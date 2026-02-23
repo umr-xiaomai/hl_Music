@@ -22,7 +22,7 @@
                     <controls:AsyncImage Source="{Binding UserAvatar}"
                                          Stretch="UniformToFill" />
                 </Border>
-                
+
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0">
                     <TextBlock Text="{Binding UserName}"
                                FontSize="24"
@@ -48,6 +48,7 @@
                     Command="{Binding LogoutCommand}"
                     HorizontalAlignment="Right"
                     Padding="30,10"
+                    Margin="0,0,0,100"
                     ToolTip.Tip="退出登录">
                 <PathIcon Data="{x:Static suki:Icons.Logout}" />
             </Button>

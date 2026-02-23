@@ -21,7 +21,7 @@ public class RawDeviceApi(IKgTransport transport, KgSessionManager sessionManage
         // 注意：imei 和 uuid 必须使用 Session 中的 InstallGuid
         var hardwareInfo = new JsonObject
         {
-            ["availableRamSize"] = 4983533568L, 
+            ["availableRamSize"] = 4983533568L,
             ["availableRomSize"] = 48114719L,
             ["availableSDSize"] = 48114717L,
             ["basebandVer"] = "",
@@ -29,11 +29,11 @@ public class RawDeviceApi(IKgTransport transport, KgSessionManager sessionManage
             ["batteryStatus"] = 3,
             ["brand"] = "Redmi",
             ["buildSerial"] = "unknown",
-            ["device"] = "marble", 
+            ["device"] = "marble",
             ["imei"] = session.InstallGuid,
             ["imsi"] = "",
             ["manufacturer"] = "Xiaomi",
-            ["uuid"] = session.InstallGuid, 
+            ["uuid"] = session.InstallGuid,
             ["accelerometer"] = false,
             ["accelerometerValue"] = "",
             ["gravity"] = false,

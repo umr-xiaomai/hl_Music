@@ -4,78 +4,121 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KuGou.Net.Adapters.Lyrics;
 using KuGou.Net.Clients;
 using SimpleAudio;
+using SukiUI.Toasts;
 
 namespace TestMusic.ViewModels;
 
 public partial class PlayerViewModel : ViewModelBase
 {
-    private readonly MusicClient _musicClient;
     private readonly LyricClient _lyricClient;
-    private readonly SimpleAudioPlayer _player;
+    private readonly MusicClient _musicClient;
     private readonly DispatcherTimer _playbackTimer;
-    
+    private readonly SimpleAudioPlayer _player;
+    private readonly Random _random = new();
+    private readonly ISukiToastManager _toastManager;
+
+    [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
+
     // 歌词解析缓存
     private List<KrcLine> _currentLyrics = new();
 
-    [ObservableProperty] private SongItem? _currentPlayingSong;
-    [ObservableProperty] private bool _isPlayingAudio;
-    [ObservableProperty] private double _currentPositionSeconds;
-    [ObservableProperty] private double _totalDurationSeconds;
-    [ObservableProperty] private float _musicVolume = 1.0f;
-    [ObservableProperty] private bool _isDraggingProgress;
-    
     // 歌词相关
     [ObservableProperty] private string _currentLyricText = "---";
     [ObservableProperty] private string _currentLyricTrans = "";
-    [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
-    public ObservableCollection<LyricLineViewModel> LyricLines { get; } = new();
 
-    // 播放队列 (独立于页面)
-    public ObservableCollection<SongItem> PlaybackQueue { get; } = new();
+    [ObservableProperty] private SongItem? _currentPlayingSong;
+    [ObservableProperty] private double _currentPositionSeconds;
+    [ObservableProperty] private bool _isDraggingProgress;
+    [ObservableProperty] private bool _isPlayingAudio;
+
+    // [新增] 随机模式状态
+    [ObservableProperty] private bool _isShuffleMode;
+
+    [ObservableProperty] private float _musicVolume = 1.0f;
+
+    // [新增] 影子队列：永远保存原始顺序
+    private List<SongItem> _originalQueue = new();
 
     // 状态消息 (用于通知 MainWindow 显示 Toast 或底部文字)
     [ObservableProperty] private string _statusMessage = "";
+    [ObservableProperty] private double _totalDurationSeconds;
 
-    public PlayerViewModel(MusicClient musicClient, LyricClient lyricClient)
+    public PlayerViewModel(MusicClient musicClient, LyricClient lyricClient, ISukiToastManager toastManager)
     {
         _musicClient = musicClient;
         _lyricClient = lyricClient;
-        
+        _toastManager = toastManager;
+
         _player = new SimpleAudioPlayer();
+
         _player.PlaybackEnded += () => Dispatcher.UIThread.Post(() => PlayNextCommand.Execute(null));
 
         _playbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _playbackTimer.Tick += OnPlaybackTimerTick;
     }
 
+    public ObservableCollection<LyricLineViewModel> LyricLines { get; } = new();
+
+    // 播放队列 (独立于页面)
+    public ObservableCollection<SongItem> PlaybackQueue { get; } = new();
+
     /// <summary>
-    /// 核心播放逻辑
+    ///     核心播放逻辑
     /// </summary>
     /// <param name="song">要播放的歌曲</param>
     /// <param name="contextList">
-    /// 歌曲所在的上下文列表。
-    /// 如果不为空，说明用户在列表中点击了播放，需要替换队列。
-    /// 如果为空，说明用户在点击"上一首/下一首"，保持队列不变。
+    ///     歌曲所在的上下文列表。
+    ///     如果不为空，说明用户在列表中点击了播放，需要替换队列。
+    ///     如果为空，说明用户在点击"上一首/下一首"，保持队列不变。
     /// </param>
     public async Task PlaySongAsync(SongItem? song, IList<SongItem>? contextList = null)
     {
         if (song == null) return;
 
-        // 1. 如果提供了新的上下文列表，更新队列
+        // 如果传入了新的列表（比如点击了歌单播放）
         if (contextList != null && contextList.Any())
         {
+            // 1. 更新影子队列 (这是基准)
+            _originalQueue = contextList.ToList();
+
+            // 2. 构建实际播放队列
             PlaybackQueue.Clear();
-            foreach (var item in contextList) PlaybackQueue.Add(item);
+
+            if (IsShuffleMode)
+            {
+                // 如果是随机模式：
+                // 将点击的那首歌放在第一个，其余的打乱放入
+                PlaybackQueue.Add(song);
+
+                var otherSongs = contextList.Where(x => x != song).ToList();
+                // 打乱其他歌曲
+                var n = otherSongs.Count;
+                while (n > 1)
+                {
+                    n--;
+                    var k = _random.Next(n + 1);
+                    (otherSongs[k], otherSongs[n]) = (otherSongs[n], otherSongs[k]);
+                }
+
+                foreach (var item in otherSongs) PlaybackQueue.Add(item);
+            }
+            else
+            {
+                // 如果是顺序模式：直接复制
+                foreach (var item in contextList) PlaybackQueue.Add(item);
+            }
         }
         else if (PlaybackQueue.Count == 0)
         {
-            // 队列为空时，至少把自己加进去
+            // 队列为空时的保底
+            _originalQueue.Add(song);
             PlaybackQueue.Add(song);
         }
 
@@ -86,21 +129,26 @@ public partial class PlayerViewModel : ViewModelBase
         StatusMessage = $"正在缓冲: {song.Name}";
 
         StopAndReset();
-
         try
         {
             // 3. 获取播放地址
-            // 注意：这里硬编码了 musicQuality，你可以按需注入配置
-            var playData = await _musicClient.GetPlayInfoAsync(song.Hash, "high"); 
-            
-            var url = playData?.Urls.FirstOrDefault(x => !string.IsNullOrEmpty(x));
-            if (string.IsNullOrEmpty(url))
+            var playData = await _musicClient.GetPlayInfoAsync(song.Hash, "high");
+            if (playData != null && playData.Status != 1)
             {
-                StatusMessage = "无法获取播放链接，尝试下一首...";
+                _toastManager.CreateToast()
+                    .OfType(NotificationType.Warning)
+                    .WithTitle("因版权原因无法获取播放链接")
+                    .WithContent("正在尝试下一首...")
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Dismiss().ByClicking()
+                    .Queue();
+                //StatusMessage = "无法获取播放链接，尝试下一首...";
                 await Task.Delay(1000);
                 await PlayNext();
                 return;
             }
+
+            var url = playData?.Urls.FirstOrDefault(x => !string.IsNullOrEmpty(x));
 
             // 4. 加载歌词 (异步不等待)
             _ = LoadLyrics(song.Hash, song.Name);
@@ -111,7 +159,8 @@ public partial class PlayerViewModel : ViewModelBase
                 _player.SetVolume(MusicVolume);
                 _player.Play();
                 IsPlayingAudio = true;
-                TotalDurationSeconds = song.DurationSeconds > 0 ? song.DurationSeconds : _player.GetDuration().TotalSeconds;
+                TotalDurationSeconds =
+                    song.DurationSeconds > 0 ? song.DurationSeconds : _player.GetDuration().TotalSeconds;
                 _playbackTimer.Start();
                 StatusMessage = $"正在播放: {song.Name}";
             }
@@ -131,7 +180,7 @@ public partial class PlayerViewModel : ViewModelBase
     [RelayCommand]
     private async Task PlaySong(SongItem? song)
     {
-        await PlaySongAsync(song, null); 
+        await PlaySongAsync(song);
     }
 
     [RelayCommand]
@@ -169,18 +218,20 @@ public partial class PlayerViewModel : ViewModelBase
         if (prevIdx < 0) prevIdx = PlaybackQueue.Count - 1;
         await PlaySongAsync(PlaybackQueue[prevIdx]);
     }
-    
+
     [RelayCommand]
     private void ClearQueue()
     {
         PlaybackQueue.Clear();
+        _originalQueue.Clear();
         StopAndReset();
     }
-    
+
     [RelayCommand]
     private void RemoveFromQueue(SongItem song)
     {
         PlaybackQueue.Remove(song);
+        _originalQueue.Remove(song);
         if (PlaybackQueue.Count == 0) StopAndReset();
     }
 
@@ -188,10 +239,52 @@ public partial class PlayerViewModel : ViewModelBase
     private void AddToNext(SongItem? song)
     {
         if (song == null) return;
-        var idx = CurrentPlayingSong != null ? PlaybackQueue.IndexOf(CurrentPlayingSong) : -1;
-        if (idx >= 0 && idx < PlaybackQueue.Count - 1) PlaybackQueue.Insert(idx + 1, song);
-        else PlaybackQueue.Add(song);
+        var originalIdx = CurrentPlayingSong != null ? _originalQueue.IndexOf(CurrentPlayingSong) : -1;
+        if (originalIdx >= 0 && originalIdx < _originalQueue.Count - 1)
+            _originalQueue.Insert(originalIdx + 1, song);
+        else
+            _originalQueue.Add(song);
+
+        var playIdx = CurrentPlayingSong != null ? PlaybackQueue.IndexOf(CurrentPlayingSong) : -1;
+        if (playIdx >= 0 && playIdx < PlaybackQueue.Count - 1)
+            PlaybackQueue.Insert(playIdx + 1, song);
+        else
+            PlaybackQueue.Add(song);
+
         StatusMessage = "已添加到播放队列";
+    }
+
+    [RelayCommand]
+    private void ToggleShuffleMode()
+    {
+        IsShuffleMode = !IsShuffleMode;
+
+        if (PlaybackQueue.Count == 0) return;
+
+        var currentSong = CurrentPlayingSong;
+
+        if (IsShuffleMode)
+        {
+            var songsToShuffle = PlaybackQueue.Where(x => x != currentSong).ToList();
+            var n = songsToShuffle.Count;
+            while (n > 1)
+            {
+                n--;
+                var k = _random.Next(n + 1);
+                (songsToShuffle[k], songsToShuffle[n]) = (songsToShuffle[n], songsToShuffle[k]);
+            }
+
+            PlaybackQueue.Clear();
+            if (currentSong != null) PlaybackQueue.Add(currentSong);
+            foreach (var song in songsToShuffle) PlaybackQueue.Add(song);
+        }
+        else
+        {
+            if (_originalQueue.Count != PlaybackQueue.Count) _originalQueue = PlaybackQueue.ToList();
+
+            PlaybackQueue.Clear();
+            foreach (var song in _originalQueue) PlaybackQueue.Add(song);
+        }
     }
 
     private void StopAndReset()
@@ -220,11 +313,13 @@ public partial class PlayerViewModel : ViewModelBase
         _player.SetPosition(TimeSpan.FromSeconds(value));
         UpdateLyrics(value * 1000);
     }
-    
-    partial void OnMusicVolumeChanged(float value) => _player.SetVolume(value);
 
-    // ... (LoadLyrics 和 UpdateLyrics 逻辑从 MainVM 搬过来，完全一样) ...
-    private async Task LoadLyrics(string hash, string name) 
+    partial void OnMusicVolumeChanged(float value)
+    {
+        _player.SetVolume(value);
+    }
+
+    private async Task LoadLyrics(string hash, string name)
     {
         CurrentLyricTrans = "";
         _currentLyrics.Clear();
@@ -259,7 +354,7 @@ public partial class PlayerViewModel : ViewModelBase
                 {
                     var krc = KrcParser.Parse(lyricResult.DecodedContent);
                     _currentLyrics = krc.Lines;
-                    
+
                     foreach (var line in _currentLyrics)
                         LyricLines.Add(new LyricLineViewModel
                         {
@@ -279,7 +374,7 @@ public partial class PlayerViewModel : ViewModelBase
             CurrentLyricText = "歌词获取失败";
         }
     }
-    
+
     private void UpdateLyrics(double currentMs)
     {
         if (LyricLines.Count == 0) return;

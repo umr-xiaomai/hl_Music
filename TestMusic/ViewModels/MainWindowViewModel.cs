@@ -4,11 +4,13 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KuGou.Net.Clients;
 using KuGou.Net.Protocol.Session;
+using SukiUI.Toasts;
 using TestMusic.Views;
 
 namespace TestMusic.ViewModels;
@@ -19,8 +21,6 @@ public partial class MainWindowViewModel : ObservableObject
     private const string LikeListCover = "avares://TestMusic/Assets/LikeList.jpg";
     private readonly DeviceClient _deviceClient;
     private readonly DiscoveryClient _discoveryClient;
-
-    public PlayerViewModel Player{ get; }
     private readonly PlaylistClient _playlistClient;
     private readonly SearchViewModel _searchViewModel;
     private readonly KgSessionManager _sessionManager;
@@ -29,7 +29,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty] private PageViewModelBase _activePage;
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
-    
+
     [ObservableProperty] private bool _isLoggedIn;
 
     [ObservableProperty] private bool _isNowPlayingOpen;
@@ -42,8 +42,9 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private string? _userAvatar;
 
     [ObservableProperty] private string _userName = "未登录";
-    
+
     public MainWindowViewModel(
+        ISukiToastManager toastManager,
         PlayerViewModel player,
         KgSessionManager sessionManager,
         AuthClient authClient,
@@ -58,42 +59,46 @@ public partial class MainWindowViewModel : ObservableObject
         _sessionManager = sessionManager;
         _deviceClient = deviceClient;
         _discoveryClient = discoveryClient;
-        
+
         _playlistClient = playlistClient;
         _userClient = userClient;
-        
+
         LoginViewModel = loginViewModel;
         _searchViewModel = searchViewModel;
         _userViewModel = userViewModel;
 
-        
+
         LoginViewModel.LoginSuccess += OnLoginSuccess;
         _userViewModel.LogoutRequested += OnLogoutRequested;
 
         Player = player;
+        ToastManager = toastManager;
         var dailyVm = new DailyRecommendViewModel();
         var playlistVm = new MyPlaylistsViewModel();
         Pages.Add(dailyVm);
         Pages.Add(playlistVm);
         ActivePage = dailyVm;
-        
-        Player.PropertyChanged += (s, e) => 
+
+        Player.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(Player.StatusMessage))
                 StatusMessage = Player.StatusMessage;
         };
-        
+
         Task.Run(async () =>
         {
             await LoadLocalSessionOrLogin();
             await GetDailyRecommendations();
         });
     }
-    
+
+    public PlayerViewModel Player { get; }
+    public ISukiToastManager ToastManager { get; }
+
     public Window? MainWindow { get; set; }
 
     public ObservableCollection<PageViewModelBase> Pages { get; } = new();
-    
+
     public LoginViewModel LoginViewModel { get; }
 
     // --- 登录相关 ---
@@ -152,7 +157,12 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch
         {
-            // 忽略加载用户信息失败
+            ToastManager.CreateToast()
+                .OfType(NotificationType.Warning)
+                .WithTitle("加载用户失败")
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Dismiss().ByClicking()
+                .Queue();
         }
     }
 
@@ -185,14 +195,13 @@ public partial class MainWindowViewModel : ObservableObject
             // 后台初始化设备
             _ = Task.Run(async () =>
             {
-                try
-                {
-                    await _deviceClient.InitDeviceAsync();
-                }
-                catch
-                {
-                    // 忽略
-                }
+                if (!await _deviceClient.InitDeviceAsync())
+                    ToastManager.CreateToast()
+                        .OfType(NotificationType.Error)
+                        .WithTitle("获取Dfid失败")
+                        .Dismiss().After(TimeSpan.FromSeconds(3))
+                        .Dismiss().ByClicking()
+                        .Queue();
             });
 
             // 加载推荐
@@ -215,7 +224,7 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
-    [RelayCommand]//先用弹窗，之后再改
+    [RelayCommand] //先用弹窗，之后再改
     private void ShowLoginDialog()
     {
         if (MainWindow == null) return;
@@ -224,10 +233,21 @@ public partial class MainWindowViewModel : ObservableObject
         {
             DataContext = LoginViewModel
         };
-        
+
         void OnLoginSuccess()
         {
             loginWindow.Close();
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await TryGetVip();
+                }
+                catch (Exception ex)
+                {
+                    StatusMessage = $"获取VIP失败: {ex.Message}";
+                }
+            });
         }
 
         LoginViewModel.LoginSuccess += OnLoginSuccess;
@@ -287,9 +307,9 @@ public partial class MainWindowViewModel : ObservableObject
     private async Task Search()
     {
         if (string.IsNullOrWhiteSpace(SearchKeyword)) return;
-        
+
         ActivePage = _searchViewModel;
-        
+
         await _searchViewModel.SearchAsync(SearchKeyword);
         StatusMessage = _searchViewModel.StatusMessage;
     }
@@ -313,7 +333,6 @@ public partial class MainWindowViewModel : ObservableObject
 
     private async Task GetMyPlaylists(MyPlaylistsViewModel vm)
     {
-        StatusMessage = "正在获取个人歌单...";
         try
         {
             var playlists = await _userClient.GetPlaylistsAsync();
@@ -329,11 +348,16 @@ public partial class MainWindowViewModel : ObservableObject
                             ? item.IsDefault is 2 ? LikeListCover : DefaultCover
                             : item.Pic
                     });
-            StatusMessage = $"加载了 {vm.Playlists.Count} 个歌单。";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"获取歌单失败: {ex.Message}";
+            ToastManager.CreateToast()
+                .OfType(NotificationType.Warning)
+                .WithTitle("获取歌单失败")
+                .WithContent($"{ex.Message}")
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Dismiss().ByClicking()
+                .Queue();
         }
     }
 
@@ -345,16 +369,14 @@ public partial class MainWindowViewModel : ObservableObject
 
         ActivePage = vm;
         vm.SelectedPlaylist = vm.Playlists.FirstOrDefault(x => x.Id == playlistId);
-        vm.IsShowingSongs = true; 
+        vm.IsShowingSongs = true;
 
-        StatusMessage = "正在加载歌单歌曲...";
         try
         {
             var songs = await _playlistClient.GetSongsAsync(playlistId, pageSize: 100);
             vm.SelectedPlaylistSongs.Clear();
             foreach (var item in songs)
             {
-                // 复原原本的歌手名解析逻辑
                 var singerName = "未知";
                 if (item.Singers.Count > 0)
                     singerName = string.Join("、", item.Singers.Select(s => s.Name));
@@ -370,12 +392,16 @@ public partial class MainWindowViewModel : ObservableObject
                     DurationSeconds = item.DurationMs / 1000.0
                 });
             }
-
-            StatusMessage = "歌单加载完成。";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"加载歌单失败: {ex.Message}";
+            ToastManager.CreateToast()
+                .OfType(NotificationType.Warning)
+                .WithTitle("加载歌单失败")
+                .WithContent($"{ex.Message}")
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Dismiss().ByClicking()
+                .Queue();
         }
     }
 
@@ -396,28 +422,21 @@ public partial class MainWindowViewModel : ObservableObject
     {
         IsNowPlayingOpen = false;
     }
-    
-    
+
+
     [RelayCommand]
     private async Task PlayFromList(SongItem? song)
     {
         if (song == null) return;
 
         IList<SongItem>? currentSongList = null;
-        
+
         if (ActivePage is DailyRecommendViewModel dailyVm)
-        {
             currentSongList = dailyVm.Songs;
-        }
         else if (ActivePage is MyPlaylistsViewModel playlistVm && playlistVm.IsShowingSongs)
-        {
             currentSongList = playlistVm.SelectedPlaylistSongs;
-        }
-        else if (ActivePage is SearchViewModel searchVm)
-        {
-            currentSongList = searchVm.Songs;
-        }
-        
+        else if (ActivePage is SearchViewModel searchVm) currentSongList = searchVm.Songs;
+
         await Player.PlaySongAsync(song, currentSongList);
     }
 }

@@ -5,6 +5,7 @@ using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using KuGou.Net.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using SukiUI.Toasts;
 using TestMusic.ViewModels;
 using TestMusic.Views;
 
@@ -22,6 +23,8 @@ public class App : Application
         BindingPlugins.DataValidators.RemoveAt(0);
         var collection = new ServiceCollection();
         collection.AddKuGouSdk();
+
+        collection.AddSingleton<ISukiToastManager, SukiToastManager>();
 
         // 注册 ViewModels
         collection.AddTransient<LoginViewModel>();

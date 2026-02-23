@@ -48,23 +48,21 @@ public partial class NowPlaying : UserControl
 
         if (scrollViewer == null)
             return;
-        
+
         listBox.ScrollIntoView(item);
-        
-        for (int i = 0; i < 3; i++)
-        {
-            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
-        }
+
+        for (var i = 0; i < 3; i++) await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
 
         var container = listBox.ContainerFromItem(item);
         if (container == null)
         {
             listBox.UpdateLayout();
             container = listBox.ContainerFromItem(item);
-        
+
             if (container == null)
                 return;
         }
+
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
 
         var transform = container.TransformToVisual(scrollViewer);

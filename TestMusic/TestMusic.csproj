@@ -5,15 +5,14 @@
         <Nullable>enable</Nullable>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-
         <ApplicationIcon>Assets\Test.ico</ApplicationIcon>
-
+        
     </PropertyGroup>
 
     <ItemGroup>
         <AvaloniaResource Include="Assets\**"/>
         <Folder Include="Models\"/>
-        <Folder Include="Services\" />
+        <Folder Include="Services\"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -118,4 +118,8 @@
         </Border>
 
     </Grid>
+
+    <suki:SukiWindow.Hosts>
+        <suki:SukiToastHost Manager="{Binding ToastManager}" />
+    </suki:SukiWindow.Hosts>
 </suki:SukiWindow>
