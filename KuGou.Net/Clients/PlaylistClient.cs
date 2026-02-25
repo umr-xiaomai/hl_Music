@@ -92,7 +92,7 @@ public class PlaylistClient(RawPlaylistApi rawApi, KgSessionManager sessionManag
     /// </summary>
     /// <param name="targetListId">目标歌单 ListID</param>
     /// <param name="songs">要添加的歌曲列表 (Name, Hash, AlbumId, MixSongId)</param>
-    public async Task<JsonElement?> AddSongsAsync(
+    public async Task<AddSongResponse?> AddSongsAsync(
         string targetListId,
         List<(string Name, string Hash, string AlbumId, string MixSongId)> songs)
     {
@@ -100,23 +100,23 @@ public class PlaylistClient(RawPlaylistApi rawApi, KgSessionManager sessionManag
 
         if (songs == null || songs.Count == 0) return null;
 
-        return await rawApi.AddSongsToPlaylistAsync(uid, token, targetListId, songs);
+        var json= await rawApi.AddSongsToPlaylistAsync(uid, token, targetListId, songs);
+        return KgApiResponseParser.Parse<AddSongResponse>(json, AppJsonContext.Default.AddSongResponse);
     }
 
     /// <summary>
     ///     对歌单删除歌曲
-    ///     <para>对应: /playlist/tracks/del</para>
     /// </summary>
     /// <param name="targetListId">目标歌单 ListID</param>
     /// <param name="fileIds">要删除的 FileID 列表 (注意: 这是歌单内的唯一ID，不是歌曲Hash)</param>
-    public async Task<JsonElement?> RemoveSongsAsync(string targetListId, IEnumerable<long> fileIds)
+    public async Task<RemoveSongResponse?> RemoveSongsAsync(string targetListId, IEnumerable<long> fileIds)
     {
         var (uid, token) = GetAuth();
-
-        // 简单的参数校验
+        
         var ids = fileIds.ToList();
         if (ids.Count == 0) return null;
 
-        return await rawApi.RemoveSongsFromPlaylistAsync(uid, token, targetListId, ids);
+        var json= await rawApi.RemoveSongsFromPlaylistAsync(uid, token, targetListId, ids);
+        return KgApiResponseParser.Parse<RemoveSongResponse>(json, AppJsonContext.Default.RemoveSongResponse);
     }
 }

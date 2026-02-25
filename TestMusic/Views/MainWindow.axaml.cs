@@ -1,5 +1,7 @@
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using SukiUI.Controls;
+using TestMusic.Services;
 using TestMusic.ViewModels;
 
 namespace TestMusic.Views;
@@ -15,5 +17,16 @@ public partial class MainWindow : SukiWindow
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainWindowViewModel vm) vm.MainWindow = this;
+    }
+    
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (SettingsManager.Settings.CloseBehavior == CloseBehavior.MinimizeToTray)
+        {
+            e.Cancel = true;
+            this.Hide();
+        }
+        
+        base.OnClosing(e);
     }
 }

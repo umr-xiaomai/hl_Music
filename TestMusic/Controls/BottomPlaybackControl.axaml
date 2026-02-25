@@ -105,6 +105,14 @@
                                  IsVisible="{Binding !Player.IsShuffleMode}" />
                         </StackPanel>
                     </Button>
+                    
+                    <Button Command="{Binding ToggleDesktopLyricCommand}" 
+                            Classes="Basic" 
+                            ToolTip.Tip="桌面歌词">
+                            <Svg Path="/Assets/DesktopLyric2.svg" Width="24" Height="24"
+                                 HorizontalAlignment="Center" 
+                                 VerticalAlignment="Center"/> 
+                    </Button>
                 </StackPanel>
             </Grid>
         </suki:GlassCard>

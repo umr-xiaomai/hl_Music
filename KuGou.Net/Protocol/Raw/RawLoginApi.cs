@@ -232,7 +232,7 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
         // 6. 组装 Body
         var body = new JsonObject
         {
-            ["dfid"] = string.IsNullOrEmpty(dfid) ? "-" : "-",
+            ["dfid"] = string.IsNullOrEmpty(dfid) ? dfid : "-",
             ["p3"] = p3Encrypted,
             ["plat"] = 1,
             ["t1"] = t1Enc,

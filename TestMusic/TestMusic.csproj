@@ -11,8 +11,6 @@
 
     <ItemGroup>
         <AvaloniaResource Include="Assets\**"/>
-        <Folder Include="Models\"/>
-        <Folder Include="Services\"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -30,6 +28,7 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2"/>
         <PackageReference Include="SukiUI" Version="6.0.4-nightly20260124"/>
         <PackageReference Include="Svg.Controls.Avalonia" Version="11.3.9.2"/>
+        <PackageReference Include="TagLibSharp" Version="2.3.0" />
     </ItemGroup>
 
     <ItemGroup>

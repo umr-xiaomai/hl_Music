@@ -47,6 +47,9 @@ namespace KuGou.Net.util;
 [JsonSerializable(typeof(List<BusiVipInfo>))]
 [JsonSerializable(typeof(DailyRecommendResponse))]
 [JsonSerializable(typeof(List<DailyRecommendSong>))]
+[JsonSerializable(typeof(AddSongResponse))]
+[JsonSerializable(typeof(RemoveSongResponse))]
+[JsonSerializable(typeof(List<AddSongItem>))] 
 internal partial class AppJsonContext : JsonSerializerContext
 {
 }

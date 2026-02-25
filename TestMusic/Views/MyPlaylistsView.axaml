@@ -6,47 +6,73 @@
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
              xmlns:localControls="using:TestMusic.Controls"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:models="clr-namespace:TestMusic.Models"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="TestMusic.Views.MyPlaylistsView"
              x:DataType="vm:MyPlaylistsViewModel">
 
-    <Grid Margin="15">
-        <!-- 视图 A：歌单列表 (大图标格子模式) -->
+   <Grid Margin="15">
+        <!-- 视图 A：统一歌单列表 -->
         <Grid IsVisible="{Binding !IsShowingSongs}" RowDefinitions="Auto, *">
+            
             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" Margin="0,0,0,20">
                 <TextBlock Text="我的歌单" FontSize="28" FontWeight="Bold" />
-                <Button Classes="Basic"
-                        Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).NavigateToMyPlaylistsCommand}">
+                <Button Classes="Basic" Command="{Binding LoadAllPlaylistsCommand}">
                     <PathIcon Data="{x:Static suki:Icons.Refresh}" Foreground="Black" />
                 </Button>
             </StackPanel>
 
             <ScrollViewer Grid.Row="1">
-                <ItemsControl ItemsSource="{Binding Playlists}">
+                <!-- 绑定到统一的 Items 集合 -->
+                <ItemsControl ItemsSource="{Binding Items}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
+                    
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
+                            <!-- 整个卡片容器 -->
                             <Button Width="160" Height="200" Margin="8" Padding="0"
-                                    Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).LoadPlaylistDetailsCommand}"
-                                    CommandParameter="{Binding Id}">
+                                    Click="OnPlaylistCardClick"> <!-- 使用 Click 事件在后台处理逻辑分发 -->
+                                
                                 <suki:GlassCard Padding="0" CornerRadius="12">
-                                    <Grid RowDefinitions="*, Auto">
-                                        <Border Grid.Row="0" Background="{DynamicResource SukiPrimaryColorLow}"
-                                                CornerRadius="12,12,0,0">
-                                            <controls:AsyncImage Source="{Binding Cover}" />
-                                        </Border>
-                                        <StackPanel Grid.Row="1"
-                                                    Background="{DynamicResource SukiCardBackground}">
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Count, StringFormat='{}{0} 首'}"
-                                                       FontSize="11" Foreground="Gray" />
-                                        </StackPanel>
-                                    </Grid>
+                                    <Panel>
+                                        <!-- 1. 正常歌单样式 (在线/本地) -->
+                                        <!-- 这里使用简单的 DataTrigger 替代方案：利用 IsVisible 绑定 -->
+                                        <!-- 注意：为了 XAML 简洁，建议在 PlaylistItem 加个 IsAdd 属性 -->
+                                        
+                                        <Grid RowDefinitions="*, Auto" IsVisible="{Binding Type, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
+                                            <Border Grid.Row="0" Background="{DynamicResource SukiPrimaryColorLow}"
+                                                    CornerRadius="12,12,0,0" ClipToBounds="True">
+                                                <controls:AsyncImage Source="{Binding Cover}" Stretch="UniformToFill"/>
+                                            </Border>
+                                            
+                                            <!-- 本地歌单的标识 (右上角) -->
+                                            <Border Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                    Background="#80000000" CornerRadius="0,0,0,8" Padding="6,2"
+                                                    IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.Local}}">
+                                                <TextBlock Text="本地" FontSize="10" Foreground="White"/>
+                                            </Border>
+
+                                            <StackPanel Grid.Row="1" Background="{DynamicResource SukiCardBackground}" >
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Count, StringFormat='{}{0} 首'}" FontSize="11" Foreground="Gray" />
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- 2. 添加按钮样式 (大大的加号) -->
+                                        <Grid IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.AddButton}}"
+                                              Background="{DynamicResource SukiCardBackground}">
+                                            <PathIcon Data="{x:Static suki:Icons.Plus}" 
+                                                      Width="40" Height="40" 
+                                                      Foreground="{DynamicResource SukiPrimaryColor}"/>
+                                            <TextBlock Text="添加歌单" 
+                                                       VerticalAlignment="Bottom" HorizontalAlignment="Center" 
+                                                       Margin="0,0,0,20" Foreground="Gray"/>
+                                        </Grid>
+                                    </Panel>
                                 </suki:GlassCard>
                             </Button>
                         </DataTemplate>

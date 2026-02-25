@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using TestMusic.Models;
 
 namespace TestMusic.ViewModels;
 
@@ -14,6 +15,7 @@ public partial class SongItem : ObservableObject
     [ObservableProperty] private bool _isPlaying;
     [ObservableProperty] private string _name = "";
     [ObservableProperty] private string _singer = "";
+    [ObservableProperty] private string? _localFilePath;
 }
 
 public partial class PlaylistItem : ObservableObject
@@ -22,4 +24,8 @@ public partial class PlaylistItem : ObservableObject
     [ObservableProperty] private string _cover = "avares://TestMusic/Assets/Default.png";
     [ObservableProperty] private string _id = "";
     [ObservableProperty] private string _name = "";
+    
+    
+    [ObservableProperty] private PlaylistType _type;
+    [ObservableProperty] private string? _localPath;
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -6,12 +7,13 @@ using Avalonia.Markup.Xaml;
 using KuGou.Net.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using SukiUI.Toasts;
+using TestMusic.Services;
 using TestMusic.ViewModels;
 using TestMusic.Views;
 
 namespace TestMusic;
 
-public class App : Application
+public partial class App : Application
 {
     public override void Initialize()
     {
@@ -25,6 +27,8 @@ public class App : Application
         collection.AddKuGouSdk();
 
         collection.AddSingleton<ISukiToastManager, SukiToastManager>();
+        
+        SettingsManager.Load();
 
         // 注册 ViewModels
         collection.AddTransient<LoginViewModel>();
@@ -36,6 +40,7 @@ public class App : Application
         var services = collection.BuildServiceProvider();
 
         var vm = services.GetRequiredService<MainWindowViewModel>();
+        var playerVm = services.GetRequiredService<PlayerViewModel>(); 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             DisableAvaloniaDataAnnotationValidation();
@@ -43,6 +48,9 @@ public class App : Application
             {
                 DataContext = vm
             };
+            
+            InitializeTrayIcon(playerVm, desktop);
+            desktop.Exit += (s, e) => ShutdownTrayIcon();
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -57,4 +65,5 @@ public class App : Application
         // remove each entry found
         foreach (var plugin in dataValidationPluginsToRemove) BindingPlugins.DataValidators.Remove(plugin);
     }
+    
 }

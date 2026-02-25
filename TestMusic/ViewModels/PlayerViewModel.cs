@@ -37,6 +37,7 @@ public partial class PlayerViewModel : ViewModelBase
     [ObservableProperty] private double _currentPositionSeconds;
     [ObservableProperty] private bool _isDraggingProgress;
     [ObservableProperty] private bool _isPlayingAudio;
+    [ObservableProperty] private string _musicQuality = "high";
 
     // [新增] 随机模式状态
     [ObservableProperty] private bool _isShuffleMode;
@@ -81,24 +82,16 @@ public partial class PlayerViewModel : ViewModelBase
     public async Task PlaySongAsync(SongItem? song, IList<SongItem>? contextList = null)
     {
         if (song == null) return;
-
-        // 如果传入了新的列表（比如点击了歌单播放）
         if (contextList != null && contextList.Any())
         {
-            // 1. 更新影子队列 (这是基准)
             _originalQueue = contextList.ToList();
-
-            // 2. 构建实际播放队列
             PlaybackQueue.Clear();
 
             if (IsShuffleMode)
             {
-                // 如果是随机模式：
-                // 将点击的那首歌放在第一个，其余的打乱放入
                 PlaybackQueue.Add(song);
 
                 var otherSongs = contextList.Where(x => x != song).ToList();
-                // 打乱其他歌曲
                 var n = otherSongs.Count;
                 while (n > 1)
                 {
@@ -111,18 +104,15 @@ public partial class PlayerViewModel : ViewModelBase
             }
             else
             {
-                // 如果是顺序模式：直接复制
                 foreach (var item in contextList) PlaybackQueue.Add(item);
             }
         }
         else if (PlaybackQueue.Count == 0)
         {
-            // 队列为空时的保底
             _originalQueue.Add(song);
             PlaybackQueue.Add(song);
         }
-
-        // 2. UI 更新
+        
         if (CurrentPlayingSong != null) CurrentPlayingSong.IsPlaying = false;
         CurrentPlayingSong = song;
         CurrentPlayingSong.IsPlaying = true;
@@ -131,29 +121,33 @@ public partial class PlayerViewModel : ViewModelBase
         StopAndReset();
         try
         {
-            // 3. 获取播放地址
-            var playData = await _musicClient.GetPlayInfoAsync(song.Hash, "high");
-            if (playData != null && playData.Status != 1)
+            string? url ;
+            if (System.IO.File.Exists(song.LocalFilePath))
             {
-                _toastManager.CreateToast()
-                    .OfType(NotificationType.Warning)
-                    .WithTitle("因版权原因无法获取播放链接")
-                    .WithContent("正在尝试下一首...")
-                    .Dismiss().After(TimeSpan.FromSeconds(3))
-                    .Dismiss().ByClicking()
-                    .Queue();
-                //StatusMessage = "无法获取播放链接，尝试下一首...";
-                await Task.Delay(1000);
-                await PlayNext();
-                return;
+                url = song.LocalFilePath;
+                StatusMessage = $"正在播放本地文件: {song.Name}";
             }
+            else
+            {
+                var playData = await _musicClient.GetPlayInfoAsync(song.Hash, MusicQuality);
+                if (playData != null && playData.Status != 1)
+                {
+                    _toastManager.CreateToast()
+                        .OfType(NotificationType.Warning)
+                        .WithTitle("无法获取播放链接")
+                        .WithContent($"错误代码: {playData.ErrCode}, 正在尝试下一首...")
+                        .Dismiss().After(TimeSpan.FromSeconds(3))
+                        .Queue();
+                    
+                    await Task.Delay(1000);
+                    await PlayNext();
+                    return;
+                }
 
-            var url = playData?.Urls.FirstOrDefault(x => !string.IsNullOrEmpty(x));
-
-            // 4. 加载歌词 (异步不等待)
-            _ = LoadLyrics(song.Hash, song.Name);
-
-            // 5. 播放
+                url = playData?.Urls.FirstOrDefault(x => !string.IsNullOrEmpty(x));
+                _ = LoadLyrics(song.Hash, song.Name);
+            }
+            
             if (_player.Load(url))
             {
                 _player.SetVolume(MusicVolume);
@@ -175,8 +169,7 @@ public partial class PlayerViewModel : ViewModelBase
             StopAndReset();
         }
     }
-
-    // 提供给 Command 使用的封装
+    
     [RelayCommand]
     private async Task PlaySong(SongItem? song)
     {
@@ -206,7 +199,7 @@ public partial class PlayerViewModel : ViewModelBase
         if (PlaybackQueue.Count == 0) return;
         var idx = CurrentPlayingSong != null ? PlaybackQueue.IndexOf(CurrentPlayingSong) : -1;
         var nextIdx = (idx + 1) % PlaybackQueue.Count;
-        await PlaySongAsync(PlaybackQueue[nextIdx]); // 不传 list，保留队列
+        await PlaySongAsync(PlaybackQueue[nextIdx]);
     }
 
     [RelayCommand]
@@ -323,8 +316,7 @@ public partial class PlayerViewModel : ViewModelBase
     {
         CurrentLyricTrans = "";
         _currentLyrics.Clear();
-
-        // 1. 清空界面绑定的歌词集合
+        
         LyricLines.Clear();
         CurrentLyricLine = null;
 

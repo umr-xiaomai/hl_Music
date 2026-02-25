@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
@@ -40,7 +41,7 @@ public partial class NowPlaying : UserControl
         }, DispatcherPriority.Input);
     }
 
-    private async void ScrollToCenter(ListBox listBox, object item)
+    private async Task ScrollToCenter(ListBox listBox, object item)
     {
         var scrollViewer = listBox.GetVisualDescendants()
             .OfType<ScrollViewer>()
@@ -50,28 +51,21 @@ public partial class NowPlaying : UserControl
             return;
 
         listBox.ScrollIntoView(item);
-
-        for (var i = 0; i < 3; i++) await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
-
-        var container = listBox.ContainerFromItem(item);
-        if (container == null)
-        {
-            listBox.UpdateLayout();
-            container = listBox.ContainerFromItem(item);
-
-            if (container == null)
-                return;
-        }
-
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+        
+        var container = listBox.ContainerFromItem(item) as Control;
+        if (container == null)
+            return;
 
+        // container 相对于 ScrollViewer 的位置
         var transform = container.TransformToVisual(scrollViewer);
         if (transform == null)
             return;
 
-        var position = transform.Value.Transform(new Point(0, 0));
+        var point = transform.Value.Transform(new Point(0, 0));
 
-        var itemCenter = position.Y + container.Bounds.Height / 2;
+        var itemCenter = point.Y + container.Bounds.Height / 2;
         var viewportCenter = scrollViewer.Viewport.Height / 2;
 
         var targetOffset = scrollViewer.Offset.Y + (itemCenter - viewportCenter);

@@ -26,6 +26,11 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly KgSessionManager _sessionManager;
     private readonly UserClient _userClient;
     private readonly UserViewModel _userViewModel;
+    
+    private DesktopLyricWindow? _lyricWindow;
+    
+    [ObservableProperty]
+    private bool _isDesktopLyricEnabled;
 
     [ObservableProperty] private PageViewModelBase _activePage;
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
@@ -74,7 +79,7 @@ public partial class MainWindowViewModel : ObservableObject
         Player = player;
         ToastManager = toastManager;
         var dailyVm = new DailyRecommendViewModel();
-        var playlistVm = new MyPlaylistsViewModel();
+        var playlistVm = new MyPlaylistsViewModel(_userClient,_playlistClient);
         Pages.Add(dailyVm);
         Pages.Add(playlistVm);
         ActivePage = dailyVm;
@@ -438,5 +443,36 @@ public partial class MainWindowViewModel : ObservableObject
         else if (ActivePage is SearchViewModel searchVm) currentSongList = searchVm.Songs;
 
         await Player.PlaySongAsync(song, currentSongList);
+    }
+    
+    
+    [RelayCommand]
+    private void ToggleDesktopLyric()
+    {
+        if (_lyricWindow == null)
+        {
+            // 打开窗口
+            _lyricWindow = new DesktopLyricWindow
+            {
+                DataContext = new DesktopLyricViewModel(Player)
+            };
+            
+            // 监听窗口关闭事件，清理引用
+            _lyricWindow.Closed += (s, e) => 
+            {
+                _lyricWindow = null;
+                IsDesktopLyricEnabled = false;
+            };
+
+            _lyricWindow.Show();
+            IsDesktopLyricEnabled = true;
+        }
+        else
+        {
+            // 关闭窗口
+            _lyricWindow.Close();
+            _lyricWindow = null;
+            IsDesktopLyricEnabled = false;
+        }
     }
 }
