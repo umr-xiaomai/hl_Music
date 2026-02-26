@@ -16,6 +16,10 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     private readonly KuGou.Net.Clients.UserClient _userClient;
     private readonly KuGou.Net.Clients.PlaylistClient _playlistClient;
     
+    private int _currentPage = 1;
+    [ObservableProperty] private bool _isLoadingMore; // 防止重复触发
+    private bool _hasMoreSongs = true; 
+    
     // 4. 控制 UI 显示：True 显示歌曲列表，False 显示歌单大格子
     [ObservableProperty] private bool _isShowingSongs;
 
@@ -26,6 +30,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     public override string Icon => "/Assets/music-player-svgrepo-com.svg";
     private const string FolderCover = "avares://TestMusic/Assets/Default.png";
     private const string DefaultCover = "avares://TestMusic/Assets/Default.png";
+    private const string LikeCover = "avares://TestMusic/Assets/LikeList.jpg";
 
     // 1. 所有的歌单列表
     public ObservableCollection<PlaylistItem> Playlists { get; } = new();
@@ -96,12 +101,10 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                         Id = item.GlobalId,
                         Count = item.Count,
                         Type = PlaylistType.Online,
-                        Cover = string.IsNullOrWhiteSpace(item.Pic) ? DefaultCover : item.Pic
+                        Cover = string.IsNullOrWhiteSpace(item.Pic) ? item.ListId!=2? DefaultCover:LikeCover : item.Pic
                     });
                 }
             }
-            
-            //TODO
         }
         catch
         {
@@ -119,33 +122,91 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         IsShowingSongs = true;
         SelectedPlaylistSongs.Clear();
 
+        _currentPage = 1;
+        _hasMoreSongs = true;
+        IsLoadingMore = false;
+
         if (item.Type == PlaylistType.Online)
         {
-            try
-            {
-                var songs = await _playlistClient.GetSongsAsync(item.Id, pageSize: 100);
-                foreach (var s in songs)
-                {
-                    var singerName = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知";
-                    SelectedPlaylistSongs.Add(new SongItem
-                    {
-                        Name = s.Name,
-                        Singer = singerName,
-                        Hash = s.Hash,
-                        AlbumId = s.AlbumId,
-                        Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultCover : s.Cover,
-                        DurationSeconds = s.DurationMs / 1000.0
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                
-            }
+            // 加载第一页
+            await LoadMoreSongsInternal(); 
         }
         else if (item.Type == PlaylistType.Local)
         {
             await ScanLocalFolder(item.LocalPath!);
+        }
+    }
+    
+    [RelayCommand]
+    private async Task LoadMore()
+    {
+        // 只有在线歌单、没有正在加载、且还有更多数据时才执行
+        if (SelectedPlaylist?.Type != PlaylistType.Online || IsLoadingMore || !_hasMoreSongs) 
+            return;
+
+        _currentPage++;
+        await LoadMoreSongsInternal();
+    }
+    
+    [RelayCommand]
+    private void DeleteLocalPlaylist(PlaylistItem item)
+    {
+        if (item == null || item.Type != PlaylistType.Local) return;
+
+        // 1. 从界面集合移除
+        Items.Remove(item);
+
+        // 2. 从配置中移除
+        if (!string.IsNullOrEmpty(item.LocalPath))
+        {
+            if (SettingsManager.Settings.LocalMusicFolders.Contains(item.LocalPath))
+            {
+                SettingsManager.Settings.LocalMusicFolders.Remove(item.LocalPath);
+                SettingsManager.Save();
+            }
+        }
+    }
+
+    // [新增] 核心加载逻辑
+    private async Task LoadMoreSongsInternal()
+    {
+        if (SelectedPlaylist == null) return;
+        
+        IsLoadingMore = true;
+        try
+        {
+            var songs = await _playlistClient.GetSongsAsync(SelectedPlaylist.Id, _currentPage, 100);
+            
+            if (songs.Count < 100)
+            {
+                _hasMoreSongs = false; 
+            }
+
+            foreach (var s in songs)
+            {
+                var singerName = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知";
+                
+                // 注意：这里是 Add 而不是 Clear，追加到列表末尾
+                SelectedPlaylistSongs.Add(new SongItem
+                {
+                    Name = s.Name,
+                    Singer = singerName,
+                    Hash = s.Hash,
+                    AlbumId = s.AlbumId,
+                    Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultCover : s.Cover,
+                    DurationSeconds = s.DurationMs / 1000.0,
+                    
+                });
+            }
+        }
+        catch (Exception)
+        {
+            // 加载失败时回滚页码，允许用户重试
+            _currentPage--; 
+        }
+        finally
+        {
+            IsLoadingMore = false;
         }
     }
 

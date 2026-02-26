@@ -8,6 +8,8 @@ namespace TestMusic.Views;
 
 public partial class MainWindow : SukiWindow
 {
+    public bool CanClose { get; set; } = false; 
+    
     public MainWindow()
     {
         InitializeComponent();
@@ -21,12 +23,18 @@ public partial class MainWindow : SukiWindow
     
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (SettingsManager.Settings.CloseBehavior == CloseBehavior.MinimizeToTray)
+        var behavior = SettingsManager.Settings.CloseBehavior;
+        if (behavior == CloseBehavior.MinimizeToTray && !CanClose)
         {
-            e.Cancel = true;
-            this.Hide();
+            e.Cancel = true; 
+            this.Hide();    
+            return;        
         }
-        
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.ForceCloseDesktopLyric();
+        }
+
         base.OnClosing(e);
     }
 }

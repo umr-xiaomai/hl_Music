@@ -129,6 +129,7 @@ public partial class MainWindowViewModel : ObservableObject
                     try
                     {
                         await TryGetVip();
+                        await Player.LoadLikeListAsync();
                     }
                     catch (Exception ex)
                     {
@@ -470,6 +471,17 @@ public partial class MainWindowViewModel : ObservableObject
         else
         {
             // 关闭窗口
+            _lyricWindow.Close();
+            _lyricWindow = null;
+            IsDesktopLyricEnabled = false;
+        }
+    }
+    
+    
+    public void ForceCloseDesktopLyric()
+    {
+        if (_lyricWindow != null)
+        {
             _lyricWindow.Close();
             _lyricWindow = null;
             IsDesktopLyricEnabled = false;

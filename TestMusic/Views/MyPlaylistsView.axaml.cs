@@ -71,4 +71,23 @@ public partial class MyPlaylistsView : UserControl
             }
         }
     }
+    
+    private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        if (sender is not ScrollViewer scrollViewer) return;
+        if (DataContext is not MyPlaylistsViewModel vm) return;
+
+        // 计算当前滚动位置 + 视口高度
+        var currentBottom = scrollViewer.Offset.Y + scrollViewer.Viewport.Height;
+        
+        // 比较：如果滚动到底部（预留 50px 的缓冲距离），且不是正在加载中
+        if (currentBottom >= scrollViewer.Extent.Height - 50)
+        {
+            // 如果 ViewModel 有加载更多的命令，则执行
+            if (vm.LoadMoreCommand.CanExecute(null))
+            {
+                vm.LoadMoreCommand.Execute(null);
+            }
+        }
+    }
 }

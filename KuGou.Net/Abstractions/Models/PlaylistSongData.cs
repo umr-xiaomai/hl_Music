@@ -39,6 +39,9 @@ public record PlaylistSong : KgBaseModel
     // 权限/VIP 标记 (10通常是VIP, 0是免费，8可能是版权限制)
     [property: JsonPropertyName("privilege")]
     public int Privilege { get; set; }
+    
+    [property: JsonPropertyName("fileid")]
+    public int FileId { get; set; }
 
     // 歌手信息数组
     [property: JsonPropertyName("singerinfo")]

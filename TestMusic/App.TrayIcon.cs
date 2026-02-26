@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform;
 using TestMusic.ViewModels;
+using TestMusic.Views;
 
 namespace TestMusic;
 
@@ -40,8 +41,12 @@ partial class App
         var exitItem = new NativeMenuItem("退出");
         exitItem.Click += (s, e) =>
         {
+            if (desktop.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.CanClose = true;
+            }
             _trayIcon?.Dispose(); 
-            desktop.Shutdown();
+            desktop.Shutdown(); 
         };
         
         var menu = new NativeMenu();

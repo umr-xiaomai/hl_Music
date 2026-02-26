@@ -10,7 +10,7 @@ public partial class SongItem : ObservableObject
     [ObservableProperty] private double _durationSeconds;
 
     [ObservableProperty] private string _hash = "";
-
+    [ObservableProperty] private string _fileId = "";
 
     [ObservableProperty] private bool _isPlaying;
     [ObservableProperty] private string _name = "";

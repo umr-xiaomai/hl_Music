@@ -23,6 +23,9 @@ public partial class PlayerViewModel : ViewModelBase
     private readonly SimpleAudioPlayer _player;
     private readonly Random _random = new();
     private readonly ISukiToastManager _toastManager;
+    
+    private readonly UserClient _userClient;
+    private readonly PlaylistClient _playlistClient;
 
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
 
@@ -50,12 +53,19 @@ public partial class PlayerViewModel : ViewModelBase
     // 状态消息 (用于通知 MainWindow 显示 Toast 或底部文字)
     [ObservableProperty] private string _statusMessage = "";
     [ObservableProperty] private double _totalDurationSeconds;
+    
+    private Dictionary<string, int> _favoriteCache = new(StringComparer.OrdinalIgnoreCase);
+    [ObservableProperty] private bool _isCurrentSongLiked;
+    
+    [ObservableProperty] private bool _isTogglingLike;
 
-    public PlayerViewModel(MusicClient musicClient, LyricClient lyricClient, ISukiToastManager toastManager)
+    public PlayerViewModel(MusicClient musicClient, LyricClient lyricClient, ISukiToastManager toastManager, UserClient userClient, PlaylistClient playlistClient)
     {
         _musicClient = musicClient;
         _lyricClient = lyricClient;
         _toastManager = toastManager;
+        _userClient = userClient;
+        _playlistClient = playlistClient;
 
         _player = new SimpleAudioPlayer();
 
@@ -116,6 +126,7 @@ public partial class PlayerViewModel : ViewModelBase
         if (CurrentPlayingSong != null) CurrentPlayingSong.IsPlaying = false;
         CurrentPlayingSong = song;
         CurrentPlayingSong.IsPlaying = true;
+        CheckCurrentSongLikeStatus();
         StatusMessage = $"正在缓冲: {song.Name}";
 
         StopAndReset();
@@ -388,6 +399,147 @@ public partial class PlayerViewModel : ViewModelBase
 
             CurrentLyricText = currentVm.Content;
             CurrentLyricTrans = currentVm.Translation;
+        }
+    }
+    
+    
+    private readonly HashSet<string> _likedHashes = new();
+    // Dictionary 用于删除时，通过Hash找到对应的 FileId (API要求)
+    private readonly Dictionary<string, int> _hashToFileId = new();
+
+    // [新增] 固定歌单ID (根据你的描述)
+    private const string LikeListIdForAction = "2"; 
+
+    // [新增] UI状态：是否我喜欢
+    [ObservableProperty] private bool _isLiked;
+    
+    public async Task LoadLikeListAsync()
+    {
+        try
+        {
+            // 获取用户歌单列表
+            var playlists = await _userClient.GetPlaylistsAsync();
+            // 根据描述：固定第二个为我喜欢的歌单
+            if (playlists.Count < 2) return;
+            
+            var likePlaylist = playlists[1]; // 索引1是第二个
+            if (string.IsNullOrEmpty(likePlaylist.GlobalId)) return;
+
+            // 获取歌单详情（获取所有歌曲）
+            var songs = await _playlistClient.GetSongsAsync(likePlaylist.GlobalId, pageSize: 1000);
+
+            lock (_likedHashes)
+            {
+                _likedHashes.Clear();
+                _hashToFileId.Clear();
+                foreach (var song in songs)
+                {
+                    if (!string.IsNullOrEmpty(song.Hash))
+                    {
+                        _likedHashes.Add(song.Hash.ToLowerInvariant());
+                        // 缓存 FileId，删除时需要
+                        // 注意：SDK返回的FileId是int，API可能需要转换
+                        if (song.FileId != 0) 
+                        {
+                            _hashToFileId[song.Hash.ToLowerInvariant()] = song.FileId;
+                        }
+                    }
+                }
+            }
+            
+            // 刷新当前播放歌曲的状态
+            CheckCurrentSongLikeStatus();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"加载收藏列表失败: {ex.Message}";
+        }
+    }
+
+    // 2. 检查当前歌曲是否在缓存中
+    private void CheckCurrentSongLikeStatus()
+    {
+        if (CurrentPlayingSong != null && !string.IsNullOrEmpty(CurrentPlayingSong.Hash))
+        {
+            var hash = CurrentPlayingSong.Hash.ToLowerInvariant();
+            IsLiked = _likedHashes.Contains(hash);
+        }
+        else
+        {
+            IsLiked = false;
+        }
+    }
+
+    // 3. 切换收藏状态
+    [RelayCommand]
+    private async Task ToggleLike()
+    {
+        if (CurrentPlayingSong == null) return;
+        var song = CurrentPlayingSong;
+        var hash = song.Hash.ToLowerInvariant();
+
+        try
+        {
+            if (IsLiked)
+            {
+                // --- 执行删除 ---
+                if (_hashToFileId.TryGetValue(hash, out var fileId))
+                {
+                    // 将 int 转为 long 列表
+                    var idList = new List<long> { fileId };
+                    var result = await _playlistClient.RemoveSongsAsync(LikeListIdForAction, idList);
+                    
+                    if (result.Status == 1)
+                    {
+                        IsLiked = false;
+                        _likedHashes.Remove(hash);
+                        _hashToFileId.Remove(hash);
+                        StatusMessage = "已取消收藏";
+                    }
+                    else
+                    {
+                        StatusMessage = $"取消失败: {result.ErrorCode}";
+                    }
+                }
+                else
+                {
+                    // 特殊情况：刚添加还没刷新列表，没有FileId
+                    StatusMessage = "正在同步列表，请稍后再试...";
+                    await LoadLikeListAsync(); // 重新拉取以获取FileId
+                }
+            }
+            else
+            {
+                // --- 执行添加 ---
+                // 构造 Tuple List (Name, Hash, AlbumId, MixSongId)
+                var songList = new List<(string Name, string Hash, string AlbumId, string MixSongId)>
+                {
+                    (song.Name, song.Hash, song.AlbumId ?? "0", "0")
+                };
+
+                var result = await _playlistClient.AddSongsAsync(LikeListIdForAction, songList);
+
+                if (result.Status == 1)
+                {
+                    IsLiked = true;
+                    _likedHashes.Add(hash);
+                    StatusMessage = "已添加到我喜欢";
+                    
+                    _ = Task.Run(async () => 
+                    {
+                        await Task.Delay(1000); // 稍等API生效
+                        await LoadLikeListAsync();
+                    });
+                }
+                else
+                {
+                    StatusMessage = $"收藏失败: {result.ErrorCode}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"操作失败: {ex.Message}";
         }
     }
 }

@@ -35,14 +35,22 @@
                         <DataTemplate>
                             <!-- 整个卡片容器 -->
                             <Button Width="160" Height="200" Margin="8" Padding="0"
-                                    Click="OnPlaylistCardClick"> <!-- 使用 Click 事件在后台处理逻辑分发 -->
+                                    Click="OnPlaylistCardClick">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="移除本地歌单"
+                                                  Command="{Binding $parent[UserControl].((vm:MyPlaylistsViewModel)DataContext).DeleteLocalPlaylistCommand}"
+                                                  CommandParameter="{Binding .}"
+                                                  IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.Local}}">
+                                            <MenuItem.Icon>
+                                                <PathIcon Data="{x:Static suki:Icons.Cross}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
                                 
                                 <suki:GlassCard Padding="0" CornerRadius="12">
                                     <Panel>
-                                        <!-- 1. 正常歌单样式 (在线/本地) -->
-                                        <!-- 这里使用简单的 DataTrigger 替代方案：利用 IsVisible 绑定 -->
-                                        <!-- 注意：为了 XAML 简洁，建议在 PlaylistItem 加个 IsAdd 属性 -->
-                                        
                                         <Grid RowDefinitions="*, Auto" IsVisible="{Binding Type, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
                                             <Border Grid.Row="0" Background="{DynamicResource SukiPrimaryColorLow}"
                                                     CornerRadius="12,12,0,0" ClipToBounds="True">
@@ -62,15 +70,9 @@
                                             </StackPanel>
                                         </Grid>
 
-                                        <!-- 2. 添加按钮样式 (大大的加号) -->
-                                        <Grid IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.AddButton}}"
-                                              Background="{DynamicResource SukiCardBackground}">
-                                            <PathIcon Data="{x:Static suki:Icons.Plus}" 
-                                                      Width="40" Height="40" 
-                                                      Foreground="{DynamicResource SukiPrimaryColor}"/>
-                                            <TextBlock Text="添加歌单" 
-                                                       VerticalAlignment="Bottom" HorizontalAlignment="Center" 
-                                                       Margin="0,0,0,20" Foreground="Gray"/>
+                                        
+                                        <Grid IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
+                                            <Svg Path="/Assets/PlaylistAdd.svg" Width="100" Height="100"/>
                                         </Grid>
                                     </Panel>
                                 </suki:GlassCard>
@@ -83,27 +85,38 @@
 
         <!-- 视图 B：歌单详情 (歌曲列表模式) -->
         <Grid IsVisible="{Binding IsShowingSongs}" RowDefinitions="Auto, *">
-            <StackPanel Grid.Row="0" Margin="0,0,0,20">
-                <Button Command="{Binding GoBackCommand}" Theme="{StaticResource SukiOutlinedButton}"
-                        Margin="0,0,0,10">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <TextBlock Text="←" FontWeight="Bold" />
-                        <TextBlock Text="返回列表" />
-                    </StackPanel>
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
+                <TextBlock Text="{Binding SelectedPlaylist.Name}" FontSize="28" FontWeight="Bold" HorizontalAlignment="Left"/>
+                <Button Grid.Column="1" Command="{Binding GoBackCommand}" Classes="Basic" HorizontalAlignment="Right">
+                    <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="Black" Width="28" Height="28" />
                 </Button>
-                <TextBlock Text="{Binding SelectedPlaylist.Name}" FontSize="28" FontWeight="Bold" />
-                <TextBlock Text="{Binding SelectedPlaylistSongs.Count, StringFormat='{}共 {0} 首歌曲'}"
-                           FontSize="12" Foreground="Gray" />
-            </StackPanel>
+            </Grid>
 
-            <ScrollViewer Grid.Row="1">
-                <ItemsControl ItemsSource="{Binding SelectedPlaylistSongs}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <localControls:SongListItemControl />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+            <ScrollViewer Grid.Row="1" 
+                          Name="SongsScrollViewer"
+                          ScrollChanged="OnScrollChanged" 
+                          Padding="0,0,0,-80">
+                
+                <StackPanel> 
+                    
+                    <ItemsControl ItemsSource="{Binding SelectedPlaylistSongs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <localControls:SongListItemControl />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    
+                    <StackPanel Orientation="Horizontal" 
+                                HorizontalAlignment="Center" 
+                                Margin="10" 
+                                Spacing="10"
+                                IsVisible="{Binding IsLoadingMore}">
+                        <suki:Loading  Width="20" Height="20"/>
+                        <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center" Foreground="Gray"/>
+                    </StackPanel>
+                    
+                </StackPanel>
             </ScrollViewer>
         </Grid>
     </Grid>

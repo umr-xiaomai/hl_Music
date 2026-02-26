@@ -26,6 +26,9 @@ public record SongInfo : KgBaseModel
 
     [property: JsonPropertyName("SingerName")]
     public string Singer { get; set; } = "";
+    
+    [property: JsonPropertyName("Singers")]
+    public List<SingerLite> Singers { get; set; } = new();
 
     [property: JsonPropertyName("AlbumID")]
     public string AlbumId { get; set; } = "";

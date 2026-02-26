@@ -57,6 +57,11 @@
                                       ItemsSource="{Binding AvailableCloseBehaviors}" 
                                       SelectedItem="{Binding SelectedCloseBehavior}"
                                       MinWidth="150">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Converter={StaticResource CloseBehaviorConverter}}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
                             </ComboBox>
                         </Grid>
                     </suki:GlassCard>

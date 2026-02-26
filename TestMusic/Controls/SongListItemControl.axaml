@@ -9,11 +9,29 @@
              Name="RootWindow"
              x:Class="TestMusic.Controls.SongListItemControl"
              x:DataType="vm:SongItem">
+    <UserControl.Styles>
+        <Style Selector="Grid#ItemRoot">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Grid#ItemRoot:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}" /> 
+            <Setter Property="RenderTransform" Value="scale(1.01)" /> 
+        </Style>
+    </UserControl.Styles>
 
-    <suki:GlassCard Margin="0,2" Padding="5" CornerRadius="8">
+    <Border CornerRadius="8" Padding="5" Margin="0,1">
         <Grid ColumnDefinitions="Auto, *, 150, 80, 150" Background="Transparent">
             <!-- 1. 封面 -->
-            <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Width="45" Height="45" Margin="5">
+            <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Width="45" Height="45" Margin="8,5">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="5" Opacity="0.3" OffsetX="1" OffsetY="1"/>
+                </Border.Effect>
                 <controls:AsyncImage Source="{Binding Cover}" Stretch="UniformToFill" />
             </Border>
 
@@ -49,5 +67,5 @@
                 </Button>
             </StackPanel>
         </Grid>
-    </suki:GlassCard>
+    </Border>
 </UserControl>

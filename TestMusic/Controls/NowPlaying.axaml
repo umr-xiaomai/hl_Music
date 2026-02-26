@@ -158,8 +158,21 @@
                                     <Svg Path="/Assets/next-svgrepo-com.svg" Css="path { fill: white; }" Width="18"
                                          Height="18" />
                                 </Button>
-                                <Svg Path="/Assets/DesktopLyric2.svg" Width="24" Height="24"
-                                     Css="path { fill: white; }" /><!--先放个SVG站地方-->
+                                <Button Command="{Binding Player.ToggleLikeCommand}"
+                                        Classes="Basic"
+                                        ToolTip.Tip="添加到我喜欢">
+                                    <Panel>
+                                        <!-- 已收藏：实心红心 -->
+                                        <Svg Path="/Assets/FavoriteBorder.svg" Css="path { fill: red; }"
+                                             Width="20" Height="20"
+                                             IsVisible="{Binding Player.IsLiked}" />
+                                        
+                                        <Svg Path="/Assets/FavoriteBorder.svg" Css="path { fill: white; }"
+                                             Opacity="0.6"
+                                             Width="20" Height="20"
+                                             IsVisible="{Binding !Player.IsLiked}" />
+                                    </Panel>
+                                </Button>
                             </StackPanel>
 
                             <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Width="400" Margin="0,4,0,0">
@@ -182,6 +195,14 @@
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ScrollViewer.VerticalScrollBarVisibility="Hidden"
                          SelectionChanged="OnLyricsSelectionChanged">
+                    <ListBox.OpacityMask>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                            <GradientStop Color="Transparent" Offset="0"/>
+                            <GradientStop Color="Black" Offset="0.1"/> 
+                            <GradientStop Color="Black" Offset="0.9"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </LinearGradientBrush>
+                    </ListBox.OpacityMask>
 
                     <ListBox.ItemTemplate>
                         <DataTemplate DataType="vm:LyricLineViewModel">

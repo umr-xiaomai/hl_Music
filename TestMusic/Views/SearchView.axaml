@@ -35,7 +35,7 @@
                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
             <!-- 搜索结果列表 -->
-            <ScrollViewer Grid.Row="1">
+            <ScrollViewer Grid.Row="1" Padding="0,0,0,-50">
                 <ItemsControl ItemsSource="{Binding Songs}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
