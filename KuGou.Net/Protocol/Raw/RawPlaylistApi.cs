@@ -3,10 +3,11 @@ using System.Text.Json.Nodes;
 using KuGou.Net.Infrastructure.Http;
 using KuGou.Net.Protocol.Transport;
 using KuGou.Net.util;
+using Microsoft.Extensions.Logging;
 
 namespace KuGou.Net.Protocol.Raw;
 
-public class RawPlaylistApi(IKgTransport transport)
+public class RawPlaylistApi(IKgTransport transport, ILogger<RawPlaylistApi> logger)
 {
     /// <summary>
     ///     获取歌单内歌曲 (对应 /pubsongs/v2/get_other_list_file_nofilt)
@@ -192,7 +193,7 @@ public class RawPlaylistApi(IKgTransport transport)
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[DeletePlaylist] 解密响应失败: {ex.Message}");
+            logger.LogError($"[DeletePlaylist] 解密响应失败: {ex.Message}");
         }
 
         return response;

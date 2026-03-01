@@ -11,8 +11,11 @@ namespace KuGou.Net.Protocol.Raw;
 /// </summary>
 public class RawSearchApi(IKgTransport transport)
 {
-    // 对应: /v3/search/song
-    public async Task<JsonElement> SearchSongAsync(string keyword, int page = 1, int pageSize = 30)
+    /// <summary>
+    ///     搜索
+    /// </summary>
+    /// <param name="type">special：歌单，song：单曲，album：专辑，author：歌手</param>
+    public async Task<JsonElement> SearchAsync(string keyword, int page = 1, int pageSize = 30, string type = "song")
     {
         var paramsDict = new Dictionary<string, string>
         {
@@ -26,7 +29,7 @@ public class RawSearchApi(IKgTransport transport)
         var request = new KgRequest
         {
             Method = HttpMethod.Get,
-            Path = "/v3/search/song",
+            Path = $"/{(type == "song" ? "v3" : "v1")}/search/{type}",
             Params = paramsDict,
             SpecificRouter = "complexsearch.kugou.com",
             SignatureType = SignatureType.Default
@@ -135,6 +138,29 @@ public class RawSearchApi(IKgTransport transport)
             CustomHeaders = new Dictionary<string, string>
             {
                 { "kg-tid", "220" }
+            }
+        };
+
+        return await transport.SendAsync(request);
+    }
+
+    public async Task<JsonElement> GetSingerDetailAsync(string authorId)
+    {
+        var body = new JsonObject
+        {
+            ["author_id"] = authorId
+        };
+
+        var request = new KgRequest
+        {
+            Method = HttpMethod.Post,
+            Path = "/kmr/v3/author",
+            Body = body,
+            SpecificRouter = "openapi.kugou.com",
+            SignatureType = SignatureType.Default,
+            CustomHeaders = new Dictionary<string, string>
+            {
+                { "kg-tid", "36" }
             }
         };
 

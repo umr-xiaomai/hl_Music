@@ -11,10 +11,8 @@
              x:Class="TestMusic.Views.MyPlaylistsView"
              x:DataType="vm:MyPlaylistsViewModel">
 
-   <Grid Margin="15">
-        <!-- 视图 A：统一歌单列表 -->
+    <Grid Margin="15">
         <Grid IsVisible="{Binding !IsShowingSongs}" RowDefinitions="Auto, *">
-            
             <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" Margin="0,0,0,20">
                 <TextBlock Text="我的歌单" FontSize="28" FontWeight="Bold" />
                 <Button Classes="Basic" Command="{Binding LoadAllPlaylistsCommand}">
@@ -23,17 +21,15 @@
             </StackPanel>
 
             <ScrollViewer Grid.Row="1">
-                <!-- 绑定到统一的 Items 集合 -->
                 <ItemsControl ItemsSource="{Binding Items}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
-                    
+
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <!-- 整个卡片容器 -->
                             <Button Width="160" Height="200" Margin="8" Padding="0"
                                     Click="OnPlaylistCardClick">
                                 <Button.ContextMenu>
@@ -48,31 +44,33 @@
                                         </MenuItem>
                                     </ContextMenu>
                                 </Button.ContextMenu>
-                                
+
                                 <suki:GlassCard Padding="0" CornerRadius="12">
                                     <Panel>
-                                        <Grid RowDefinitions="*, Auto" IsVisible="{Binding Type, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
+                                        <Grid RowDefinitions="*, Auto"
+                                              IsVisible="{Binding Type, Converter={x:Static ObjectConverters.NotEqual}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
                                             <Border Grid.Row="0" Background="{DynamicResource SukiPrimaryColorLow}"
                                                     CornerRadius="12,12,0,0" ClipToBounds="True">
-                                                <controls:AsyncImage Source="{Binding Cover}" Stretch="UniformToFill"/>
+                                                <controls:AsyncImage Source="{Binding Cover}" Stretch="UniformToFill" />
                                             </Border>
-                                            
-                                            <!-- 本地歌单的标识 (右上角) -->
+
                                             <Border Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
                                                     Background="#80000000" CornerRadius="0,0,0,8" Padding="6,2"
                                                     IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.Local}}">
-                                                <TextBlock Text="本地" FontSize="10" Foreground="White"/>
+                                                <TextBlock Text="本地" FontSize="10" Foreground="White" />
                                             </Border>
 
-                                            <StackPanel Grid.Row="1" Background="{DynamicResource SukiCardBackground}" >
-                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Text="{Binding Count, StringFormat='{}{0} 首'}" FontSize="11" Foreground="Gray" />
+                                            <StackPanel Grid.Row="1" Background="{DynamicResource SukiCardBackground}">
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Count, StringFormat='{}{0} 首'}" FontSize="11"
+                                                           Foreground="Gray" />
                                             </StackPanel>
                                         </Grid>
 
-                                        
-                                        <Grid IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
-                                            <Svg Path="/Assets/PlaylistAdd.svg" Width="100" Height="100"/>
+                                        <Grid
+                                            IsVisible="{Binding Type, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
+                                            <Svg Path="/Assets/PlaylistAdd.svg" Width="100" Height="100" />
                                         </Grid>
                                     </Panel>
                                 </suki:GlassCard>
@@ -83,22 +81,23 @@
             </ScrollViewer>
         </Grid>
 
-        <!-- 视图 B：歌单详情 (歌曲列表模式) -->
+
         <Grid IsVisible="{Binding IsShowingSongs}" RowDefinitions="Auto, *">
             <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
-                <TextBlock Text="{Binding SelectedPlaylist.Name}" FontSize="28" FontWeight="Bold" HorizontalAlignment="Left"/>
+                <TextBlock Text="{Binding SelectedPlaylist.Name}" FontSize="28" FontWeight="Bold"
+                           HorizontalAlignment="Left" />
                 <Button Grid.Column="1" Command="{Binding GoBackCommand}" Classes="Basic" HorizontalAlignment="Right">
                     <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="Black" Width="28" Height="28" />
                 </Button>
             </Grid>
 
-            <ScrollViewer Grid.Row="1" 
+            <ScrollViewer Grid.Row="1"
                           Name="SongsScrollViewer"
-                          ScrollChanged="OnScrollChanged" 
+                          ScrollChanged="OnScrollChanged"
                           Padding="0,0,0,-80">
-                
-                <StackPanel> 
-                    
+
+                <StackPanel>
+
                     <ItemsControl ItemsSource="{Binding SelectedPlaylistSongs}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -106,16 +105,16 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    
-                    <StackPanel Orientation="Horizontal" 
-                                HorizontalAlignment="Center" 
-                                Margin="10" 
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="10"
                                 Spacing="10"
                                 IsVisible="{Binding IsLoadingMore}">
-                        <suki:Loading  Width="20" Height="20"/>
-                        <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center" Foreground="Gray"/>
+                        <suki:Loading Width="20" Height="20" />
+                        <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center" Foreground="Gray" />
                     </StackPanel>
-                    
+
                 </StackPanel>
             </ScrollViewer>
         </Grid>

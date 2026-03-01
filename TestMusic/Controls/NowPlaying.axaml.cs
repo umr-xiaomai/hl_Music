@@ -53,8 +53,8 @@ public partial class NowPlaying : UserControl
         listBox.ScrollIntoView(item);
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
-        
-        var container = listBox.ContainerFromItem(item) as Control;
+
+        var container = listBox.ContainerFromItem(item);
         if (container == null)
             return;
 

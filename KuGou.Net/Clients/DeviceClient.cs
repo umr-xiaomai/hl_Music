@@ -1,10 +1,11 @@
 using KuGou.Net.Protocol.Raw;
 using KuGou.Net.Protocol.Session;
 using KuGou.Net.util;
+using Microsoft.Extensions.Logging;
 
 namespace KuGou.Net.Clients;
 
-public class DeviceClient(RawDeviceApi rawApi, KgSessionManager sessionManager)
+public class DeviceClient(RawDeviceApi rawApi, KgSessionManager sessionManager, ILogger<DeviceClient> logger)
 {
     public async Task<bool> InitDeviceAsync()
     {
@@ -14,7 +15,7 @@ public class DeviceClient(RawDeviceApi rawApi, KgSessionManager sessionManager)
         if (!string.IsNullOrEmpty(session.Dfid) && session.Dfid != "-")
             return true;
 
-        Console.WriteLine("[Device] 检测到新设备，开始注册风控信息 (V2)...");
+        logger.LogInformation("[Device] 检测到新设备，开始注册风控信息 (V2)...");
         return await RegisterDeviceAsync();
     }
 
@@ -22,8 +23,6 @@ public class DeviceClient(RawDeviceApi rawApi, KgSessionManager sessionManager)
     {
         var session = sessionManager.Session;
 
-        // 调用新的 V2 接口
-        // 此时 Session.InstallGuid 已经在 SessionManager 初始化时生成好了
         var json = await rawApi.RegisterDevAsync(session.UserId, session.Token);
 
         // 解析结果
@@ -40,12 +39,12 @@ public class DeviceClient(RawDeviceApi rawApi, KgSessionManager sessionManager)
                     session.Uuid = KgUtils.Md5(session.Dfid + session.Mid);
 
                     KgSessionStore.Save(session);
-                    Console.WriteLine($"[Device] 注册成功! DFID: {serverDfid}");
+                    logger.LogInformation($"[Device] 注册成功! DFID: {serverDfid}");
                     return true;
                 }
             }
 
-        Console.WriteLine("[Device] 注册失败。");
+        logger.LogError("[Device] 注册失败。");
         return false;
     }
 }

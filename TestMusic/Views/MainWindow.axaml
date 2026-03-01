@@ -28,6 +28,10 @@
             <views:SearchView />
         </DataTemplate>
 
+        <DataTemplate DataType="vm:SingerViewModel">
+            <views:SingerView />
+        </DataTemplate>
+
         <DataTemplate DataType="vm:UserViewModel">
             <views:UserView />
         </DataTemplate>
@@ -98,7 +102,7 @@
             <suki:SukiSideMenu.FooterContent>
                 <StackPanel HorizontalAlignment="Center" Margin="10,10,10,100" Spacing="8">
                     <localControls:UserAvatarControl />
-                    <TextBlock Text="v1.0.0" Foreground="Gray" FontSize="10" HorizontalAlignment="Center" />
+                    <TextBlock Text="v0.1.1" Foreground="Gray" FontSize="10" HorizontalAlignment="Center" />
                 </StackPanel>
             </suki:SukiSideMenu.FooterContent>
         </suki:SukiSideMenu>

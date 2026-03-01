@@ -4,10 +4,11 @@ using KuGou.Net.Infrastructure.Http;
 using KuGou.Net.Protocol.Session;
 using KuGou.Net.Protocol.Transport;
 using KuGou.Net.util;
+using Microsoft.Extensions.Logging;
 
 namespace KuGou.Net.Protocol.Raw;
 
-public class RawDeviceApi(IKgTransport transport, KgSessionManager sessionManager)
+public class RawDeviceApi(IKgTransport transport, KgSessionManager sessionManager, ILogger<RawDeviceApi> logger)
 {
     /// <summary>
     ///     [Update] 注册设备获取 DFID (V2 接口)
@@ -125,7 +126,7 @@ public class RawDeviceApi(IKgTransport transport, KgSessionManager sessionManage
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RawDeviceApi] 解密失败: {ex.Message}");
+            logger.LogError($"[RawDeviceApi] 解密失败: {ex.Message}");
         }
 
         return response;

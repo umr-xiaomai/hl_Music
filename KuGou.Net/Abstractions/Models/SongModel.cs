@@ -7,9 +7,6 @@ public record SearchResultData : KgBaseModel
 {
     [property: JsonPropertyName("total")] public int Total { get; set; }
 
-    // 注意：有些接口叫 info，有些叫 lists，有些叫 songs
-    // 这里我们可以定义多个属性尝试映射，或者在 Client 层处理
-    // 假设 V3 接口返回的是 lists
     [property: JsonPropertyName("lists")] public List<SongInfo>? Songs { get; set; }
 }
 
@@ -26,7 +23,7 @@ public record SongInfo : KgBaseModel
 
     [property: JsonPropertyName("SingerName")]
     public string Singer { get; set; } = "";
-    
+
     [property: JsonPropertyName("Singers")]
     public List<SingerLite> Singers { get; set; } = new();
 
@@ -39,11 +36,9 @@ public record SongInfo : KgBaseModel
     [property: JsonPropertyName("Image")]
     public string? Cover
     {
-        get => field?.Replace("{size}", "100");
+        get => field?.Replace("{size}", "600");
         set;
     }
-
-    // 其他几十个字段（Res, HQ, SQ, MvHash...）全部自动进 Extras
 }
 
 // 3. 播放链接结果

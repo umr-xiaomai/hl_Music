@@ -8,32 +8,30 @@ namespace TestMusic.Views;
 
 public partial class MainWindow : SukiWindow
 {
-    public bool CanClose { get; set; } = false; 
-    
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
     }
 
+    public bool CanClose { get; set; } = false;
+
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainWindowViewModel vm) vm.MainWindow = this;
     }
-    
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         var behavior = SettingsManager.Settings.CloseBehavior;
         if (behavior == CloseBehavior.MinimizeToTray && !CanClose)
         {
-            e.Cancel = true; 
-            this.Hide();    
-            return;        
+            e.Cancel = true;
+            Hide();
+            return;
         }
-        if (DataContext is MainWindowViewModel vm)
-        {
-            vm.ForceCloseDesktopLyric();
-        }
+
+        if (DataContext is MainWindowViewModel vm) vm.ForceCloseDesktopLyric();
 
         base.OnClosing(e);
     }

@@ -6,24 +6,17 @@ namespace TestMusic.Converters;
 
 public class SecondsToMinutesSecondsConverter : IValueConverter
 {
-    // 将double秒数转换为"分:秒"格式
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        // 检查值是否为double类型
         if (value is double seconds)
         {
-            // 处理负数、NaN、无穷大等情况
             if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0)
                 return "00:00";
-
-            // 转换为整数秒（向下取整）
             var totalSeconds = (int)Math.Floor(seconds);
 
-            // 计算分钟和秒
             var minutes = totalSeconds / 60;
             var secs = totalSeconds % 60;
 
-            // 格式化为两位数
             return $"{minutes:D2}:{secs:D2}";
         }
 

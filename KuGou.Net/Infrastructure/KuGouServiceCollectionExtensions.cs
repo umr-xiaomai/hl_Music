@@ -41,6 +41,7 @@ public static class KuGouServiceCollectionExtensions
         services.AddTransient<RawDeviceApi>();
         services.AddTransient<RawLyricApi>();
         services.AddTransient<RawRankApi>();
+        services.AddTransient<RawAlbumApi>();
 
         services.AddTransient<RawDiscoveryApi>();
 
@@ -55,6 +56,7 @@ public static class KuGouServiceCollectionExtensions
         services.AddTransient<UserClient>();
         services.AddTransient<DeviceClient>();
         services.AddTransient<LyricClient>();
+        services.AddTransient<AlbumClient>();
 
         return services;
     }

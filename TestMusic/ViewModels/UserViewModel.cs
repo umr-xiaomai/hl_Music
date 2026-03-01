@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -11,17 +9,19 @@ namespace TestMusic.ViewModels;
 
 public partial class UserViewModel : PageViewModelBase
 {
-    private  UserClient _userClient;
-    private  AuthClient _authClient;
+    private readonly AuthClient _authClient;
+    private readonly UserClient _userClient;
     [ObservableProperty] private bool _isLoading = true;
+
+    [ObservableProperty] private CloseBehavior _selectedCloseBehavior;
+
+    [ObservableProperty] private string _selectedQuality;
     [ObservableProperty] private string? _userAvatar;
     [ObservableProperty] private string _userId = "";
     [ObservableProperty] private string _userName = "加载中...";
     [ObservableProperty] private string _vipStatus = "未开通";
-    
-    private PlayerViewModel Player { get; } 
-    
-    public UserViewModel(PlayerViewModel player,UserClient userClient, AuthClient authClient)
+
+    public UserViewModel(PlayerViewModel player, UserClient userClient, AuthClient authClient)
     {
         _userClient = userClient;
         _authClient = authClient;
@@ -30,9 +30,17 @@ public partial class UserViewModel : PageViewModelBase
         SelectedQuality = SettingsManager.Settings.MusicQuality;
     }
 
+    private PlayerViewModel Player { get; }
+
 
     public override string DisplayName => "用户中心";
     public override string Icon => "/Assets/user-svgrepo-com.svg";
+
+
+    public CloseBehavior[] AvailableCloseBehaviors { get; } = Enum.GetValues<CloseBehavior>();
+
+
+    public string[] QualityOptions { get; } = { "128", "320", "flac", "high" };
 
     public async Task LoadUserInfoAsync()
     {
@@ -69,21 +77,13 @@ public partial class UserViewModel : PageViewModelBase
     }
 
     public event Action? LogoutRequested;
-    
-    
-    public CloseBehavior[] AvailableCloseBehaviors { get; } = Enum.GetValues<CloseBehavior>();
-    
-    [ObservableProperty] private CloseBehavior _selectedCloseBehavior;
+
     partial void OnSelectedCloseBehaviorChanged(CloseBehavior value)
     {
         SettingsManager.Settings.CloseBehavior = value;
         SettingsManager.Save();
     }
 
-    
-    public string[] QualityOptions { get; } = { "128", "320", "flac", "high" };
-
-    [ObservableProperty] private string _selectedQuality;
     partial void OnSelectedQualityChanged(string value)
     {
         SettingsManager.Settings.MusicQuality = value;

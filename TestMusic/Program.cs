@@ -14,10 +14,7 @@ internal sealed class Program
     public static void Main(string[] args)
     {
         _ = new Mutex(true, "TestMusic", out var createdNew);
-        if (!createdNew)
-        {
-            return;
-        }
+        if (!createdNew) return;
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }

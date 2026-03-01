@@ -4,6 +4,7 @@ using KuGou.Net.Adapters.Common;
 using KuGou.Net.Protocol.Raw;
 using KuGou.Net.Protocol.Session;
 using KuGou.Net.util;
+using Microsoft.Extensions.Logging;
 
 namespace KuGou.Net.Clients;
 
@@ -12,8 +13,8 @@ namespace KuGou.Net.Clients;
 /// </summary>
 public class AuthClient(
     RawLoginApi rawApi,
-    KgSessionManager sessionManager
-//,ILogger<AuthClient> logger
+    KgSessionManager sessionManager,
+    ILogger<AuthClient> logger
 )
 {
     /// <summary>
@@ -42,13 +43,11 @@ public class AuthClient(
             {
                 sessionManager.UpdateAuth(newUserId, newToken, "0", "", t1);
                 KgSessionStore.Save(sessionManager.Session);
-                //logger.LogInformation($"Token 登录成功! UserID: {newUserId}");
+                logger.LogInformation($"Token 登录成功! UserID: {newUserId}");
             }
-
-            //var newT1 = data.TryGetProperty("t1", out var t1El) ? t1El.GetString() : "";
         }
 
-        //logger.LogWarning("[Auth] 登录 失败，返回数据中未找到 data 节点。");
+        logger.LogWarning("[Auth] 登录 失败，返回数据中未找到 data 节点。");
         return json;
     }
 
@@ -71,8 +70,6 @@ public class AuthClient(
 
         if (json.TryGetProperty("data", out var data))
         {
-            // 修正步骤 2: 从 data 节点中读取字段
-            // 注意：userid 和 is_vip 是数字类型，使用 ToString() 最稳妥，能兼容数字和字符串
             var newToken = data.GetProperty("token").GetString();
             var newUserId = data.GetProperty("userid").ToString();
 
@@ -80,11 +77,11 @@ public class AuthClient(
             {
                 sessionManager.UpdateAuth(newUserId, newToken, "0", "", "");
                 KgSessionStore.Save(sessionManager.Session);
-                //logger.LogInformation($"Token 刷新成功! UserID: {newUserId}");
+                logger.LogInformation($"Token 刷新成功! UserID: {newUserId}");
             }
         }
 
-        //logger.LogWarning("[Auth] 刷新 Token 失败，返回数据中未找到 data 节点。");
+        logger.LogWarning("[Auth] 刷新 Token 失败，返回数据中未找到 data 节点。");
         return json;
     }
 
@@ -98,11 +95,11 @@ public class AuthClient(
         // 没 Token 也没 UserID，跳过刷新
         if (string.IsNullOrEmpty(session.Token) || session.UserId == "0")
         {
-            Console.WriteLine("[Auth] 本地无有效 Token，跳过刷新。");
+            logger.LogError("[Auth] 本地无有效 Token，跳过刷新。");
             return new RefreshTokenResponse();
         }
 
-        Console.WriteLine($"[Auth] 正在尝试刷新 Token (User: {session.UserId})...");
+        logger.LogError($"[Auth] 正在尝试刷新 Token (User: {session.UserId})...");
 
         // 调用 Raw 接口
         var json = await rawApi.RefreshTokenAsync(session.UserId, session.Token, session.Dfid);
@@ -120,7 +117,7 @@ public class AuthClient(
             {
                 sessionManager.UpdateAuth(newUserId, newToken, vipType, "", t1);
                 KgSessionStore.Save(sessionManager.Session);
-                //logger.LogInformation($"Token 刷新成功! UserID: {newUserId}");
+                logger.LogInformation($"Token 刷新成功! UserID: {newUserId}");
             }
         }
 

@@ -7,8 +7,8 @@ namespace TestMusic.Services;
 
 public enum CloseBehavior
 {
-    Exit,           
-    MinimizeToTray  
+    Exit,
+    MinimizeToTray
 }
 
 // 设置数据模型
@@ -23,8 +23,8 @@ public class AppSettings
 public static class SettingsManager
 {
     private static readonly string SettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
-        "TestMusic", 
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "TestMusic",
         "settings.json");
 
     public static AppSettings Settings { get; private set; } = new();

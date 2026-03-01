@@ -4,10 +4,11 @@ using KuGou.Net.Infrastructure.Http;
 using KuGou.Net.Protocol.Session;
 using KuGou.Net.Protocol.Transport;
 using KuGou.Net.util;
+using Microsoft.Extensions.Logging;
 
 namespace KuGou.Net.Protocol.Raw;
 
-public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager)
+public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager, ILogger<RawLoginApi> logger)
 {
     private const string LiteT1Key = "5e4ef500e9597fe004bd09a46d8add98";
     private const string LiteT1Iv = "04bd09a46d8add98";
@@ -35,17 +36,12 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
         var session = sessionManager.Session;
         var dateTime = DateTimeOffset.Now.ToUnixTimeMilliseconds(); // ms
 
-        // 1. T1 计算: AES(|timestamp)
-        // JS: const t1 = cryptoAesEncrypt(`|${dateTime}`, ...)
         var t1Raw = $"|{dateTime}";
         var (t1Enc, _) = KgCrypto.AesEncrypt(t1Raw, LiteT1Key, LiteT1Iv);
 
-        // 2. T2 计算: AES(GUID|Fixed|MAC|DEV|timestamp)
-        // JS: `${params.cookie?.KUGOU_API_GUID}|...|${params.cookie?.KUGOU_API_DEV}|${dateTime}`
         var t2Raw = $"{session.InstallGuid}|{T2FixedHash}|{session.InstallMac}|{session.InstallDev}|{dateTime}";
         var (t2Enc, _) = KgCrypto.AesEncrypt(t2Raw, LiteT2Key, LiteT2Iv);
 
-        // 3. 常规 AES 加密 params
         var aesPayload = new JsonObject
         {
             ["mobile"] = mobile,
@@ -54,7 +50,6 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
         var aesJson = JsonSerializer.Serialize(aesPayload, AppJsonContext.Default.JsonObject);
         var (aesStr, aesKey) = KgCrypto.AesEncrypt(aesJson); // 随机 Key
 
-        // 4. RSA 加密 Key
         var pkData = new JsonObject
         {
             ["clienttime_ms"] = dateTime,
@@ -63,7 +58,6 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
         var pkJson = JsonSerializer.Serialize(pkData, AppJsonContext.Default.JsonObject);
         var pk = KgCrypto.RsaEncryptNoPadding(pkJson).ToUpper();
 
-        // 5. 组装 Body
         var maskedMobile = mobile.Length > 10
             ? $"{mobile[..2]}*****{mobile.Substring(10, 1)}"
             : mobile;
@@ -92,9 +86,9 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
         var request = new KgRequest
         {
             Method = HttpMethod.Post,
-            BaseUrl = LoginRetryHost, // 切换到 retry 域名
+            BaseUrl = LoginRetryHost,
             Path = "/v7/login_by_verifycode",
-            SpecificRouter = LoginRouter, // 路由还是保持 login.user
+            SpecificRouter = LoginRouter,
             Body = dataMap,
             SignatureType = SignatureType.Default,
             CustomHeaders = new Dictionary<string, string>
@@ -105,7 +99,6 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
 
         var response = await transport.SendAsync(request);
 
-        // 解密响应逻辑 (复用)
         return TryDecryptResponse(response, aesKey);
     }
 
@@ -291,7 +284,7 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RawLoginApi] 解密响应失败: {ex.Message}");
+            logger.LogError($"[RawLoginApi] 解密响应失败: {ex.Message}");
         }
 
         return response;

@@ -100,7 +100,7 @@ public class PlaylistClient(RawPlaylistApi rawApi, KgSessionManager sessionManag
 
         if (songs == null || songs.Count == 0) return null;
 
-        var json= await rawApi.AddSongsToPlaylistAsync(uid, token, targetListId, songs);
+        var json = await rawApi.AddSongsToPlaylistAsync(uid, token, targetListId, songs);
         return KgApiResponseParser.Parse<AddSongResponse>(json, AppJsonContext.Default.AddSongResponse);
     }
 
@@ -112,11 +112,11 @@ public class PlaylistClient(RawPlaylistApi rawApi, KgSessionManager sessionManag
     public async Task<RemoveSongResponse?> RemoveSongsAsync(string targetListId, IEnumerable<long> fileIds)
     {
         var (uid, token) = GetAuth();
-        
+
         var ids = fileIds.ToList();
         if (ids.Count == 0) return null;
 
-        var json= await rawApi.RemoveSongsFromPlaylistAsync(uid, token, targetListId, ids);
+        var json = await rawApi.RemoveSongsFromPlaylistAsync(uid, token, targetListId, ids);
         return KgApiResponseParser.Parse<RemoveSongResponse>(json, AppJsonContext.Default.RemoveSongResponse);
     }
 }

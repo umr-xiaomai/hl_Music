@@ -9,61 +9,92 @@
              Name="RootWindow"
              x:Class="TestMusic.Controls.SongListItemControl"
              x:DataType="vm:SongItem">
+
+
     <UserControl.Styles>
         <Style Selector="Grid#ItemRoot">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.2" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
                 </Transitions>
             </Setter>
         </Style>
         <Style Selector="Grid#ItemRoot:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}" /> 
-            <Setter Property="RenderTransform" Value="scale(1.01)" /> 
+            <Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}" />
+            <Setter Property="RenderTransform" Value="scale(1.01)" />
         </Style>
     </UserControl.Styles>
 
     <Border CornerRadius="8" Padding="5" Margin="0,1">
+        <!-- 保持原来的右键菜单，方便电脑用户习惯 -->
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="查看歌手" ItemsSource="{Binding Singers}">
+                    <MenuItem.Styles>
+                        <Style Selector="MenuItem">
+                            <Setter Property="Header"
+                                    Value="{Binding ., Converter={StaticResource SingerNameConverter}}" />
+                            <Setter Property="Command"
+                                    Value="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).NavigateToSingerCommand}" />
+                            <Setter Property="CommandParameter" Value="{Binding .}" />
+                        </Style>
+                    </MenuItem.Styles>
+                </MenuItem>
+                <MenuItem Header="下一首播放"
+                          Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).Player.AddToNextCommand}"
+                          CommandParameter="{Binding .}" />
+            </ContextMenu>
+        </Border.ContextMenu>
         <Grid ColumnDefinitions="Auto, *, 150, 80, 150" Background="Transparent">
-            <!-- 1. 封面 -->
             <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Width="45" Height="45" Margin="8,5">
                 <Border.Effect>
-                    <DropShadowEffect BlurRadius="5" Opacity="0.3" OffsetX="1" OffsetY="1"/>
+                    <DropShadowEffect BlurRadius="5" Opacity="0.3" OffsetX="1" OffsetY="1" />
                 </Border.Effect>
                 <controls:AsyncImage Source="{Binding Cover}" Stretch="UniformToFill" />
             </Border>
 
-            <!-- 2. 歌名 -->
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
                 <TextBlock Text="{Binding Name}" FontWeight="DemiBold" TextTrimming="CharacterEllipsis" />
             </StackPanel>
 
-            <!-- 3. 歌手 -->
             <TextBlock Grid.Column="2" Text="{Binding Singer}" VerticalAlignment="Center" Foreground="Gray"
                        TextTrimming="CharacterEllipsis" />
 
-            <!-- 4. 时长 (需要你自己有个转换器，这里简化显示) -->
             <TextBlock Grid.Column="3"
                        Text="{Binding DurationSeconds,Converter={StaticResource SecondsToTimeConverter}}"
                        VerticalAlignment="Center" Foreground="Gray" />
 
-            <!-- 5. 操作按钮组 -->
             <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
                         HorizontalAlignment="Right" Margin="0,0,10,0">
 
                 <Button Classes="Basic" ToolTip.Tip="播放"
                         Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).PlayFromListCommand}"
                         CommandParameter="{Binding .}">
-                    <TextBlock Text="▶" FontWeight="Bold" />
+                    <TextBlock Text="▶" FontWeight="Bold" Foreground="Black" />
                 </Button>
 
-                <!-- 添加到下一首按钮 -->
-                <Button Classes="Basic" ToolTip.Tip="下一首播放"
-                        Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).Player.AddToNextCommand}"
-                        CommandParameter="{Binding .}">
-                    <TextBlock Text="+" FontWeight="Bold" />
+                <Button Classes="Basic" ToolTip.Tip="更多操作">
+                    <Button.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuItem Header="查看歌手" ItemsSource="{Binding Singers}">
+                                <MenuItem.Styles>
+                                    <Style Selector="MenuItem">
+                                        <Setter Property="Header"
+                                                Value="{Binding ., Converter={StaticResource SingerNameConverter}}" />
+                                        <Setter Property="Command"
+                                                Value="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).NavigateToSingerCommand}" />
+                                        <Setter Property="CommandParameter" Value="{Binding .}" />
+                                    </Style>
+                                </MenuItem.Styles>
+                            </MenuItem>
+                            <MenuItem Header="下一首播放"
+                                      Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).Player.AddToNextCommand}"
+                                      CommandParameter="{Binding .}" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                    <Svg Path="/Assets/More.svg" Width="25" Height="25" />
                 </Button>
             </StackPanel>
         </Grid>

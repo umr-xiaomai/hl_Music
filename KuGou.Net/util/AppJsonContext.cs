@@ -49,7 +49,21 @@ namespace KuGou.Net.util;
 [JsonSerializable(typeof(List<DailyRecommendSong>))]
 [JsonSerializable(typeof(AddSongResponse))]
 [JsonSerializable(typeof(RemoveSongResponse))]
-[JsonSerializable(typeof(List<AddSongItem>))] 
+[JsonSerializable(typeof(List<AddSongItem>))]
+[JsonSerializable(typeof(SingerAudioResponse))]
+[JsonSerializable(typeof(List<SingerSongItem>))]
+[JsonSerializable(typeof(SingerTransParam))]
+[JsonSerializable(typeof(SingerDetailResponse))]
+[JsonSerializable(typeof(SearchPlaylistResponse))]
+[JsonSerializable(typeof(List<SearchPlaylistItem>))]
+[JsonSerializable(typeof(SearchAlbumResponse))]
+[JsonSerializable(typeof(List<SearchAlbumItem>))]
+[JsonSerializable(typeof(AlbumSongResponse))]
+[JsonSerializable(typeof(List<AlbumSongItem>))]
+[JsonSerializable(typeof(AlbumSongBase))]
+[JsonSerializable(typeof(AlbumSongAudioInfo))]
+[JsonSerializable(typeof(AlbumSongAlbumInfo))]
+[JsonSerializable(typeof(AlbumSongAuthor))]
 internal partial class AppJsonContext : JsonSerializerContext
 {
 }

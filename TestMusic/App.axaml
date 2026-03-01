@@ -23,6 +23,7 @@
         <converters:CountdownTextConverter x:Key="CountdownTextConverter" />
         <converters:CountdownEnabledConverter x:Key="CountdownEnabledConverter" />
         <converters:CloseBehaviorConverter x:Key="CloseBehaviorConverter" />
+        <converters:SingerNameConverter x:Key="SingerNameConverter" />
     </Application.Resources>
 
 </Application>

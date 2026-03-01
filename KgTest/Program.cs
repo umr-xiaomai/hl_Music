@@ -4,6 +4,7 @@ using KuGou.Net.Clients;
 using KuGou.Net.Infrastructure.Http;
 using KuGou.Net.Protocol.Raw;
 using KuGou.Net.Protocol.Session;
+using Microsoft.Extensions.Logging.Abstractions;
 using SimpleAudio;
 
 namespace KgTest;
@@ -54,15 +55,15 @@ internal class Program
         _sessionManager = sessionMgr;
 
         // 组装各层 (Raw -> Client)
-        var rawLogin = new RawLoginApi(transport, _sessionManager);
+        var rawLogin = new RawLoginApi(transport, _sessionManager, NullLogger<RawLoginApi>.Instance);
         var rawSearch = new RawSearchApi(transport);
-        var rawDevice = new RawDeviceApi(transport, _sessionManager);
+        var rawDevice = new RawDeviceApi(transport, _sessionManager, NullLogger<RawDeviceApi>.Instance);
         var rawUser = new RawUserApi(transport);
-        var rawPlaylist = new RawPlaylistApi(transport);
+        var rawPlaylist = new RawPlaylistApi(transport, NullLogger<RawPlaylistApi>.Instance);
         var rawLyric = new RawLyricApi(transport);
         var rawDiscovery = new RawDiscoveryApi(transport);
-        _authClient = new AuthClient(rawLogin, _sessionManager);
-        _deviceClient = new DeviceClient(rawDevice, _sessionManager);
+        _authClient = new AuthClient(rawLogin, _sessionManager, NullLogger<AuthClient>.Instance);
+        _deviceClient = new DeviceClient(rawDevice, _sessionManager, NullLogger<DeviceClient>.Instance);
         _musicClient = new MusicClient(rawSearch, _sessionManager);
         _playlistClient = new PlaylistClient(rawPlaylist, _sessionManager);
         _userClient = new UserClient(rawUser, _sessionManager);

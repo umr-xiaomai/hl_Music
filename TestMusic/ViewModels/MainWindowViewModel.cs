@@ -8,8 +8,10 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KuGou.Net.Abstractions.Models;
 using KuGou.Net.Clients;
 using KuGou.Net.Protocol.Session;
+using Microsoft.Extensions.Logging;
 using SukiUI.Toasts;
 using TestMusic.Views;
 
@@ -21,29 +23,32 @@ public partial class MainWindowViewModel : ObservableObject
     private const string LikeListCover = "avares://TestMusic/Assets/LikeList.jpg";
     private readonly DeviceClient _deviceClient;
     private readonly DiscoveryClient _discoveryClient;
+    private readonly ILogger<MainWindowViewModel> _logger;
+    private readonly MusicClient _musicClient;
     private readonly PlaylistClient _playlistClient;
     private readonly SearchViewModel _searchViewModel;
     private readonly KgSessionManager _sessionManager;
     private readonly UserClient _userClient;
     private readonly UserViewModel _userViewModel;
-    
-    private DesktopLyricWindow? _lyricWindow;
-    
-    [ObservableProperty]
-    private bool _isDesktopLyricEnabled;
 
     [ObservableProperty] private PageViewModelBase _activePage;
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
+
+    [ObservableProperty] private bool _isDesktopLyricEnabled;
 
     [ObservableProperty] private bool _isLoggedIn;
 
     [ObservableProperty] private bool _isNowPlayingOpen;
     [ObservableProperty] private bool _isQueuePaneOpen; // 右侧抽屉
 
+    private DesktopLyricWindow? _lyricWindow;
+
+    private PageViewModelBase? _previousPage;
+
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
     private string _searchKeyword = "";
 
-    [ObservableProperty] private string _statusMessage = "就绪";
+    //[ObservableProperty] private string _statusMessage = "就绪";
     [ObservableProperty] private string? _userAvatar;
 
     [ObservableProperty] private string _userName = "未登录";
@@ -57,9 +62,11 @@ public partial class MainWindowViewModel : ObservableObject
         DiscoveryClient discoveryClient,
         PlaylistClient playlistClient,
         UserClient userClient,
+        MusicClient musicClient,
         LoginViewModel loginViewModel,
         SearchViewModel searchViewModel,
-        UserViewModel userViewModel)
+        UserViewModel userViewModel,
+        ILogger<MainWindowViewModel> logger)
     {
         _sessionManager = sessionManager;
         _deviceClient = deviceClient;
@@ -71,7 +78,8 @@ public partial class MainWindowViewModel : ObservableObject
         LoginViewModel = loginViewModel;
         _searchViewModel = searchViewModel;
         _userViewModel = userViewModel;
-
+        _logger = logger;
+        _musicClient = musicClient;
 
         LoginViewModel.LoginSuccess += OnLoginSuccess;
         _userViewModel.LogoutRequested += OnLogoutRequested;
@@ -79,16 +87,16 @@ public partial class MainWindowViewModel : ObservableObject
         Player = player;
         ToastManager = toastManager;
         var dailyVm = new DailyRecommendViewModel();
-        var playlistVm = new MyPlaylistsViewModel(_userClient,_playlistClient);
+        var playlistVm = new MyPlaylistsViewModel(_userClient, _playlistClient);
         Pages.Add(dailyVm);
         Pages.Add(playlistVm);
         ActivePage = dailyVm;
 
-        Player.PropertyChanged += (s, e) =>
+        /*Player.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(Player.StatusMessage))
-                StatusMessage = Player.StatusMessage;
-        };
+                _logger.LogInformation(Player.StatusMessage);
+        };*/
 
         Task.Run(async () =>
         {
@@ -123,7 +131,7 @@ public partial class MainWindowViewModel : ObservableObject
 
                 IsLoggedIn = true;
                 await LoadUserInfo();
-                StatusMessage = $"已加载本地用户: {saved.UserId}";
+                _logger.LogInformation($"已加载本地用户: {saved.UserId}");
                 _ = Task.Run(async () =>
                 {
                     try
@@ -133,18 +141,19 @@ public partial class MainWindowViewModel : ObservableObject
                     }
                     catch (Exception ex)
                     {
-                        StatusMessage = $"获取VIP失败: {ex.Message}";
+                        _logger.LogInformation($"获取VIP失败: {ex.Message}");
                     }
                 });
             }
             else
             {
-                StatusMessage = "未登录，以游客身份运行。";
+                _logger.LogInformation("未登录，以游客身份运行。");
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"登录初始化失败: {ex.Message}";
+            _logger.LogError($"登录初始化失败: {ex.Message}");
+            ;
         }
     }
 
@@ -196,7 +205,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsLoggedIn = true;
             await LoadUserInfo();
-            StatusMessage = "登录成功";
+            _logger.LogInformation("登录成功");
 
             // 后台初始化设备
             _ = Task.Run(async () =>
@@ -222,7 +231,7 @@ public partial class MainWindowViewModel : ObservableObject
             IsLoggedIn = false;
             UserName = "未登录";
             UserAvatar = null;
-            StatusMessage = "已退出登录";
+            _logger.LogInformation("已退出登录");
 
             // 返回每日推荐页面
             var dailyVm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
@@ -251,7 +260,7 @@ public partial class MainWindowViewModel : ObservableObject
                 }
                 catch (Exception ex)
                 {
-                    StatusMessage = $"获取VIP失败: {ex.Message}";
+                    _logger.LogError($"获取VIP失败: {ex.Message}");
                 }
             });
         }
@@ -281,7 +290,7 @@ public partial class MainWindowViewModel : ObservableObject
         var vm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
         if (vm == null) return;
 
-        StatusMessage = "正在获取每日推荐...";
+        _logger.LogInformation("正在获取每日推荐...");
         try
         {
             var response = await _discoveryClient.GetRecommendedSongsAsync();
@@ -295,17 +304,17 @@ public partial class MainWindowViewModel : ObservableObject
                         Singer = item.SingerName,
                         Hash = item.Hash,
                         AlbumId = item.AlbumId,
+                        Singers = item.Singers,
                         Cover = string.IsNullOrWhiteSpace(item.SizableCover)
                             ? DefaultCover
                             : item.SizableCover,
                         DurationSeconds = item.Duration
                     });
-                StatusMessage = $"每日推荐加载完成 ({response.Date})";
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"获取推荐失败: {ex.Message}";
+            _logger.LogInformation($"获取推荐失败: {ex.Message}");
         }
     }
 
@@ -317,7 +326,6 @@ public partial class MainWindowViewModel : ObservableObject
         ActivePage = _searchViewModel;
 
         await _searchViewModel.SearchAsync(SearchKeyword);
-        StatusMessage = _searchViewModel.StatusMessage;
     }
 
     private bool CanSearch()
@@ -442,24 +450,23 @@ public partial class MainWindowViewModel : ObservableObject
         else if (ActivePage is MyPlaylistsViewModel playlistVm && playlistVm.IsShowingSongs)
             currentSongList = playlistVm.SelectedPlaylistSongs;
         else if (ActivePage is SearchViewModel searchVm) currentSongList = searchVm.Songs;
+        else if (ActivePage is SingerViewModel singerVm) currentSongList = singerVm.Songs;
 
         await Player.PlaySongAsync(song, currentSongList);
     }
-    
-    
+
+
     [RelayCommand]
     private void ToggleDesktopLyric()
     {
         if (_lyricWindow == null)
         {
-            // 打开窗口
             _lyricWindow = new DesktopLyricWindow
             {
                 DataContext = new DesktopLyricViewModel(Player)
             };
-            
-            // 监听窗口关闭事件，清理引用
-            _lyricWindow.Closed += (s, e) => 
+
+            _lyricWindow.Closed += (s, e) =>
             {
                 _lyricWindow = null;
                 IsDesktopLyricEnabled = false;
@@ -470,14 +477,49 @@ public partial class MainWindowViewModel : ObservableObject
         }
         else
         {
-            // 关闭窗口
             _lyricWindow.Close();
             _lyricWindow = null;
             IsDesktopLyricEnabled = false;
         }
     }
-    
-    
+
+
+    [RelayCommand]
+    public void NavigateToSinger(object? parameter)
+    {
+        if (parameter is SingerLite singer)
+        {
+            // 记录上一页
+            _previousPage = ActivePage;
+
+            // 创建新的 SingerViewModel
+            var singerVm = new SingerViewModel(
+                _musicClient,
+                singer.Id.ToString(),
+                singer.Name
+            );
+
+            ActivePage = singerVm;
+        }
+    }
+
+    [RelayCommand]
+    public void NavigateBack()
+    {
+        if (_previousPage != null)
+        {
+            ActivePage = _previousPage;
+            _previousPage = null;
+        }
+        else
+        {
+            // 默认回首页
+            var dailyVm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
+            if (dailyVm != null) ActivePage = dailyVm;
+        }
+    }
+
+
     public void ForceCloseDesktopLyric()
     {
         if (_lyricWindow != null)

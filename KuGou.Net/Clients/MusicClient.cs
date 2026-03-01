@@ -9,9 +9,9 @@ namespace KuGou.Net.Clients;
 
 public class MusicClient(RawSearchApi rawApi, KgSessionManager sessionManager)
 {
-    public async Task<List<SongInfo>> SearchAsync(string keyword, int page = 1)
+    public async Task<List<SongInfo>> SearchAsync(string keyword, int page = 1, string type = "song")
     {
-        var json = await rawApi.SearchSongAsync(keyword, page);
+        var json = await rawApi.SearchAsync(keyword, page, 30, type);
 
         var data = KgApiResponseParser.Parse<SearchResultData>(json, AppJsonContext.Default.SearchResultData);
 
@@ -43,18 +43,52 @@ public class MusicClient(RawSearchApi rawApi, KgSessionManager sessionManager)
     }
 
 
-    public async Task<JsonElement> GetSingerSongsAsync(
+    public async Task<SingerAudioResponse?> GetSingerSongsAsync(
         string authorId,
         int page = 1,
         int pageSize = 30,
         string sort = "new")
     {
-        // 从 Session 获取 DFID
         var dfid = sessionManager.Session.Dfid;
 
-        // 调用 RawApi
         var json = await rawApi.GetSingerSongsAsync(dfid, authorId, page, pageSize, sort);
 
-        return json;
+        var result = json.Deserialize(AppJsonContext.Default.SingerAudioResponse);
+        return result;
+    }
+
+    public async Task<SingerDetailResponse?> GetSingerDetailAsync(string authorId)
+    {
+        var json = await rawApi.GetSingerDetailAsync(authorId);
+
+        return KgApiResponseParser.Parse<SingerDetailResponse>(
+            json,
+            AppJsonContext.Default.SingerDetailResponse
+        );
+        ;
+    }
+
+    public async Task<List<SearchPlaylistItem>?> SearchSpecialAsync(string keyword, int page = 1,
+        string type = "special")
+    {
+        var json = await rawApi.SearchAsync(keyword, page, 30, type);
+
+        var data = KgApiResponseParser.Parse<SearchPlaylistResponse>(
+            json,
+            AppJsonContext.Default.SearchPlaylistResponse
+        );
+        return data?.Playlists;
+    }
+
+    public async Task<List<SearchAlbumItem>?> SearchAlbumAsync(string keyword, int page = 1, string type = "album")
+    {
+        var json = await rawApi.SearchAsync(keyword, page, 30, type);
+
+        var data = KgApiResponseParser.Parse<SearchAlbumResponse>(
+            json,
+            AppJsonContext.Default.SearchAlbumResponse
+        );
+
+        return data?.Albums;
     }
 }

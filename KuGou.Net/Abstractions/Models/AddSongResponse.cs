@@ -3,12 +3,12 @@
 namespace KuGou.Net.Abstractions.Models;
 
 /// <summary>
-///     添加歌曲到歌单响应 
+///     添加歌曲到歌单响应
 /// </summary>
 public record AddSongResponse : KgBaseModel
 {
     /// <summary>
-    ///     当前歌单内的歌曲总数 
+    ///     当前歌单内的歌曲总数
     /// </summary>
     [property: JsonPropertyName("count")]
     public int Count { get; set; }
@@ -39,7 +39,7 @@ public record AddSongItem
     public string Hash { get; set; } = "";
 
     /// <summary>
-    ///     歌单内唯一 ID 
+    ///     歌单内唯一 ID
     /// </summary>
     [property: JsonPropertyName("fileid")]
     public long FileId { get; set; }

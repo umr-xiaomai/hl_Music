@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -6,6 +5,7 @@ using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using KuGou.Net.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SukiUI.Toasts;
 using TestMusic.Services;
 using TestMusic.ViewModels;
@@ -24,15 +24,24 @@ public partial class App : Application
     {
         BindingPlugins.DataValidators.RemoveAt(0);
         var collection = new ServiceCollection();
+        collection.AddLogging(builder =>
+        {
+            builder.SetMinimumLevel(LogLevel.Information);
+            builder.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+            builder.AddFilter("Microsoft.Extensions.Http", LogLevel.Warning);
+            builder.AddDebug();
+            builder.AddConsole();
+        });
         collection.AddKuGouSdk();
 
         collection.AddSingleton<ISukiToastManager, SukiToastManager>();
-        
+
         SettingsManager.Load();
 
         // 注册 ViewModels
         collection.AddTransient<LoginViewModel>();
         collection.AddTransient<SearchViewModel>();
+        collection.AddTransient<SingerViewModel>();
         collection.AddTransient<UserViewModel>();
         collection.AddTransient<MainWindowViewModel>();
         collection.AddSingleton<PlayerViewModel>();
@@ -40,7 +49,7 @@ public partial class App : Application
         var services = collection.BuildServiceProvider();
 
         var vm = services.GetRequiredService<MainWindowViewModel>();
-        var playerVm = services.GetRequiredService<PlayerViewModel>(); 
+        var playerVm = services.GetRequiredService<PlayerViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             DisableAvaloniaDataAnnotationValidation();
@@ -48,9 +57,13 @@ public partial class App : Application
             {
                 DataContext = vm
             };
-            
+
             InitializeTrayIcon(playerVm, desktop);
-            desktop.Exit += (s, e) => ShutdownTrayIcon();
+            desktop.Exit += (s, e) =>
+            {
+                ShutdownTrayIcon();
+                playerVm.Dispose();
+            };
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -65,5 +78,4 @@ public partial class App : Application
         // remove each entry found
         foreach (var plugin in dataValidationPluginsToRemove) BindingPlugins.DataValidators.Remove(plugin);
     }
-    
 }

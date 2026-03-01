@@ -5,7 +5,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
-             xmlns:services="clr-namespace:TestMusic.Services"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
              x:Class="TestMusic.Views.UserView"
              x:DataType="vm:UserViewModel">
@@ -42,19 +41,19 @@
             <!-- 统计信息（可选） -->
             <ScrollViewer Grid.Row="1" Margin="30,0,30,20">
                 <StackPanel Spacing="20">
-                    
-                    <TextBlock Text="通用设置" FontWeight="Bold" FontSize="18" Margin="0,0,0,5"/>
+
+                    <TextBlock Text="通用设置" FontWeight="Bold" FontSize="18" Margin="0,0,0,5" />
 
                     <!-- 关闭行为设置 -->
                     <suki:GlassCard IsOpaque="True" Padding="15">
                         <Grid ColumnDefinitions="*, Auto">
                             <StackPanel>
-                                <TextBlock Text="关闭主面板时" FontWeight="DemiBold"/>
-                                <TextBlock Text="选择点击关闭按钮时的行为" FontSize="12" Foreground="Gray"/>
+                                <TextBlock Text="关闭主面板时" FontWeight="DemiBold" />
+                                <TextBlock Text="选择点击关闭按钮时的行为" FontSize="12" Foreground="Gray" />
                             </StackPanel>
-                            
-                            <ComboBox Grid.Column="1" 
-                                      ItemsSource="{Binding AvailableCloseBehaviors}" 
+
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding AvailableCloseBehaviors}"
                                       SelectedItem="{Binding SelectedCloseBehavior}"
                                       MinWidth="150">
                                 <ComboBox.ItemTemplate>
@@ -70,13 +69,13 @@
                     <suki:GlassCard IsOpaque="True" Padding="15">
                         <Grid ColumnDefinitions="*, Auto">
                             <StackPanel>
-                                <TextBlock Text="默认播放音质" FontWeight="DemiBold"/>
-                                <TextBlock Text="音质从低到高" FontSize="12" Foreground="Gray"/>
+                                <TextBlock Text="默认播放音质" FontWeight="DemiBold" />
+                                <TextBlock Text="音质从低到高" FontSize="12" Foreground="Gray" />
                             </StackPanel>
-                            <ComboBox Grid.Column="1" 
+                            <ComboBox Grid.Column="1"
                                       ItemsSource="{Binding QualityOptions}"
                                       SelectedItem="{Binding SelectedQuality}"
-                                      MinWidth="150"/>
+                                      MinWidth="150" />
                         </Grid>
                     </suki:GlassCard>
                 </StackPanel>

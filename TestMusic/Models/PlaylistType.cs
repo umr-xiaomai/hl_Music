@@ -2,7 +2,7 @@
 
 public enum PlaylistType
 {
-    Online,     
-    Local,      
-    AddButton  
+    Online,
+    Local,
+    AddButton
 }

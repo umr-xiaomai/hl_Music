@@ -1,10 +1,11 @@
 ﻿using KuGou.Net.Clients;
 using KuGou.Net.Infrastructure.Http;
 using KuGou.Net.Protocol.Raw;
+using Microsoft.Extensions.Logging.Abstractions;
 
 var (transport, session) = KgHttpClientFactory.CreateWithSession();
 var musicClient = new MusicClient(new RawSearchApi(transport), session);
-var _playlistClient = new PlaylistClient(new RawPlaylistApi(transport), session);
+var _playlistClient = new PlaylistClient(new RawPlaylistApi(transport, NullLogger<RawPlaylistApi>.Instance), session);
 Console.WriteLine("=== 歌单详情测试 ===");
 
 var pid = "collection_3_2413242059_4_0";
