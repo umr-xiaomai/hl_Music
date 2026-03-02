@@ -37,7 +37,7 @@ KugouMusicApi.NET/
 # 克隆项目
 git clone
 https://github.com/Linsxyx/KugouMusic.NET.git
-cd KugouMusicApi.NET
+cd KugouMusic.NET
 
 # 构建项目
 dotnet build KugouMusic.NET.slnx
