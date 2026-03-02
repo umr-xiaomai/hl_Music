@@ -15,10 +15,10 @@ KugouMusicApi.NET/
 
 ## 截图
 
-![image](https://github.com/Linsxyx/KugouMusic.NET/docs/images/player-main.png)
-![image](https://github.com/Linsxyx/KugouMusic.NET/docs/images/每日推荐.png)
-![image](https://github.com/Linsxyx/KugouMusic.NET/docs/images/歌手.png)
-![image](https://github.com/Linsxyx/KugouMusic.NET/docs/images/搜索.png)
+![image](docs/images/player-main.png)
+![image](docs/images/每日推荐.png)
+![image](docs/images/歌手.png)
+![image](docs/images/搜索.png)
 
 ## 快速开始
 
