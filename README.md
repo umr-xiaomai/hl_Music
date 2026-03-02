@@ -35,7 +35,8 @@ KugouMusicApi.NET/
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-repo/KugouMusicApi.NET.git
+git clone
+https://github.com/Linsxyx/KugouMusic.NET.git
 cd KugouMusicApi.NET
 
 # 构建项目
