@@ -1,57 +1,54 @@
-# KugouMusicApi.NET
+# KugouMusic.NET
 
-基于 .NET 10.0 开发的跨平台桌面音乐播放器，集成酷狗音乐 API
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-brightgreen.svg)](https://github.com/Linsxyx/KugouMusic.NET/releases)
 
-## 项目结构
+基于 **.NET 10.0 + Avalonia** 开发的**跨平台酷狗音乐桌面客户端**。
 
-```
-KugouMusicApi.NET/
-├── KuGou.Net/           # 酷狗 API 核心库
-├── SimpleAudio/         # 音频播放组件
-├── KugouAvaloniaPlayer/ # 桌面客户端
-├── KgWebApi.Net/        # Web API 服务
-└── ConsoleApp1/         # 控制台测试程序
-```
+---
 
-## 截图
+## ✨ 特性
 
-![image](docs/images/player-main.png)
-![image](docs/images/每日推荐.png)
-![image](docs/images/歌手.png)
-![image](docs/images/搜索.png)
+- 🎵 完整集成酷狗音乐 API（搜索、歌单、每日推荐、歌手页、滚动歌词）
+- 🔄 **在线自动更新**
+- 🖥️ 真正跨平台（Windows / Linux / macOS）
+- 🎨 现代 Avalonia UI + MVVM
 
-## 快速开始
+---
 
-### 安装
+## 📸 截图
 
-- 访问本项目的 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases) 页面下载安装包。
+![歌词界面](docs/images/lyrics.png)
+![主界面](docs/images/main.png)
+![搜索页面](docs/images/search.png)
+![歌手页面](docs/images/singer.png)
+---
 
-### 环境要求
+## 🚀 下载与安装
 
-- .NET 10.0 SDK
-- Windows/Linux/macOS
+### 推荐方式
+访问 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases) 页面下载：
 
-### 构建运行
+- **Windows**：`KugouAvaloniaPlayer-win.exe`
+- **Linux**：`KugouAvaloniaPlayer-linux.AppImage`
+- **Mac**：`KugouAvaloniaPlayer-mac.pkg`
+
+安装后**每次启动程序会自动检查更新**，发现新版本会提示一键更新。
+
+---
+
+## 🛠️ 本地构建（开发者）
 
 ```bash
-# 克隆项目
-git clone
-https://github.com/Linsxyx/KugouMusic.NET.git
+# 1. 克隆
+git clone https://github.com/Linsxyx/KugouMusic.NET.git
 cd KugouMusic.NET
 
-# 构建项目
+# 2. 还原 & 构建
+dotnet restore KugouMusic.NET.slnx
 dotnet build KugouMusic.NET.slnx
 
-# 运行桌面客户端
+# 3. 运行桌面客户端
 dotnet run --project KugouAvaloniaPlayer/KugouAvaloniaPlayer.csproj
-
-# 运行 Web API
-dotnet run --project KgWebApi.Net/KgWebApi.Net.csproj
 ```
-
-##  开源许可
-
-本项目仅供个人学习研究使用，禁止用于商业及非法用途。
-
-[The MIT License (MIT)](https://github.com/Linsxyx/KugouMusic.NET/blob/master/LICENSE) 
-
