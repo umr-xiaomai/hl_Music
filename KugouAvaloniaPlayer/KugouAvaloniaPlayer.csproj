@@ -55,9 +55,6 @@
         <Compile Update="Views\UserView.axaml.cs">
             <DependentUpon>UserView.axaml</DependentUpon>
         </Compile>
-        <Compile Update="Views\LoginWindow.axaml.cs">
-            <DependentUpon>LoginWindow.axaml</DependentUpon>
-        </Compile>
         <Compile Update="Views\SingerView.axaml.cs">
             <DependentUpon>SingerView.axaml</DependentUpon>
         </Compile>

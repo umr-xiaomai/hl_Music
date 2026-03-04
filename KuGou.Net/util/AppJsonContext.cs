@@ -64,6 +64,8 @@ namespace KuGou.Net.util;
 [JsonSerializable(typeof(AlbumSongAudioInfo))]
 [JsonSerializable(typeof(AlbumSongAlbumInfo))]
 [JsonSerializable(typeof(AlbumSongAuthor))]
+[JsonSerializable(typeof(QRCode))]
+[JsonSerializable(typeof(QrLoginStatusResponse))]
 internal partial class AppJsonContext : JsonSerializerContext
 {
 }

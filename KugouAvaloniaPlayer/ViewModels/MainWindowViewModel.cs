@@ -205,11 +205,12 @@ public partial class MainWindowViewModel : ObservableObject
     {
         Dispatcher.UIThread.Post(async () =>
         {
+            DialogManager.DismissDialog();
+
             IsLoggedIn = true;
             await LoadUserInfo();
             _logger.LogInformation("登录成功");
-
-            // 后台初始化设备
+            
             _ = Task.Run(async () =>
             {
                 if (!await _deviceClient.InitDeviceAsync())
@@ -219,9 +220,18 @@ public partial class MainWindowViewModel : ObservableObject
                         .Dismiss().After(TimeSpan.FromSeconds(3))
                         .Dismiss().ByClicking()
                         .Queue();
-            });
 
-            // 加载推荐
+                try
+                {
+                    await TryGetVip();
+                    await Player.LoadLikeListAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"初始化VIP或喜欢列表失败: {ex.Message}");
+                }
+            });
+            
             await GetDailyRecommendations();
         });
     }
@@ -241,36 +251,18 @@ public partial class MainWindowViewModel : ObservableObject
         });
     }
 
-    [RelayCommand] //先用弹窗，之后再改
+    [RelayCommand] 
     private void ShowLoginDialog()
     {
-        if (MainWindow == null) return;
-
-        var loginWindow = new LoginWindow
+        var loginView = new LoginView
         {
             DataContext = LoginViewModel
         };
 
-        void OnLoginSuccess()
-        {
-            loginWindow.Close();
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await TryGetVip();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"获取VIP失败: {ex.Message}");
-                }
-            });
-        }
-
-        LoginViewModel.LoginSuccess += OnLoginSuccess;
-        loginWindow.Closed += (_, _) => LoginViewModel.LoginSuccess -= OnLoginSuccess;
-
-        loginWindow.Show(MainWindow);
+        DialogManager.CreateDialog()
+            .WithContent(loginView)
+            .WithActionButton("关闭", _ => { }, true, "Basic")
+            .TryShow();
     }
 
     [RelayCommand]

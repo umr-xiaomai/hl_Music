@@ -73,17 +73,27 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./all_releases
+          path: ./all_artifacts
           merge-multiple: true
 
+      - name: Prepare Clean Release
+        shell: bash
+        run: |
+          mkdir -p ./release_files
+          cp ./all_artifacts/*.exe ./release_files/KugouAvaloniaPlayer-win.exe 2>/dev/null || true
+          cp ./all_artifacts/*.pkg ./release_files/KugouAvaloniaPlayer-mac.pkg 2>/dev/null || true
+          cp ./all_artifacts/*.AppImage ./release_files/KugouAvaloniaPlayer-linux.AppImage 2>/dev/null || true
+          cp ./all_artifacts/*.nupkg ./release_files/
+          cp ./all_artifacts/RELEASES* ./release_files/ 2>/dev/null || true
+          cp ./all_artifacts/releases.*.json ./release_files/ 2>/dev/null || true
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          files: ./all_releases/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: ./release_files/*
+          token: ${{ secrets.GITHUB_TOKEN }}

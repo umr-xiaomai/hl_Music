@@ -1,12 +1,17 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Logging;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KuGou.Net.Abstractions.Models;
 using KuGou.Net.Clients;
+using Microsoft.Extensions.Logging;
 
 namespace KugouAvaloniaPlayer.ViewModels;
 
-public partial class LoginViewModel(AuthClient authClient, DeviceClient deviceClient) : ObservableObject
+public partial class LoginViewModel(AuthClient authClient, DeviceClient deviceClient,ILogger<LoginViewModel> logger) : ObservableObject
 {
     [ObservableProperty] private string _code = "";
     [ObservableProperty] private int _countdown;
@@ -14,6 +19,133 @@ public partial class LoginViewModel(AuthClient authClient, DeviceClient deviceCl
     [ObservableProperty] private bool _isSendingCode;
     [ObservableProperty] private string _mobile = "";
     [ObservableProperty] private string _statusMessage = "";
+    
+    [ObservableProperty] private bool _isQrLoginSelected ; 
+    [ObservableProperty] private string? _qrCodeImageUrl;
+    [ObservableProperty] private string _qrStatusMessage = "请使用酷狗音乐概念版App扫码";
+    [ObservableProperty] private bool _isQrExpired;
+
+    private string? _qrCodeKey;
+    private CancellationTokenSource? _qrPollingCts;
+    
+    partial void OnIsQrLoginSelectedChanged(bool value)
+    {
+        if (value)
+            _ = RefreshQrCode();
+        else
+            StopQrPolling(); 
+    }
+
+    [RelayCommand]
+    public async Task RefreshQrCode()
+    {
+        StopQrPolling();
+        QrStatusMessage = "正在获取二维码...";
+        QrCodeImageUrl = null;
+        IsQrExpired = false;
+        
+        try
+        {
+            var qr = await authClient.GetQrCodeAsync();
+            if (qr != null && !string.IsNullOrEmpty(qr.Qrcode))
+            {
+                _qrCodeKey = qr.Qrcode;
+                QrCodeImageUrl = qr.QrcodeImg;
+                QrStatusMessage = "请使用酷狗音乐App扫码";
+                StartQrPolling();
+            }
+            else
+            {
+                QrStatusMessage = "获取二维码失败，请重试";
+                IsQrExpired = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            QrStatusMessage = $"获取二维码出错: {ex.Message}";
+            IsQrExpired = true;
+        }
+    }
+
+    private void StartQrPolling()
+    {
+        _qrPollingCts = new CancellationTokenSource();
+        var token = _qrPollingCts.Token;
+
+        Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(2000, token); 
+                if (token.IsCancellationRequested) break;
+
+                if (string.IsNullOrEmpty(_qrCodeKey)) continue;
+
+                try
+                {
+                    var status = await authClient.CheckQrStatusAsync(_qrCodeKey);
+                    
+                    if (status.QrStatus == QrLoginStatus.WaitingForScan)
+                    {
+                        Dispatcher.UIThread.Post(() => QrStatusMessage = "请使用酷狗音乐App扫码");
+                    }
+                    else if (status.QrStatus == QrLoginStatus.WaitingForConfirm)
+                    {
+                        Dispatcher.UIThread.Post(() => QrStatusMessage = "扫码成功，请在手机上确认");
+                    }
+                    else if (status.QrStatus == QrLoginStatus.Success)
+                    {
+                        Dispatcher.UIThread.Post(() => 
+                        {
+                            QrStatusMessage = "登录成功";
+                            StopQrPolling();
+                            
+                            
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await deviceClient.InitDeviceAsync();
+                                    await authClient.RefreshSessionAsync();
+                                }
+                                catch
+                                {
+                                    
+                                }
+                            });
+
+                            LoginSuccess?.Invoke();
+                        });
+                        break;
+                    }
+                    else if (status.QrStatus == QrLoginStatus.Expired)
+                    {
+                        Dispatcher.UIThread.Post(() => 
+                        {
+                            QrStatusMessage = "二维码已过期，请点击刷新";
+                            IsQrExpired = true;
+                        });
+                        StopQrPolling();
+                        break;
+                    }
+                }
+                catch
+                {
+                    logger.LogError("轮询出错");
+                }
+            }
+        }, token);
+    }
+
+    public void StopQrPolling()
+    {
+        if (_qrPollingCts != null)
+        {
+            _qrPollingCts.Cancel();
+            _qrPollingCts.Dispose();
+            _qrPollingCts = null;
+        }
+    }
 
     [RelayCommand]
     private async Task SendCode()

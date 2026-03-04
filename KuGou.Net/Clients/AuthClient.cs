@@ -54,35 +54,39 @@ public class AuthClient(
     /// <summary>
     ///     获取二维码 Key 和 URL
     /// </summary>
-    public async Task<JsonElement> GetQrCodeAsync()
+    public async Task<QRCode?> GetQrCodeAsync()
     {
         var json = await rawApi.GetQrKeyAsync();
-        return json;
+        var data = KgApiResponseParser.Parse<QRCode>(json, AppJsonContext.Default.QRCode);
+        return data;
     }
 
     /// <summary>
     ///     检查二维码扫码状态
     ///     返回: 0=等待, 1=已扫码, 2=过期, 4=登录成功,登录完记得刷下token拿t1
     /// </summary>
-    public async Task<JsonElement> CheckQrStatusAsync(string key)
+    public async Task<QrLoginStatusResponse?> CheckQrStatusAsync(string key)
     {
         var json = await rawApi.CheckQrStatusAsync(key);
-
-        if (json.TryGetProperty("data", out var data))
+        
+        var res = KgApiResponseParser.Parse<QrLoginStatusResponse>(json, AppJsonContext.Default.QrLoginStatusResponse);
+        
+        if (res != null && res.IsSuccess)
         {
-            var newToken = data.GetProperty("token").GetString();
-            var newUserId = data.GetProperty("userid").ToString();
+            var newUserId = res.UserId.ToString();
+            var newToken = res.Token;
 
-            if (!string.IsNullOrEmpty(newToken))
-            {
-                sessionManager.UpdateAuth(newUserId, newToken, "0", "", "");
-                KgSessionStore.Save(sessionManager.Session);
-                logger.LogInformation($"Token 刷新成功! UserID: {newUserId}");
-            }
+            sessionManager.UpdateAuth(newUserId!, newToken!, "0", "", "");
+            KgSessionStore.Save(sessionManager.Session);
+        
+            logger.LogInformation($"二维码登录成功! UserID: {newUserId}, Nickname: {res.Nickname}");
         }
-
-        logger.LogWarning("[Auth] 刷新 Token 失败，返回数据中未找到 data 节点。");
-        return json;
+        else if (res != null && res.QrStatus == QrLoginStatus.Expired)
+        {
+            logger.LogWarning("[Auth] 二维码已过期，请重新获取。");
+        }
+        
+        return res ;
     }
 
     /// <summary>

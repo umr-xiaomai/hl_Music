@@ -102,7 +102,7 @@
             <suki:SukiSideMenu.FooterContent>
                 <StackPanel HorizontalAlignment="Center" Margin="10,10,10,100" Spacing="8">
                     <localControls:UserAvatarControl />
-                    <TextBlock Text="v0.2.0" Foreground="Gray" FontSize="10" HorizontalAlignment="Center" />
+                    <TextBlock Text="v0.2.1" Foreground="Gray" FontSize="10" HorizontalAlignment="Center" />
                 </StackPanel>
             </suki:SukiSideMenu.FooterContent>
         </suki:SukiSideMenu>
