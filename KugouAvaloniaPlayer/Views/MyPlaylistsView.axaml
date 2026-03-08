@@ -20,7 +20,7 @@
                 </Button>
             </StackPanel>
 
-            <ScrollViewer Grid.Row="1">
+            <ScrollViewer Grid.Row="1" Padding="0,0,0,-50">
                 <ItemsControl ItemsSource="{Binding Items}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>

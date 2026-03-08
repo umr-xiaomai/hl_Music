@@ -89,12 +89,12 @@ public partial class SingerViewModel : PageViewModelBase
         {
             var sort = IsHotSort ? "hot" : "new";
             var result = await _musicClient.GetSingerSongsAsync(
-                _authorId, page, 30, sort);
+                _authorId, page, 100, sort);
 
             if (result?.Songs == null)
                 return false;
 
-            if (result.Songs.Count < 30)
+            if (result.Songs.Count < 100)
                 _hasMoreSongs = false;
 
             var songItems = result.Songs

@@ -62,6 +62,9 @@ public partial class SearchViewModel(
     public AvaloniaList<SearchAlbumItem> Albums { get; } = new();
     public AvaloniaList<SongItem> DetailSongs { get; } = new();
 
+    // 当前是否显示歌单详情（用于控制收藏按钮可见性）
+    public bool IsPlaylistDetail => _currentDetailType == DetailType.Playlist;
+
     [RelayCommand]
     private async Task Search()
     {
@@ -148,6 +151,7 @@ public partial class SearchViewModel(
 
         // 初始化状态
         _currentDetailType = DetailType.Playlist;
+        OnPropertyChanged(nameof(IsPlaylistDetail));
         _currentDetailId = item.GlobalId;
         _currentDetailPage = 1;
         _hasMoreDetails = true;
@@ -172,6 +176,7 @@ public partial class SearchViewModel(
         if (item == null) return;
 
         _currentDetailType = DetailType.Album;
+        OnPropertyChanged(nameof(IsPlaylistDetail));
         _currentDetailId = item.AlbumId.ToString();
         _currentDetailPage = 1;
         _hasMoreDetails = true;
@@ -225,9 +230,9 @@ public partial class SearchViewModel(
             }
             else if (_currentDetailType == DetailType.Album)
             {
-                var songs = await albumClient.GetSongsAsync(_currentDetailId, _currentDetailPage);
+                var songs = await albumClient.GetSongsAsync(_currentDetailId, _currentDetailPage,100);
 
-                if (songs == null || songs.Count < 30) _hasMoreDetails = false;
+                if (songs == null || songs.Count < 100) _hasMoreDetails = false;
 
                 if (songs != null)
                 {

@@ -214,7 +214,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void OnLoginSuccess()
     {
-        Dispatcher.UIThread.Post(async () =>
+        Dispatcher.UIThread.Post(async void () =>
         {
             DialogManager.DismissDialog();
 
@@ -242,6 +242,10 @@ public partial class MainWindowViewModel : ObservableObject
                     _logger.LogError($"初始化VIP或喜欢列表失败: {ex.Message}");
                 }
             });
+            
+            var myPlaylistsVm = Pages.OfType<MyPlaylistsViewModel>().FirstOrDefault();
+            if (myPlaylistsVm != null)
+                _ = myPlaylistsVm.LoadAllPlaylistsCommand.ExecuteAsync(null);
 
             await GetDailyRecommendations();
         });

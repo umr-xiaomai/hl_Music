@@ -69,6 +69,10 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     private List<SongItem> _originalQueue = new();
 
+    // 连续播放失败计数器（熔断机制）
+    private int _consecutiveFailures;
+    private const int MaxConsecutiveFailures = 5;
+
     //[ObservableProperty] private string _statusMessage = "";
     [ObservableProperty] private double _totalDurationSeconds;
 
@@ -125,6 +129,19 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     public async Task PlaySongAsync(SongItem? song, IList<SongItem>? contextList = null)
     {
         if (song == null) return;
+
+        // 检查熔断状态
+        if (_consecutiveFailures >= MaxConsecutiveFailures)
+        {
+            _toastManager.CreateToast()
+                .OfType(NotificationType.Error)
+                .WithTitle("播放已停止")
+                .WithContent($"连续 {MaxConsecutiveFailures} 首歌曲获取失败，请检查网络或稍后重试")
+                .Dismiss().After(TimeSpan.FromSeconds(5))
+                .Queue();
+            _logger.LogWarning($"熔断触发：连续 {MaxConsecutiveFailures} 次播放失败，停止自动播放");
+            return;
+        }
 
         if (contextList != null && contextList.Any())
         {
@@ -203,12 +220,15 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             else
             {
                 var playData = await _musicClient.GetPlayInfoAsync(song.Hash, MusicQuality);
-                if (playData != null && playData.Status != 1)
+                if (playData == null || playData.Status != 1)
                 {
+                    _consecutiveFailures++;
+                    _logger.LogWarning($"播放失败 ({_consecutiveFailures}/{MaxConsecutiveFailures}): {song.Name}");
+
                     _toastManager.CreateToast()
                         .OfType(NotificationType.Warning)
                         .WithTitle("无法获取播放链接")
-                        .WithContent($"错误代码: {playData.ErrCode}, 正在尝试下一首...")
+                        .WithContent($"错误代码: {playData?.ErrCode}, 正在尝试下一首...")
                         .Dismiss().After(TimeSpan.FromSeconds(3))
                         .Queue();
 
@@ -223,6 +243,9 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
             if (url != null && _player.Load(url))
             {
+                // 播放成功，重置熔断计数器
+                _consecutiveFailures = 0;
+
                 _player.SetVolume(MusicVolume);
                 _player.Play();
                 IsPlayingAudio = true;
@@ -233,7 +256,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             }
             else
             {
-                _logger.LogError("音频流加载失败");
+                _consecutiveFailures++;
+                _logger.LogWarning($"音频流加载失败 ({_consecutiveFailures}/{MaxConsecutiveFailures}): {song.Name}");
+
+                // 尝试下一首
+                await Task.Delay(500);
+                await PlayNext();
             }
         }
         catch (Exception ex)
@@ -305,14 +333,23 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private void AddToNext(SongItem? song)
     {
         if (song == null) return;
+        
+        var existingInPlayback = PlaybackQueue.IndexOf(song);
+        var existingInOriginal = _originalQueue.IndexOf(song);
+
+        if (existingInPlayback >= 0)
+            PlaybackQueue.RemoveAt(existingInPlayback);
+        if (existingInOriginal >= 0)
+            _originalQueue.RemoveAt(existingInOriginal);
+        
         var originalIdx = CurrentPlayingSong != null ? _originalQueue.IndexOf(CurrentPlayingSong) : -1;
-        if (originalIdx >= 0 && originalIdx < _originalQueue.Count - 1)
+        if (originalIdx >= 0 && originalIdx < _originalQueue.Count)
             _originalQueue.Insert(originalIdx + 1, song);
         else
             _originalQueue.Add(song);
 
         var playIdx = CurrentPlayingSong != null ? PlaybackQueue.IndexOf(CurrentPlayingSong) : -1;
-        if (playIdx >= 0 && playIdx < PlaybackQueue.Count - 1)
+        if (playIdx >= 0 && playIdx < PlaybackQueue.Count)
             PlaybackQueue.Insert(playIdx + 1, song);
         else
             PlaybackQueue.Add(song);
@@ -582,7 +619,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
                     _ = Task.Run(async () =>
                     {
-                        await Task.Delay(1000); // 稍等API生效
+                        await Task.Delay(3000); 
                         await LoadLikeListAsync();
                     });
                 }
@@ -604,7 +641,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    public async Task ShowAddToPlaylistDialog(SongItem? song)
+    private async Task ShowAddToPlaylistDialog(SongItem? song)
     {
         if (song == null) return;
 
@@ -635,25 +672,29 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
                 MaxHeight = 400,
                 ItemsSource = onlinePlaylists,
                 SelectionMode = SelectionMode.Single,
-                ItemTemplate = new FuncDataTemplate<UserPlaylistItem>((item, _) =>
+                ItemTemplate = new FuncDataTemplate<UserPlaylistItem>((item, _) => new TextBlock
                 {
-                    return new TextBlock
-                    {
-                        Text = item.Name
-                    };
+                    Text = item.Name
                 })
             };
 
-            _dialogManager.CreateDialog()
+            await _dialogManager.CreateDialog()
                 .WithTitle("添加到歌单")
                 .WithContent(listBox)
                 .WithActionButton("取消", _ => { }, true, "Standard")
-                .WithActionButton("添加", async _ =>
+                .WithActionButton("添加", async void (_) =>
                 {
-                    if (listBox.SelectedItem is UserPlaylistItem selectedPlaylist)
-                        await AddSongToPlaylistAsync(song, selectedPlaylist.ListId.ToString(), selectedPlaylist.Name);
+                    try
+                    {
+                        if (listBox.SelectedItem is UserPlaylistItem selectedPlaylist)
+                            await AddSongToPlaylistAsync(song, selectedPlaylist.ListId.ToString(), selectedPlaylist.Name);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError($"{e}");
+                    }
                 }, true, "Standard")
-                .TryShow();
+                .TryShowAsync();
         }
         catch (Exception ex)
         {
@@ -678,6 +719,22 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             };
 
             var result = await _playlistClient.AddSongsAsync(playlistId, songList);
+            if (result?.Status == 1&& playlistId == "2")
+            {
+                IsLiked = true;
+                _likedHashes.Add(song.Hash);
+                _logger.LogInformation("已添加到我喜欢");
+
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(3000); 
+                    await LoadLikeListAsync();
+                });
+            }
+            else
+            {
+                _logger.LogError($"收藏失败: {result?.ErrorCode}");
+            }
 
             if (result?.Status == 1)
                 _toastManager.CreateToast()
