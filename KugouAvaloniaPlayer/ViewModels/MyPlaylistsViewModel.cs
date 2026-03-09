@@ -304,7 +304,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         };
 
         _dialogManager.CreateDialog()
-            .WithTitle("新建网络歌单")
+            .WithTitle("新建歌单")
             .WithContent(textBox)
             .WithActionButton("取消", _ => { }, true, "Flat")
             .WithActionButton("创建", async _ =>

@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KugouAvaloniaPlayer.Services;
 
@@ -15,9 +18,14 @@ public enum CloseBehavior
 public class AppSettings
 {
     public CloseBehavior CloseBehavior { get; set; } = CloseBehavior.MinimizeToTray;
-    public string MusicQuality { get; set; } = "128"; // 128, 320, flac, high
+    public string MusicQuality { get; set; } = "128"; 
     public List<string> LocalMusicFolders { get; set; } = new();
     public bool AutoCheckUpdate { get; set; } = true;
+}
+
+[JsonSerializable(typeof(AppSettings))]
+internal partial class AppSettingsJsonContext : JsonSerializerContext
+{
 }
 
 // 设置管理器
@@ -29,6 +37,13 @@ public static class SettingsManager
         "AvaloniaPlayerSettings.json");
 
     public static AppSettings Settings { get; private set; } = new();
+    
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        TypeInfoResolver = AppSettingsJsonContext.Default 
+    };
 
     public static void Load()
     {
@@ -37,10 +52,10 @@ public static class SettingsManager
             if (File.Exists(SettingsPath))
             {
                 var json = File.ReadAllText(SettingsPath);
-                Settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                Settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
             }
         }
-        catch
+        catch (Exception ex)
         {
             Settings = new AppSettings();
         }
@@ -51,14 +66,18 @@ public static class SettingsManager
         try
         {
             var dir = Path.GetDirectoryName(SettingsPath);
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir!);
+            if (!Directory.Exists(dir)) 
+            {
+                Directory.CreateDirectory(dir!);
+            }
 
-            var json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(Settings, JsonOptions);
             File.WriteAllText(SettingsPath, json);
+            
         }
-        catch
+        catch (Exception ex)
         {
-            // 忽略保存错误
+            //Console.WriteLine($"[SettingsManager] 保存配置文件失败: {ex.Message}");
         }
     }
 }

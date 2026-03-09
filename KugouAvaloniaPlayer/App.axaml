@@ -27,6 +27,7 @@
         <converters:CountdownEnabledConverter x:Key="CountdownEnabledConverter" />
         <converters:CloseBehaviorConverter x:Key="CloseBehaviorConverter" />
         <converters:SingerNameConverter x:Key="SingerNameConverter" />
+        <converters:EnumEqualityConverter x:Key="EnumEqualityConverter" />
     </Application.Resources>
 
 </Application>

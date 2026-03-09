@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.ViewModels;
@@ -14,11 +13,6 @@ public partial class MyPlaylistsView : UserControl
         InitializeComponent();
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
-
     private void OnPlaylistCardClick(object? sender, RoutedEventArgs e)
     {
         var button = sender as Button;
@@ -29,14 +23,12 @@ public partial class MyPlaylistsView : UserControl
 
         if (item.Type == PlaylistType.AddButton)
         {
-            // --- 点击了"添加"卡片 ---
-            // 弹出菜单选择：本地还是在线
             var contextMenu = new ContextMenu();
 
             var addLocalItem = new MenuItem { Header = "导入本地文件夹..." };
             addLocalItem.Click += AddLocalFolder_Click;
 
-            var addOnlineItem = new MenuItem { Header = "新建网络歌单..." };
+            var addOnlineItem = new MenuItem { Header = "新建歌单..." };
             addOnlineItem.Click += AddOnlinePlaylist_Click;
 
             contextMenu.Items.Add(addLocalItem);
@@ -46,8 +38,6 @@ public partial class MyPlaylistsView : UserControl
         }
         else
         {
-            // --- 点击了普通歌单 ---
-            // 调用 VM 打开详情
             vm.OpenPlaylistCommand.Execute(item);
         }
     }
@@ -79,14 +69,34 @@ public partial class MyPlaylistsView : UserControl
     {
         if (sender is not ScrollViewer scrollViewer) return;
         if (DataContext is not MyPlaylistsViewModel vm) return;
-
-        // 计算当前滚动位置 + 视口高度
+        
         var currentBottom = scrollViewer.Offset.Y + scrollViewer.Viewport.Height;
-
-        // 比较：如果滚动到底部（预留 50px 的缓冲距离），且不是正在加载中
+        
         if (currentBottom >= scrollViewer.Extent.Height - 50)
-            // 如果 ViewModel 有加载更多的命令，则执行
             if (vm.LoadMoreCommand.CanExecute(null))
                 vm.LoadMoreCommand.Execute(null);
+    }
+    
+    private void OnDeleteLocalPlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is PlaylistItem item)
+        {
+            if (DataContext is MyPlaylistsViewModel vm)
+            {
+                vm.DeleteLocalPlaylistCommand.Execute(item);
+            }
+        }
+    }
+
+    // [新增]：安全响应“删除网络歌单”
+    private void OnDeleteOnlinePlaylistClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.DataContext is PlaylistItem item)
+        {
+            if (DataContext is MyPlaylistsViewModel vm)
+            {
+                vm.DeleteOnlinePlaylistCommand.Execute(item);
+            }
+        }
     }
 }
