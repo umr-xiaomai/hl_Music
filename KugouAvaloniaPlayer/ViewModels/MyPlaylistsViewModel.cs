@@ -12,6 +12,7 @@ using CommunityToolkit.Mvvm.Input;
 using KuGou.Net.Clients;
 using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.Services;
+using Microsoft.Extensions.Logging;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using File = TagLib.File;
@@ -20,10 +21,11 @@ namespace KugouAvaloniaPlayer.ViewModels;
 
 public partial class MyPlaylistsViewModel : PageViewModelBase
 {
-    private const string FolderCover = "avares://KugouAvaloniaPlayer/Assets/Default.png";
-    private const string DefaultCover = "avares://KugouAvaloniaPlayer/Assets/Default.png";
+    private const string DefaultCover = "avares://KugouAvaloniaPlayer/Assets/default_listcard.png";
+    private const string DefaultSongCover = "avares://KugouAvaloniaPlayer/Assets/default_song.png";
     private const string LikeCover = "avares://KugouAvaloniaPlayer/Assets/LikeList.jpg";
     private readonly ISukiDialogManager _dialogManager;
+    private readonly ILogger<MyPlaylistsViewModel> _logger;
     private readonly PlaylistClient _playlistClient;
     private readonly ISukiToastManager _toastManager;
     private readonly UserClient _userClient;
@@ -41,12 +43,14 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         UserClient userClient,
         PlaylistClient playlistClient,
         ISukiToastManager toastManager,
-        ISukiDialogManager dialogManager)
+        ISukiDialogManager dialogManager,
+        ILogger<MyPlaylistsViewModel> logger)
     {
         _userClient = userClient;
         _playlistClient = playlistClient;
         _toastManager = toastManager;
         _dialogManager = dialogManager;
+        _logger = logger;
 
         _ = LoadAllPlaylists();
     }
@@ -90,7 +94,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                     Name = new DirectoryInfo(path).Name,
                     LocalPath = path,
                     Type = PlaylistType.Local,
-                    Cover = FolderCover,
+                    Cover = DefaultCover,
                     Count = 0
                 });
 
@@ -119,7 +123,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         }
         catch
         {
-            //_logger.LogError("加载失败");
+            _logger.LogError("加载失败");
         }
     }
 
@@ -185,7 +189,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 AlbumId = s.AlbumId,
                 FileId = s.FileId, // 保存 FileId 用于删除
                 Singers = s.Singers,
-                Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultCover : s.Cover,
+                Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover: s.Cover,
                 DurationSeconds = s.DurationMs / 1000.0
             }).ToList();
 
@@ -228,14 +232,14 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                             Singer = singer,
                             DurationSeconds = tfile.Properties.Duration.TotalSeconds,
                             LocalFilePath = file,
-                            Cover = DefaultCover
+                            Cover = DefaultSongCover
                         };
 
                         tempList.Add(songItem);
                     }
                     catch
                     {
-                        //_logger.LogError("加载本地文件失败");
+                        _logger.LogError("加载本地文件失败");
                     }
 
                 Dispatcher.UIThread.Post(() =>
@@ -246,7 +250,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             }
             catch
             {
-                //_logger.LogError("权限错误");
+                _logger.LogError("权限错误");
             }
         });
     }

@@ -33,7 +33,8 @@ public partial class SearchViewModel(
     ISukiToastManager toastManager,
     ILogger<SearchViewModel> logger) : PageViewModelBase
 {
-    private const string DefaultCover = "avares://KugouAvaloniaPlayer/Assets/Default.png";
+    private const string DefaultSongCover = "avares://KugouAvaloniaPlayer/Assets/default_song.png";
+    private const string DefaultCardCover = "avares://KugouAvaloniaPlayer/Assets/default_listcard.png";
     private string _currentDetailId = "";
 
     private int _currentDetailPage = 1;
@@ -162,7 +163,7 @@ public partial class SearchViewModel(
 
         DetailTitle = item.Name;
         DetailSubTitle = $"{item.SongCount} 首歌曲 - {item.CreatorName}";
-        DetailCover = item.Cover ?? DefaultCover;
+        DetailCover = item.Cover ?? DefaultCardCover;
 
         IsShowingDetail = true;
         DetailSongs.Clear();
@@ -183,7 +184,7 @@ public partial class SearchViewModel(
 
         DetailTitle = item.Name;
         DetailSubTitle = $"{item.SingerName}";
-        DetailCover = item.Cover ?? DefaultCover;
+        DetailCover = item.Cover ?? DefaultCardCover;
 
         IsShowingDetail = true;
         DetailSongs.Clear();
@@ -220,7 +221,7 @@ public partial class SearchViewModel(
                         Hash = s.Hash,
                         AlbumId = s.AlbumId,
                         Singers = s.Singers,
-                        Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultCover : s.Cover,
+                        Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,
                         DurationSeconds = s.DurationMs / 1000.0
                     };
                 }).ToList();
@@ -249,7 +250,7 @@ public partial class SearchViewModel(
                             Hash = s.Hash,
                             AlbumId = s.AlbumId,
                             Singers = s.Singers,
-                            Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultCover : s.Cover,
+                            Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,
                             DurationSeconds = s.DurationMs / 1000.0
                         };
                     }).ToList();
@@ -291,7 +292,7 @@ public partial class SearchViewModel(
             Singer = item.Singer,
             Hash = item.Hash,
             Singers = item.Singers,
-            Cover = string.IsNullOrWhiteSpace(item.Cover) ? DefaultCover : item.Cover,
+            Cover = string.IsNullOrWhiteSpace(item.Cover) ? DefaultSongCover : item.Cover,
             DurationSeconds = item.Duration
         };
     }

@@ -29,7 +29,7 @@ public partial class SingerViewModel : PageViewModelBase
         _musicClient = musicClient;
         _authorId = authorId;
         _singerName = singerName;
-        _singerAvatar = "avares://KugouAvaloniaPlayer/Assets/Default.png";
+        _singerAvatar = "avares://KugouAvaloniaPlayer/Assets/default_singer.png";
         _ = LoadSongsAsync();
     }
 

@@ -245,7 +245,6 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
             if (url != null && _player.Load(url))
             {
-                // 播放成功，重置熔断计数器
                 _consecutiveFailures = 0;
 
                 _player.SetVolume(MusicVolume);
@@ -480,65 +479,85 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     }
     
     private async Task LoadLocalLyricsAsync(string audioFilePath)
+{
+    try
     {
-        CurrentLyricTrans = "";
-        _currentLyrics.Clear();
+        var directory = Path.GetDirectoryName(audioFilePath);
+        var audioFileName = Path.GetFileName(audioFilePath);
+        var audioFileNameWithoutExt = Path.GetFileNameWithoutExtension(audioFilePath);
 
-        LyricLines.Clear();
-        CurrentLyricLine = null;
-
-        try
+        if (directory == null)
         {
-            var directory = Path.GetDirectoryName(audioFilePath);
-            var audioFileName = Path.GetFileName(audioFilePath); 
-
-            if (directory == null || audioFileName == null)
-            {
-                CurrentLyricText = "未找到歌词";
-                return;
-            }
-
-            var extensions = new[] { ".krc", ".lrc", ".vtt" };
-            string? lyricFilePath = null;
-
-            foreach (var ext in extensions)
-            {
-                var path = Path.Combine(directory, audioFileName + ext);
-                if (File.Exists(path))
-                {
-                    lyricFilePath = path;
-                    break;
-                }
-            }
-
-            if (lyricFilePath == null)
-            {
-                CurrentLyricText = "未找到歌词";
-                return;
-            }
-
-            var exT = Path.GetExtension(lyricFilePath).ToLowerInvariant();
-            var lines = await ParseLyricFileAsync(lyricFilePath, exT);
-
-            if (lines.Count > 0)
-            {
-                foreach (var line in lines)
-                {
-                    LyricLines.Add(line);
-                }
-                CurrentLyricText = "";
-            }
-            else
-            {
-                CurrentLyricText = "暂无歌词";
-            }
+            CurrentLyricText = "未找到歌词";
+            return;
         }
-        catch (Exception ex)
+
+        var lyricFilePath = FindLyricFile(directory, audioFileName, audioFileNameWithoutExt);
+
+        if (lyricFilePath == null)
         {
-            _logger.LogError($"加载本地歌词失败: {ex.Message}");
-            CurrentLyricText = "歌词解析失败";
+            CurrentLyricText = "未找到歌词";
+            return;
+        }
+
+        var lines = await ParseLyricFileAsync(lyricFilePath, Path.GetExtension(lyricFilePath).ToLowerInvariant());
+
+        if (lines.Count > 0)
+        {
+            LyricLines.Clear();
+            foreach (var line in lines)
+            {
+                LyricLines.Add(line);
+            }
+            CurrentLyricText = "";
+        }
+        else
+        {
+            CurrentLyricText = "暂无歌词";
         }
     }
+    catch (Exception ex)
+    {
+        _logger.LogError($"加载本地歌词失败: {ex.Message}");
+        CurrentLyricText = "歌词解析失败";
+    }
+}
+
+private string? FindLyricFile(string directory, string audioFileName, string audioFileNameWithoutExt)
+{
+    var extensions = new[] { ".krc", ".lrc", ".vtt" };
+    
+    var searchPatterns = new List<Func<string?>>
+    {
+        () => extensions.Select(ext => Path.Combine(directory, audioFileName + ext))
+                       .FirstOrDefault(File.Exists),
+        
+        () => extensions.Select(ext => Path.Combine(directory, audioFileNameWithoutExt + ext))
+                       .FirstOrDefault(File.Exists),
+        
+        () => {
+            var allLyricFiles = Directory.GetFiles(directory, "*.*")
+                .Where(f => extensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .ToList();
+
+            var fileNameWithoutExtLower = audioFileNameWithoutExt.ToLowerInvariant();
+            return allLyricFiles.FirstOrDefault(f => 
+                Path.GetFileNameWithoutExtension(f).ToLowerInvariant().Contains(fileNameWithoutExtLower));
+        }
+    };
+
+    foreach (var strategy in searchPatterns)
+    {
+        var result = strategy();
+        if (result != null)
+        {
+            _logger.LogInformation($"通过策略 {searchPatterns.IndexOf(strategy) + 1} 找到歌词: {result}");
+            return result;
+        }
+    }
+
+    return null;
+}
 
     private async Task<List<LyricLineViewModel>> ParseLyricFileAsync(string filePath, string ext)
     {
