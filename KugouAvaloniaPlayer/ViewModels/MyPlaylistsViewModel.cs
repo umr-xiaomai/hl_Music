@@ -217,35 +217,40 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             {
                 var files = Directory.EnumerateFiles(path, "*.*", SearchOption.AllDirectories)
                     .Where(f => supportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
-                var tempList = new List<SongItem>();
-                foreach (var file in files)
-                    try
+                var tempList = files
+                    .AsParallel()
+                    .Select(file =>
                     {
-                        using var tfile = File.Create(file);
-                        var title = tfile.Tag.Title ?? Path.GetFileNameWithoutExtension(file);
-                        var artists = tfile.Tag.Performers;
-                        var singer = artists.Length > 0 ? string.Join(", ", artists) : "未知艺术家";
-
-                        var songItem = new SongItem
+                        try
                         {
-                            Name = title,
-                            Singer = singer,
-                            DurationSeconds = tfile.Properties.Duration.TotalSeconds,
-                            LocalFilePath = file,
-                            Cover = DefaultSongCover
-                        };
+                            using var tfile = File.Create(file);
 
-                        tempList.Add(songItem);
-                    }
-                    catch
-                    {
-                        _logger.LogError("加载本地文件失败");
-                    }
+                            var title = tfile.Tag.Title ?? Path.GetFileNameWithoutExtension(file);
+                            var artists = tfile.Tag.Performers;
+                            var singer = artists.Length > 0 ? string.Join(", ", artists) : "未知艺术家";
+
+                            return new SongItem
+                            {
+                                Name = title,
+                                Singer = singer,
+                                DurationSeconds = tfile.Properties.Duration.TotalSeconds,
+                                LocalFilePath = file,
+                                Cover = DefaultSongCover
+                            };
+                        }
+                        catch
+                        {
+                            _logger.LogError("加载本地文件失败");
+                            return null;
+                        }
+                    })
+                    .Where(x => x != null)
+                    .ToList();
 
                 Dispatcher.UIThread.Post(() =>
                 {
                     SelectedPlaylistSongs.Clear();
-                    SelectedPlaylistSongs.AddRange(tempList);
+                    SelectedPlaylistSongs.AddRange(tempList!);
                 });
             }
             catch

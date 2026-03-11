@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -58,6 +57,7 @@ public static class SettingsManager
         catch (Exception ex)
         {
             Settings = new AppSettings();
+            //Console.WriteLine(ex.Message);
         }
     }
 
