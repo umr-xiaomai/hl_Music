@@ -9,10 +9,90 @@
              x:Class="KugouAvaloniaPlayer.Views.DailyRecommendView"
              x:DataType="vm:DailyRecommendViewModel">
 
-    <suki:GlassCard Margin="15" Padding="20">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="ACGGradStart">#89D4F9</Color>
+                    <Color x:Key="ACGGradEnd">#3D8BFF</Color>
+                    <Color x:Key="ACGTextShadow">#40003366</Color>
+                </ResourceDictionary>
+                
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="ACGGradStart">#2A4365</Color>
+                    <Color x:Key="ACGGradEnd">#111D2C</Color>
+                    <Color x:Key="ACGTextShadow">#80000000</Color>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <suki:GlassCard Margin="15" Padding="0" CornerRadius="16">
         <Grid RowDefinitions="Auto, *">
-            <TextBlock Text="每日推荐歌曲" FontSize="26" FontWeight="Bold" Margin="0,0,0,15" />
-            <ScrollViewer Grid.Row="1" Padding="0,0,0,-50">
+
+            <Border Grid.Row="0"
+                    Height="220"
+                    CornerRadius="16,16,0,0"
+                    ClipToBounds="True">
+                
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource ACGGradStart}" Offset="0" />
+                        <GradientStop Color="{DynamicResource ACGGradEnd}" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Panel>
+                    <Path Data="M 250,0 L 450,0 L 150,220 L -50,220 Z"
+                          Fill="#15FFFFFF" HorizontalAlignment="Right" />
+                    <Path Data="M 450,0 L 650,0 L 350,220 L 150,220 Z"
+                          Fill="#0AFFFFFF" HorizontalAlignment="Right" />
+
+                    <Ellipse Width="100" Height="100"
+                             Stroke="#25FFFFFF" StrokeThickness="6"
+                             HorizontalAlignment="Left" VerticalAlignment="Top"
+                             Margin="40,-30,0,0" />
+                    <Ellipse Width="24" Height="24"
+                             Fill="#30FFFFFF"
+                             HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                             Margin="140,0,0,40" />
+                    <Ellipse Width="160" Height="160"
+                             Stroke="#15FFFFFF" StrokeThickness="2"
+                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                             Margin="0,0,80,-60" />
+                    
+                    <StackPanel VerticalAlignment="Center" Spacing="2" Margin="35,0,0,0">
+                        <Border Background="#30FFFFFF" 
+                                CornerRadius="4" 
+                                HorizontalAlignment="Left" 
+                                Padding="8,3" 
+                                Margin="0,0,0,6">
+                            <TextBlock Text="DAILY RECOMMENDATION" 
+                                       FontSize="10" 
+                                       FontWeight="Heavy" 
+                                       Foreground="White" 
+                                       LetterSpacing="1" />
+                        </Border>
+
+                        <TextBlock Text="每日推荐"
+                                   FontSize="44"
+                                   FontWeight="Black"
+                                   Foreground="White"
+                                   LetterSpacing="2">
+                            
+                            <TextBlock.Effect>
+                                <DropShadowEffect BlurRadius="8" 
+                                                  Opacity="0.8" 
+                                                  OffsetX="0" OffsetY="3" 
+                                                  Color="{DynamicResource ACGTextShadow}" />
+                            </TextBlock.Effect>
+                        </TextBlock>
+                        
+                    </StackPanel>
+                </Panel>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" Padding="0,0,0,-80">
                 <ItemsControl ItemsSource="{Binding Songs}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>

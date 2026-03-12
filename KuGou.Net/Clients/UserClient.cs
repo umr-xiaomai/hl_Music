@@ -15,7 +15,7 @@ public class UserClient(RawUserApi rawApi, KgSessionManager sessionManager)
         return (s.UserId, s.Token);
     }
 
-    private bool IsLoggedIn()
+    public bool IsLoggedIn()
     {
         var s = sessionManager.Session;
         return !string.IsNullOrEmpty(s.Token) && s.UserId != "0";
@@ -58,7 +58,7 @@ public class UserClient(RawUserApi rawApi, KgSessionManager sessionManager)
     /// <summary>
     ///     获取用户歌单
     /// </summary>
-    public async Task<List<UserPlaylistItem>> GetPlaylistsAsync(int page = 1, int pageSize = 30)
+    public async Task<UserPlaylistResponse?> GetPlaylistsAsync(int page = 1, int pageSize = 30)
     {
         if (!IsLoggedIn()) return null;
         var (uid, token) = GetAuth();
@@ -66,7 +66,7 @@ public class UserClient(RawUserApi rawApi, KgSessionManager sessionManager)
         var data = KgApiResponseParser.Parse<UserPlaylistResponse>(jsonElement,
             AppJsonContext.Default.UserPlaylistResponse);
 
-        return data?.Playlists ?? new List<UserPlaylistItem>();
+        return data;
     }
 
     /// <summary>

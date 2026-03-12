@@ -53,7 +53,7 @@ internal class Program
         // 1. 初始化 SDK (替代 DI 容器)
         var (transport, sessionMgr) = KgHttpClientFactory.CreateWithSession();
         _sessionManager = sessionMgr;
-
+        
         // 组装各层 (Raw -> Client)
         var rawLogin = new RawLoginApi(transport, _sessionManager, NullLogger<RawLoginApi>.Instance);
         var rawSearch = new RawSearchApi(transport);
@@ -69,10 +69,8 @@ internal class Program
         _userClient = new UserClient(rawUser, _sessionManager);
         _lyricClient = new LyricClient(rawLyric);
         _discoveryClient = new DiscoveryClient(rawDiscovery, _sessionManager);
-
-
+        SimpleAudioPlayer.Initialize();
         _player = new SimpleAudioPlayer();
-
         await LoadLocalSessionOrLogin();
 
 
@@ -205,7 +203,7 @@ internal class Program
         // 1. 获取强类型列表
         var playlists = await _userClient.GetPlaylistsAsync();
 
-        if (playlists == null || playlists.Count == 0)
+        if (playlists == null || playlists.Playlists.Count == 0)
         {
             Console.WriteLine("未找到个人歌单 (或未登录)。");
             return;
@@ -215,7 +213,7 @@ internal class Program
         Console.WriteLine("\n--- 我的歌单列表 ---");
 
         var index = 1;
-        foreach (var item in playlists)
+        foreach (var item in playlists.Playlists)
             // 2. 映射到 ViewModel
             // 注意：global_collection_id 是最关键的，用于后续 GetPlaylist
             if (!string.IsNullOrEmpty(item.GlobalId))

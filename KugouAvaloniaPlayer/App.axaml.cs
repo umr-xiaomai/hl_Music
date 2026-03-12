@@ -9,6 +9,7 @@ using KugouAvaloniaPlayer.ViewModels;
 using KugouAvaloniaPlayer.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SimpleAudio;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 
@@ -24,6 +25,7 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         BindingPlugins.DataValidators.RemoveAt(0);
+        SimpleAudioPlayer.Initialize();
         var collection = new ServiceCollection();
         collection.AddLogging(builder =>
         {
@@ -73,6 +75,7 @@ public partial class App : Application
             {
                 ShutdownTrayIcon();
                 playerVm.Dispose();
+                SimpleAudioPlayer.Free();
             };
         }
 

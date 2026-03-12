@@ -14,40 +14,29 @@ using SukiUI.Toasts;
 
 namespace KugouAvaloniaPlayer.Services;
 
-public class FavoritePlaylistService
+public class FavoritePlaylistService(
+    UserClient userClient,
+    PlaylistClient playlistClient,
+    ISukiToastManager toastManager,
+    ISukiDialogManager dialogManager,
+    ILogger<FavoritePlaylistService> logger)
 {
     private const string LikeListIdForAction = "2";
-    private readonly ISukiDialogManager _dialogManager;
     private readonly Dictionary<string, int> _hashToFileId = new();
 
     private readonly HashSet<string> _likedHashes = new();
-    private readonly ILogger<FavoritePlaylistService> _logger;
-    private readonly PlaylistClient _playlistClient;
-    private readonly ISukiToastManager _toastManager;
-
-    private readonly UserClient _userClient;
-
-    public FavoritePlaylistService(UserClient userClient, PlaylistClient playlistClient,
-        ISukiToastManager toastManager, ISukiDialogManager dialogManager, ILogger<FavoritePlaylistService> logger)
-    {
-        _userClient = userClient;
-        _playlistClient = playlistClient;
-        _toastManager = toastManager;
-        _dialogManager = dialogManager;
-        _logger = logger;
-    }
 
     public async Task LoadLikeListAsync()
     {
-        try
+        var playlists = await userClient.GetPlaylistsAsync();
+        if (playlists is not null && playlists.Status == 1)
         {
-            var playlists = await _userClient.GetPlaylistsAsync();
-            if (playlists.Count < 1) return;
+            if (playlists.Playlists.Count < 1) return;
 
-            var likePlaylist = playlists[1];
+            var likePlaylist = playlists.Playlists[1];
             if (string.IsNullOrEmpty(likePlaylist.ListCreateId)) return;
 
-            var songs = await _playlistClient.GetSongsAsync(likePlaylist.ListCreateId, pageSize: 1000);
+            var songs = await playlistClient.GetSongsAsync(likePlaylist.ListCreateId, pageSize: 1000);
 
             lock (_likedHashes)
             {
@@ -61,9 +50,9 @@ public class FavoritePlaylistService
                     }
             }
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError($"加载收藏列表失败: {ex.Message}");
+            logger.LogError($"加载收藏列表失败: err_code{playlists?.ErrorCode}");
         }
     }
 
@@ -85,7 +74,7 @@ public class FavoritePlaylistService
             {
                 if (_hashToFileId.TryGetValue(hash, out var fileId))
                 {
-                    var result = await _playlistClient.RemoveSongsAsync(LikeListIdForAction, new List<long> { fileId });
+                    var result = await playlistClient.RemoveSongsAsync(LikeListIdForAction, new List<long> { fileId });
                     if (result?.Status == 1)
                     {
                         lock (_likedHashes)
@@ -108,7 +97,7 @@ public class FavoritePlaylistService
                 {
                     (song.Name, song.Hash, song.AlbumId, "0")
                 };
-                var result = await _playlistClient.AddSongsAsync(LikeListIdForAction, songList);
+                var result = await playlistClient.AddSongsAsync(LikeListIdForAction, songList);
                 if (result?.Status == 1)
                 {
                     lock (_likedHashes)
@@ -127,7 +116,7 @@ public class FavoritePlaylistService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"操作收藏失败: {ex.Message}");
+            logger.LogError($"操作收藏失败: {ex.Message}");
         }
 
         return currentIsLiked; // 失败则保持原状态
@@ -135,14 +124,14 @@ public class FavoritePlaylistService
 
     public async Task ShowAddToPlaylistDialogAsync(SongItem song)
     {
-        try
+        var playlists = await userClient.GetPlaylistsAsync();
+        if (playlists is not null && playlists.Status == 1)
         {
-            var playlists = await _userClient.GetPlaylistsAsync();
-            var onlinePlaylists = playlists.Where(p => !string.IsNullOrEmpty(p.ListCreateId)).ToList();
+            var onlinePlaylists = playlists.Playlists.Where(p => !string.IsNullOrEmpty(p.ListCreateId)).ToList();
 
             if (onlinePlaylists.Count == 0)
             {
-                _toastManager.CreateToast().OfType(NotificationType.Warning).WithTitle("提示").WithContent("请先创建歌单")
+                toastManager.CreateToast().OfType(NotificationType.Warning).WithTitle("提示").WithContent("请先创建歌单")
                     .Queue();
                 return;
             }
@@ -153,7 +142,7 @@ public class FavoritePlaylistService
                 ItemTemplate = new FuncDataTemplate<UserPlaylistItem>((item, _) => new TextBlock { Text = item.Name })
             };
 
-            await _dialogManager.CreateDialog()
+            await dialogManager.CreateDialog()
                 .WithTitle("添加到歌单")
                 .WithContent(listBox)
                 .WithActionButton("取消", _ => { }, true)
@@ -165,9 +154,9 @@ public class FavoritePlaylistService
                 }, true)
                 .TryShowAsync();
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "获取歌单列表失败");
+            logger.LogError($"获取歌单列表失败 err_code{playlists?.ErrorCode}");
         }
     }
 
@@ -178,7 +167,7 @@ public class FavoritePlaylistService
             var songList = new List<(string Name, string Hash, string AlbumId, string MixSongId)>
                 { (song.Name, song.Hash, song.AlbumId, "0") };
 
-            var result = await _playlistClient.AddSongsAsync(playlistId, songList);
+            var result = await playlistClient.AddSongsAsync(playlistId, songList);
 
             if (result?.Status == 1)
             {
@@ -196,17 +185,17 @@ public class FavoritePlaylistService
                     });
                 }
 
-                _toastManager.CreateToast().OfType(NotificationType.Success).WithTitle("添加成功")
+                toastManager.CreateToast().OfType(NotificationType.Success).WithTitle("添加成功")
                     .WithContent($"已添加到「{playlistName}」").Queue();
             }
             else
             {
-                _toastManager.CreateToast().OfType(NotificationType.Error).WithTitle("添加失败").Queue();
+                toastManager.CreateToast().OfType(NotificationType.Error).WithTitle("添加失败").Queue();
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "添加歌曲到歌单失败");
+            logger.LogError(ex, "添加歌曲到歌单失败");
         }
     }
 }

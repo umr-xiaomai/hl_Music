@@ -15,13 +15,14 @@ namespace KugouAvaloniaPlayer.Services;
 
 public class LyricsService(LyricClient lyricClient, ILogger<LyricsService> logger)
 {
+    private LyricLineViewModel? _currentActiveLine;
     public AvaloniaList<LyricLineViewModel> LyricLines { get; } = new();
 
     public void Clear()
     {
         LyricLines.Clear();
     }
-    
+
     public LyricLineViewModel? SyncLyrics(double currentMs)
     {
         if (LyricLines.Count == 0) return null;
@@ -46,8 +47,13 @@ public class LyricsService(LyricClient lyricClient, ILogger<LyricsService> logge
             }
 
         var activeLine = LyricLines[resultIndex];
-        
-        foreach (var line in LyricLines) line.IsActive = line == activeLine;
+
+        if (_currentActiveLine != activeLine)
+        {
+            if (_currentActiveLine != null) _currentActiveLine.IsActive = false;
+            activeLine.IsActive = true;
+            _currentActiveLine = activeLine;
+        }
 
         return activeLine;
     }

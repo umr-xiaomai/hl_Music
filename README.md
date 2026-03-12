@@ -22,7 +22,7 @@
 ![歌词界面](docs/images/lyrics.png)
 ![主界面](docs/images/main.png)
 ![搜索页面](docs/images/search.png)
-![歌手页面](docs/images/singer.png)
+![排行榜页面](docs/images/rank.png)
 ---
 
 ## 🚀 下载与安装
@@ -34,7 +34,7 @@
 - **Linux**：`KugouAvaloniaPlayer-linux.AppImage`
 - **Mac**：`KugouAvaloniaPlayer-mac.pkg`
 
-安装后**每次启动程序会自动检查更新**，发现新版本会提示一键更新。
+安装后**每次启动程序会自动检查更新**，发现新版本会提示一键更新，可设置是否自动更新。
 
 ---
 
@@ -54,5 +54,5 @@ dotnet run --project KugouAvaloniaPlayer/KugouAvaloniaPlayer.csproj
 
 # 4. 调试酷狗API
 dotnet run --project KgWebApi.Net/KgWebApi.Net.csproj
-访问http://localhost:5058/scalar/v1
+# 访问http://localhost:5058/scalar/v1
 ```

@@ -100,7 +100,7 @@ public partial class MainWindowViewModel : ObservableObject
         Pages.Add(myPlaylistsViewModel);
         ActivePage = dailyRecommendViewModel;
 
-        WeakReferenceMessenger.Default.Register<PlaySongMessage>(this, async void (r, m) =>
+        WeakReferenceMessenger.Default.Register<PlaySongMessage>(this, async void (_, m) =>
         {
             IList<SongItem>? currentSongList = null;
 
@@ -118,14 +118,14 @@ public partial class MainWindowViewModel : ObservableObject
             await Player.PlaySongAsync(m.Song, currentSongList);
         });
 
-        WeakReferenceMessenger.Default.Register<NavigateToSingerMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<NavigateToSingerMessage>(this, (_, m) =>
         {
             _previousPage = ActivePage;
             var singerVm = new SingerViewModel(musicClient1, m.Singer.Id.ToString(), m.Singer.Name);
             ActivePage = singerVm;
         });
 
-        WeakReferenceMessenger.Default.Register<AuthStateChangedMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<AuthStateChangedMessage>(this, (_, m) =>
         {
             if (m.IsLoggedIn)
                 OnLoginSuccess();
@@ -133,7 +133,7 @@ public partial class MainWindowViewModel : ObservableObject
                 OnLogoutRequested();
         });
 
-        WeakReferenceMessenger.Default.Register<NavigatePageMessage>(this, (r, m) =>
+        WeakReferenceMessenger.Default.Register<NavigatePageMessage>(this, (_, m) =>
         {
             _previousPage = ActivePage;
             ActivePage = m.TargetPage;
@@ -234,12 +234,22 @@ public partial class MainWindowViewModel : ObservableObject
             var todayRecord = history.Items.FirstOrDefault(x => x.Day == todayStr);
             if (todayRecord == null)
             {
-                await _userClient.ReceiveOneDayVipAsync();
+                var data = await _userClient.ReceiveOneDayVipAsync();
+                if (data is not null && data.Status == 1)
+                    _logger.LogInformation("vip领取成功");
+                else
+                    _logger.LogError($"vip领取失败{data?.ErrorCode}");
                 await Task.Delay(1000);
                 await _userClient.UpgradeVipRewardAsync();
             }
-
-            if (todayRecord is { VipType: "tvip" }) await _userClient.UpgradeVipRewardAsync();
+            else if (todayRecord is { VipType: "tvip" })
+            {
+                await _userClient.UpgradeVipRewardAsync();
+            }
+            else
+            {
+                _logger.LogInformation("今日已领取vip");
+            }
         }
     }
 
@@ -383,11 +393,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     private async Task GetMyPlaylists(MyPlaylistsViewModel vm)
     {
-        try
+        var playlists = await _userClient.GetPlaylistsAsync();
+        if (playlists is not null && playlists.Status == 1)
         {
-            var playlists = await _userClient.GetPlaylistsAsync();
             vm.Playlists.Clear();
-            var playlistItems = playlists
+            var playlistItems = playlists.Playlists
                 .Where(item => !string.IsNullOrEmpty(item.ListCreateId))
                 .Select(item => new PlaylistItem
                 {
@@ -399,16 +409,15 @@ public partial class MainWindowViewModel : ObservableObject
                         : item.Pic
                 })
                 .ToList();
-
             if (playlistItems.Any())
                 vm.Playlists.AddRange(playlistItems);
         }
-        catch (Exception ex)
+        else
         {
             ToastManager.CreateToast()
                 .OfType(NotificationType.Warning)
                 .WithTitle("获取歌单失败")
-                .WithContent($"{ex.Message}")
+                .WithContent($"{playlists?.ErrorCode}")
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Dismiss().ByClicking()
                 .Queue();

@@ -57,7 +57,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         _ = LoadAllPlaylists();
 
         WeakReferenceMessenger.Default.Register<RemoveFromPlaylistMessage>(this,
-            async void (r, m) => { await RemoveSongFromPlaylist(m.Song); });
+            async void (_, m) => { await RemoveSongFromPlaylist(m.Song); });
 
         WeakReferenceMessenger.Default.Register<AuthStateChangedMessage>(this, (r, m) => { _ = LoadAllPlaylists(); });
     }
@@ -107,17 +107,21 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
 
         if (localItems.Count > 0)
             Items.AddRange(localItems);
-        try
+
+        if (!_userClient.IsLoggedIn())
+            return;
+
+        var onlinePlaylists = await _userClient.GetPlaylistsAsync();
+        if (onlinePlaylists is not null && onlinePlaylists.Status == 1)
         {
-            var onlinePlaylists = await _userClient.GetPlaylistsAsync();
             var onlineItems = new List<PlaylistItem>();
-            foreach (var item in onlinePlaylists)
+            foreach (var item in onlinePlaylists.Playlists)
                 if (!string.IsNullOrEmpty(item.ListCreateId))
                     onlineItems.Add(new PlaylistItem
                     {
                         Name = item.Name,
                         Id = item.ListCreateId,
-                        ListId = item.ListId, // 保存数字 ID 用于删除
+                        ListId = item.ListId,
                         Count = item.Count,
                         Type = PlaylistType.Online,
                         Cover = string.IsNullOrWhiteSpace(item.Pic)
@@ -128,9 +132,9 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             if (onlineItems.Count > 0)
                 Items.AddRange(onlineItems);
         }
-        catch
+        else
         {
-            _logger.LogError("加载失败");
+            _logger.LogError($"加载失败,err_code{onlinePlaylists?.ErrorCode}");
         }
     }
 
@@ -350,7 +354,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             .WithTitle("新建歌单")
             .WithContent(textBox)
             .WithActionButton("取消", _ => { }, true, "Flat")
-            .WithActionButton("创建", async _ =>
+            .WithActionButton("创建", async void (_) =>
             {
                 var name = textBox.Text;
                 if (!string.IsNullOrWhiteSpace(name)) await CreateOnlinePlaylistCommand.ExecuteAsync(name);

@@ -9,29 +9,26 @@ public class SimpleAudioPlayer : IDisposable
 
     public SimpleAudioPlayer()
     {
-        InitializeBass();
     }
 
     public event Action PlaybackEnded;
 
-    private void InitializeBass()
+    public static void Initialize()
     {
         if (Bass.CurrentDevice == -1)
             if (!Bass.Init(-1, 44100, DeviceInitFlags.Default, IntPtr.Zero))
                 Console.WriteLine($"[BASS Init Error] {Bass.LastError}");
         
-        try
+        Bass.PluginLoad(GetBassPluginName("bassflac"));
+        if (!OperatingSystem.IsMacOS())
         {
-            Bass.PluginLoad(GetBassPluginName("bassflac"));
-            if (!OperatingSystem.IsMacOS())
-            {
-                Bass.PluginLoad(GetBassPluginName("bass_aac"));
-            }
+            Bass.PluginLoad(GetBassPluginName("bass_aac"));
         }
-        catch
-        {
-            /* 忽略插件加载错误，防止崩溃 */
-        }
+        
+        Bass.Configure(Configuration.NetBufferLength, 5000); 
+        Bass.Configure(Configuration.NetPreBuffer, 20); 
+        Bass.Configure(Configuration.NetReadTimeOut, 10000);
+        
     }
 
     #region 状态属性
@@ -42,6 +39,8 @@ public class SimpleAudioPlayer : IDisposable
     public bool IsPaused => _stream != 0 && Bass.ChannelIsActive(_stream) == PlaybackState.Paused;
 
     public bool IsStopped => _stream == 0 || Bass.ChannelIsActive(_stream) == PlaybackState.Stopped;
+    
+    public bool IsStalled => _stream != 0 && Bass.ChannelIsActive(_stream) == PlaybackState.Stalled;
 
     #endregion
 
@@ -105,6 +104,11 @@ public class SimpleAudioPlayer : IDisposable
             Bass.StreamFree(_stream);
             _stream = 0;
         }
+    }
+    
+    public static void Free()
+    {
+        Bass.Free();
     }
 
     #endregion
@@ -183,7 +187,6 @@ public class SimpleAudioPlayer : IDisposable
 
     public void Dispose()
     {
-        Bass.Free();
         Stop();
     }
 

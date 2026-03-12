@@ -39,6 +39,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private string _currentLyricTrans = "";
     [ObservableProperty] private SongItem? _currentPlayingSong;
     [ObservableProperty] private double _currentPositionSeconds;
+    [ObservableProperty] private bool _isBuffering;
     [ObservableProperty] private bool _isDraggingProgress;
     [ObservableProperty] private bool _isLiked;
     [ObservableProperty] private bool _isPlayingAudio;
@@ -60,13 +61,13 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _player = new SimpleAudioPlayer();
         _player.PlaybackEnded += OnPlaybackEnded;
 
-        _playbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _playbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         _playbackTimer.Tick += OnPlaybackTimerTick;
 
         WeakReferenceMessenger.Default.Register<AddToNextMessage>(this,
-            (r, m) => { _queueManager.AddToNext(m.Song, CurrentPlayingSong); });
+            (_, m) => { _queueManager.AddToNext(m.Song, CurrentPlayingSong); });
         WeakReferenceMessenger.Default.Register<ShowPlaylistDialogMessage>(this,
-            async (r, m) => { await _favoriteService.ShowAddToPlaylistDialogAsync(m.Song); });
+            async void (_, m) => { await _favoriteService.ShowAddToPlaylistDialogAsync(m.Song); });
     }
 
     public AvaloniaList<SongItem> PlaybackQueue => _queueManager.PlaybackQueue;
@@ -162,8 +163,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             Dispatcher.UIThread.Post(() => PlayNextCommand.Execute(null));
         });
     }
-
-    // ================= 播放控制命令 =================
+    
     [RelayCommand]
     private async Task PlaySong(SongItem? song)
     {
@@ -226,8 +226,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         if (CurrentPlayingSong == null) return;
         IsLiked = await _favoriteService.ToggleLikeAsync(CurrentPlayingSong, IsLiked);
     }
-
-    // ================= 内部状态联动 =================
+    
     private void StopAndReset()
     {
         _playbackTimer.Stop();
@@ -247,10 +246,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private void OnPlaybackTimerTick(object? sender, EventArgs e)
     {
         if (_player.IsStopped || IsDraggingProgress) return;
+
+        IsBuffering = _player.IsStalled;
+
         var pos = _player.GetPosition();
         CurrentPositionSeconds = pos.TotalSeconds;
 
-        // 让歌词服务处理高亮，返回当前行
         var activeLine = _lyricsService.SyncLyrics(pos.TotalMilliseconds);
         if (activeLine != CurrentLyricLine)
         {
