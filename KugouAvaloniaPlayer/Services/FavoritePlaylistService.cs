@@ -132,6 +132,8 @@ public class FavoritePlaylistService(
             if (onlinePlaylists.Count == 0)
             {
                 toastManager.CreateToast().OfType(NotificationType.Warning).WithTitle("提示").WithContent("请先创建歌单")
+                    .Dismiss().ByClicking()
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
                     .Queue();
                 return;
             }
@@ -142,17 +144,17 @@ public class FavoritePlaylistService(
                 ItemTemplate = new FuncDataTemplate<UserPlaylistItem>((item, _) => new TextBlock { Text = item.Name })
             };
 
-            await dialogManager.CreateDialog()
+            dialogManager.CreateDialog()
                 .WithTitle("添加到歌单")
                 .WithContent(listBox)
-                .WithActionButton("取消", _ => { }, true)
+                .WithActionButton("取消", _ => { }, true,"Standard")
                 .WithActionButton("添加", async void (_) =>
                 {
                     if (listBox.SelectedItem is UserPlaylistItem selectedPlaylist)
                         await AddSongToPlaylistInnerAsync(song, selectedPlaylist.ListId.ToString(),
                             selectedPlaylist.Name);
-                }, true)
-                .TryShowAsync();
+                }, true,"Standard")
+                .TryShow();
         }
         else
         {
@@ -185,12 +187,19 @@ public class FavoritePlaylistService(
                     });
                 }
 
-                toastManager.CreateToast().OfType(NotificationType.Success).WithTitle("添加成功")
-                    .WithContent($"已添加到「{playlistName}」").Queue();
+                toastManager.CreateToast()
+                    .OfType(NotificationType.Success).WithTitle("添加成功")
+                    .WithContent($"已添加到「{playlistName}」")
+                    .Dismiss().ByClicking()
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Queue();
             }
             else
             {
-                toastManager.CreateToast().OfType(NotificationType.Error).WithTitle("添加失败").Queue();
+                toastManager.CreateToast().OfType(NotificationType.Error).WithTitle("添加失败")
+                    .Dismiss().ByClicking()
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Queue();
             }
         }
         catch (Exception ex)

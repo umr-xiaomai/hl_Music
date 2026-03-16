@@ -60,6 +60,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         _player = new SimpleAudioPlayer();
         _player.PlaybackEnded += OnPlaybackEnded;
+        UpdateAudioEffects(SettingsManager.Settings.EQPreset, SettingsManager.Settings.EnableSurround);
 
         _playbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
         _playbackTimer.Tick += OnPlaybackTimerTick;
@@ -277,5 +278,27 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     public async Task LoadLikeListAsync()
     {
         await _favoriteService.LoadLikeListAsync();
+    }
+    
+    public void UpdateAudioEffects(string preset, bool surround)
+    {
+        _player.SetEQ(GetEqPreset(preset));
+        _player.SetSurround(surround);
+    }
+    
+    public static float[] GetEqPreset(string preset)
+    {
+        return preset switch
+        {
+            "Pop (流行)"         => [-1.5f, 3.0f, 5.0f, 6.0f, 4.0f, 0.0f, -2.0f, -2.0f, -1.0f, -1.0f],
+            "Rock (摇滚)"        => [6.0f, 4.0f, -3.0f, -6.0f, -2.0f, 3.0f, 6.0f, 8.0f, 8.0f, 8.0f],
+            "Bass Boost (重低音)" => [7.0f, 5.0f, 3.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f],
+            "Classical (古典)"   => [0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -5.0f, -5.0f, -5.0f, -7.0f],
+            "Vocal (人声增强)"    => [-2.0f, -2.0f, 0.0f, 3.0f, 5.0f, 5.0f, 3.0f, 0.0f, -2.0f, -2.0f],
+            "Dance (舞曲)"       => [7.0f, 5.0f, 2.0f, 0.0f, 0.0f, -4.0f, -5.0f, -5.0f, 0.0f, 0.0f],
+            "Electronic (电子)"  => [6.0f, 5.0f, 1.0f, -2.0f, -3.0f, 1.0f, 3.0f, 6.0f, 7.0f, 8.0f],
+            "Acoustic (木吉他)"   => [4.0f, 4.0f, 3.0f, 1.0f, 1.0f, 1.0f, 3.0f, 4.0f, 3.0f, 2.0f],
+            _ => [0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f]
+        };
     }
 }

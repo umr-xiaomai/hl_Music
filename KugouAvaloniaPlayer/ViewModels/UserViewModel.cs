@@ -26,6 +26,11 @@ public partial class UserViewModel : PageViewModelBase
     [ObservableProperty] private string _userId = "";
     [ObservableProperty] private string _userName = "加载中...";
     [ObservableProperty] private string _vipStatus = "未开通";
+    
+    public string[] EQPresetOptions { get; } = { "Normal (原声)", "Pop (流行)", "Rock (摇滚)", "Bass Boost (重低音)", "Classical (古典)", "Vocal (人声增强)", "Dance (舞曲)" ,"Electronic (电子)","Acoustic (木吉他)"};
+    [ObservableProperty] private string _selectedEQPreset;
+    
+    [ObservableProperty] private bool _enableSurround;
 
     public UserViewModel(PlayerViewModel player, UserClient userClient, AuthClient authClient)
     {
@@ -35,6 +40,12 @@ public partial class UserViewModel : PageViewModelBase
         SelectedCloseBehavior = SettingsManager.Settings.CloseBehavior;
         SelectedQuality = SettingsManager.Settings.MusicQuality;
         AutoCheckUpdate = SettingsManager.Settings.AutoCheckUpdate;
+    
+        
+        var preset = SettingsManager.Settings.EQPreset;
+        SelectedEQPreset = System.Array.Exists(EQPresetOptions, x => x == preset) ? preset : "Normal (原声)";
+    
+        EnableSurround = SettingsManager.Settings.EnableSurround;
     }
 
     private PlayerViewModel Player { get; }
@@ -127,5 +138,19 @@ public partial class UserViewModel : PageViewModelBase
     public void SetCheckingUpdateState(bool isChecking)
     {
         IsCheckingUpdate = isChecking;
+    }
+    
+    partial void OnSelectedEQPresetChanged(string value)
+    {
+        SettingsManager.Settings.EQPreset = value;
+        SettingsManager.Save();
+        Player.UpdateAudioEffects(value, EnableSurround);
+    }
+
+    partial void OnEnableSurroundChanged(bool value)
+    {
+        SettingsManager.Settings.EnableSurround = value;
+        SettingsManager.Save();
+        Player.UpdateAudioEffects(SelectedEQPreset, value);
     }
 }

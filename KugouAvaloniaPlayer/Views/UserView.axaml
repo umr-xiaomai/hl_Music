@@ -80,6 +80,31 @@
                                       MinWidth="150" />
                         </Grid>
                     </suki:GlassCard>
+                    
+                    <suki:GlassCard IsOpaque="True" Padding="15">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel>
+                                <TextBlock Text="音效" FontWeight="DemiBold" />
+                                <TextBlock Text="选择预设的风格，实时生效(不保证好用)" FontSize="12" Foreground="{DynamicResource SukiLiquid2}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding EQPresetOptions}"
+                                      SelectedItem="{Binding SelectedEQPreset}"
+                                      MinWidth="150" />
+                        </Grid>
+                    </suki:GlassCard>
+
+                    <!-- 全景声 / 空间音效 -->
+                    <suki:GlassCard IsOpaque="True" Padding="15">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel>
+                                <TextBlock Text="空间音效" FontWeight="DemiBold" />
+                                <TextBlock Text="没想好具体怎么做，目前会很电，不建议使用(我不会告诉你任何事情的啊啊啊啊)" FontSize="12" Foreground="{DynamicResource SukiLiquid2}" />
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1"
+                                          IsChecked="{Binding EnableSurround, Mode=TwoWay}" />
+                        </Grid>
+                    </suki:GlassCard>
 
                     <!-- 自动检查更新 -->
                     <suki:GlassCard IsOpaque="True" Padding="15">

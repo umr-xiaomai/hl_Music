@@ -231,9 +231,9 @@ public partial class SearchViewModel(
             }
             else if (_currentDetailType == DetailType.Album)
             {
-                var songs = await albumClient.GetSongsAsync(_currentDetailId, _currentDetailPage, 100);
+                var songs = await albumClient.GetSongsAsync(_currentDetailId, _currentDetailPage, 50);
 
-                if (songs == null || songs.Count < 100) _hasMoreDetails = false;
+                if (songs == null || songs.Count < 50) _hasMoreDetails = false;
 
                 if (songs != null)
                 {
