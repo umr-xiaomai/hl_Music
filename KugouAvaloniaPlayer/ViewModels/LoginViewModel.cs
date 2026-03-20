@@ -223,6 +223,10 @@ public partial class LoginViewModel(AuthClient authClient, DeviceClient deviceCl
 
                 WeakReferenceMessenger.Default.Send(new AuthStateChangedMessage(true));
             }
+            else
+            {
+                StatusMessage = "登录失败，若没有账号请先在酷狗音乐概念版App注册";
+            }
         }
         catch (Exception ex)
         {

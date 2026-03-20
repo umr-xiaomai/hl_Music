@@ -47,7 +47,7 @@ public class AuthClient(
         }
         else
         {
-            logger.LogWarning("[Auth] 登录 失败，返回数据中未找到 data 节点。");
+            logger.LogWarning("[Auth] 登录失败，若没有账号请先在酷狗音乐概念版App注册。");
         }
 
         return data;

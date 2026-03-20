@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using KuGou.Net.Clients;
+using KuGou.Net.Protocol.Session;
 using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.Services;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 {
     private const int MaxConsecutiveFailures = 5;
     private readonly FavoritePlaylistService _favoriteService;
+    private readonly KgSessionManager _sessionManager;
     private readonly ILogger<PlayerViewModel> _logger;
     private readonly LyricsService _lyricsService;
     private readonly MusicClient _musicClient;
@@ -49,7 +51,8 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     public PlayerViewModel(
         MusicClient musicClient, ISukiToastManager toastManager, ILogger<PlayerViewModel> logger,
-        PlaybackQueueManager queueManager, LyricsService lyricsService, FavoritePlaylistService favoriteService)
+        PlaybackQueueManager queueManager, LyricsService lyricsService, FavoritePlaylistService favoriteService,
+        KgSessionManager sessionManager)
     {
         _musicClient = musicClient;
         _toastManager = toastManager;
@@ -57,6 +60,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _queueManager = queueManager;
         _lyricsService = lyricsService;
         _favoriteService = favoriteService;
+        _sessionManager = sessionManager;
 
         _player = new SimpleAudioPlayer();
         _player.PlaybackEnded += OnPlaybackEnded;
@@ -90,6 +94,19 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     public async Task PlaySongAsync(SongItem? song, IList<SongItem>? contextList = null)
     {
         if (song == null) return;
+
+        // 检查是否已登录
+        if (string.IsNullOrEmpty(_sessionManager.Session.Token) || _sessionManager.Session.UserId == "0")
+        {
+            _toastManager.CreateToast()
+                .OfType(NotificationType.Warning)
+                .WithTitle("请先登录")
+                .WithContent("登录后才能播放音乐")
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Dismiss().ByClicking()
+                .Queue();
+            return;
+        }
 
         if (_consecutiveFailures >= MaxConsecutiveFailures)
         {
