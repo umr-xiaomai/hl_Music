@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
@@ -22,6 +23,7 @@ namespace KugouAvaloniaPlayer.ViewModels;
 public partial class PlayerViewModel : ViewModelBase, IDisposable
 {
     private const int MaxConsecutiveFailures = 5;
+    private static readonly TimeSpan AudioLoadTimeout = TimeSpan.FromSeconds(12);
     private readonly FavoritePlaylistService _favoriteService;
     private readonly KgSessionManager _sessionManager;
     private readonly ILogger<PlayerViewModel> _logger;
@@ -33,8 +35,11 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     private readonly PlaybackQueueManager _queueManager;
     private readonly ISukiToastManager _toastManager;
+    private readonly SemaphoreSlim _playSongLock = new(1, 1);
 
     private int _consecutiveFailures;
+    private int _playRequestVersion;
+    private CancellationTokenSource? _loadCancellation;
 
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
     [ObservableProperty] private string _currentLyricText = "---";
@@ -82,6 +87,9 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _loadCancellation?.Cancel();
+        _loadCancellation?.Dispose();
+        _playSongLock.Dispose();
         _playbackTimer.Stop();
         _playbackTimer.Tick -= OnPlaybackTimerTick;
         _player.PlaybackEnded -= OnPlaybackEnded;
@@ -95,40 +103,46 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     {
         if (song == null) return;
 
-        // 检查是否已登录
-        if (string.IsNullOrEmpty(_sessionManager.Session.Token) || _sessionManager.Session.UserId == "0")
-        {
-            _toastManager.CreateToast()
-                .OfType(NotificationType.Warning)
-                .WithTitle("请先登录")
-                .WithContent("登录后才能播放音乐")
-                .Dismiss().After(TimeSpan.FromSeconds(3))
-                .Dismiss().ByClicking()
-                .Queue();
-            return;
-        }
-
-        if (_consecutiveFailures >= MaxConsecutiveFailures)
-        {
-            _toastManager.CreateToast().OfType(NotificationType.Error).WithTitle("熔断保护").WithContent("连续多次失败，停止播放")
-                .Queue();
-            return;
-        }
-
-        // 交给队列管理器处理
-        _queueManager.SetupQueue(song, contextList);
-
-        if (CurrentPlayingSong != null) CurrentPlayingSong.IsPlaying = false;
-        CurrentPlayingSong = song;
-        CurrentPlayingSong.IsPlaying = true;
-
-        // 检查喜欢状态
-        IsLiked = _favoriteService.IsLiked(song.Hash);
-
-        StopAndReset();
+        await _playSongLock.WaitAsync();
+        var requestVersion = Interlocked.Increment(ref _playRequestVersion);
 
         try
         {
+            if (string.IsNullOrEmpty(_sessionManager.Session.Token) || _sessionManager.Session.UserId == "0")
+            {
+                _toastManager.CreateToast()
+                    .OfType(NotificationType.Warning)
+                    .WithTitle("请先登录")
+                    .WithContent("登录后才能播放音乐")
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Dismiss().ByClicking()
+                    .Queue();
+                return;
+            }
+
+            if (_consecutiveFailures >= MaxConsecutiveFailures)
+            {
+                _toastManager.CreateToast().OfType(NotificationType.Error).WithTitle("熔断保护").WithContent("连续多次失败，停止播放")
+                    .Queue();
+                _consecutiveFailures = 0;
+                return;
+            }
+
+            _loadCancellation?.Cancel();
+            _loadCancellation?.Dispose();
+            var currentLoadCts = new CancellationTokenSource();
+            _loadCancellation = currentLoadCts;
+            
+            _queueManager.SetupQueue(song, contextList);
+
+            if (CurrentPlayingSong != null) CurrentPlayingSong.IsPlaying = false;
+            CurrentPlayingSong = song;
+            CurrentPlayingSong.IsPlaying = true;
+            
+            IsLiked = _favoriteService.IsLiked(song.Hash);
+
+            StopAndReset();
+
             string? url;
             if (File.Exists(song.LocalFilePath))
             {
@@ -148,8 +162,19 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
                 _ = _lyricsService.LoadOnlineLyricsAsync(song.Hash, song.Name);
             }
 
-            if (url != null && _player.Load(url))
+            if (requestVersion != _playRequestVersion || currentLoadCts.IsCancellationRequested) return;
+
+            var loadSuccess = url != null &&
+                              await TryLoadStreamAsync(url, song.Name, AudioLoadTimeout, currentLoadCts.Token);
+
+            if (loadSuccess)
             {
+                if (requestVersion != _playRequestVersion || currentLoadCts.IsCancellationRequested)
+                {
+                    _player.Stop();
+                    return;
+                }
+
                 _consecutiveFailures = 0;
                 _player.SetVolume(MusicVolume);
                 _player.Play();
@@ -168,6 +193,35 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         {
             _logger.LogError($"播放出错: {ex.Message}");
             StopAndReset();
+        }
+        finally
+        {
+            _playSongLock.Release();
+        }
+    }
+
+    private async Task<bool> TryLoadStreamAsync(
+        string url,
+        string songName,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var loadTask = Task.Run(() => _player.Load(url), cancellationToken);
+            var completed = await Task.WhenAny(loadTask, Task.Delay(timeout, cancellationToken));
+            if (completed != loadTask)
+            {
+                if (cancellationToken.IsCancellationRequested) return false;
+                _logger.LogWarning("加载歌曲超时: {SongName}, timeout={Timeout}s", songName, timeout.TotalSeconds);
+                return false;
+            }
+
+            return await loadTask;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
     }
 
@@ -296,21 +350,14 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     {
         await _favoriteService.LoadLikeListAsync();
     }
-
-    /*public void UpdateAudioEffects(string preset, bool surround)
-    {
-        _player.SetEQ(GetEqPreset(preset));
-        _player.SetSurround(surround);
-    }*/
+    
 
     public void ApplyCustomEQ(float[] gains)
     {
         _player.SetEQ(gains);
-        // 强制 UI 更新预设名称（如果有绑定）
         OnPropertyChanged(nameof(MusicQuality));
     }
-
-    // 修改原有的 UpdateAudioEffects 逻辑
+    
     public void UpdateAudioEffects(string preset, bool surround)
     {
         if (preset == "自定义")
