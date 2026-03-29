@@ -39,7 +39,7 @@
 
 ## 👍 灵感来自
 
-### [MakcRe/KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
+[MakcRe/KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
 
 ## 🛠️ 本地构建（开发者）
 
