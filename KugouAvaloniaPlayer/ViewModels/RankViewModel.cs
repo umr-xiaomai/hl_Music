@@ -8,6 +8,7 @@ using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KuGou.Net.Clients;
+using Microsoft.Extensions.Logging;
 using SukiUI.Toasts;
 
 namespace KugouAvaloniaPlayer.ViewModels;
@@ -22,6 +23,7 @@ public partial class RankItem : ObservableObject
 public partial class RankViewModel : PageViewModelBase
 {
     private const string DefaultCover = "avares://KugouAvaloniaPlayer/Assets/Default.png";
+    private readonly ILogger<RankViewModel> _logger;
     private readonly RankClient _rankClient;
     private readonly ISukiToastManager _toastManager;
 
@@ -32,10 +34,11 @@ public partial class RankViewModel : PageViewModelBase
     [ObservableProperty] private bool _isShowingSongs;
     [ObservableProperty] private RankItem? _selectedRank;
 
-    public RankViewModel(RankClient rankClient, ISukiToastManager toastManager)
+    public RankViewModel(RankClient rankClient, ISukiToastManager toastManager, ILogger<RankViewModel> logger)
     {
         _rankClient = rankClient;
         _toastManager = toastManager;
+        _logger = logger;
         _ = LoadAllRanks();
     }
 
@@ -102,7 +105,8 @@ public partial class RankViewModel : PageViewModelBase
     [RelayCommand]
     private async Task LoadMore()
     {
-        if (IsLoadingMore || !_hasMoreSongs) return;
+        if (IsLoadingMore || !_hasMoreSongs)
+            return;
 
         _currentPage++;
         await LoadMoreSongsInternal();

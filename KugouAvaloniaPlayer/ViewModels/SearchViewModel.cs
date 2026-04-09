@@ -5,8 +5,10 @@ using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using KuGou.Net.Abstractions.Models;
 using KuGou.Net.Clients;
+using KugouAvaloniaPlayer.Models;
 using Microsoft.Extensions.Logging;
 using SukiUI.Toasts;
 
@@ -195,7 +197,9 @@ public partial class SearchViewModel(
     [RelayCommand]
     private async Task LoadMoreDetails()
     {
-        if (IsLoadingMoreDetails || !_hasMoreDetails || !IsShowingDetail) return;
+        if (IsLoadingMoreDetails || !_hasMoreDetails || !IsShowingDetail)
+            return;
+
 
         _currentDetailPage++;
         await LoadMoreDetailsInternal();
@@ -307,6 +311,8 @@ public partial class SearchViewModel(
         {
             var result = await playlistClient.CollectPlaylistAsync(_currentPlaylistName, _currentPlaylistGlobalId);
             if (result != null)
+            {
+                WeakReferenceMessenger.Default.Send(new RefreshPlaylistsMessage());
                 toastManager.CreateToast()
                     .OfType(NotificationType.Success)
                     .WithTitle("收藏成功")
@@ -314,6 +320,7 @@ public partial class SearchViewModel(
                     .Dismiss().After(TimeSpan.FromSeconds(3))
                     .Dismiss().ByClicking()
                     .Queue();
+            }
         }
         catch (Exception ex)
         {

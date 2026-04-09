@@ -60,6 +60,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             async void (_, m) => { await RemoveSongFromPlaylist(m.Song); });
 
         WeakReferenceMessenger.Default.Register<AuthStateChangedMessage>(this, (r, m) => { _ = LoadAllPlaylists(); });
+        WeakReferenceMessenger.Default.Register<RefreshPlaylistsMessage>(this, (r, m) => { _ = LoadAllPlaylists(); });
     }
 
     // 标识当前选中的歌单是否为网络歌单
@@ -319,6 +320,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             var result = await _playlistClient.CreatePlaylistAsync(name);
             if (result != null)
             {
+                WeakReferenceMessenger.Default.Send(new RefreshPlaylistsMessage());
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Success)
                     .WithTitle("创建成功")
@@ -372,6 +374,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             var result = await _playlistClient.DeletePlaylistAsync(item.ListId.ToString());
             if (result != null)
             {
+                WeakReferenceMessenger.Default.Send(new RefreshPlaylistsMessage());
                 Items.Remove(item);
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Success)

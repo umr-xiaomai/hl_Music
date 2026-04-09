@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -27,15 +28,12 @@ namespace KugouAvaloniaPlayer.ViewModels;
 public partial class MainWindowViewModel : ObservableObject
 {
     private const string DefaultCover = "avares://KugouAvaloniaPlayer/Assets/Default.png";
-    private const string LikeListCover = "avares://KugouAvaloniaPlayer/Assets/LikeList.jpg";
     private readonly AuthClient _authClient;
     private readonly IDesktopLyricViewModelFactory _desktopLyricViewModelFactory;
     private readonly DiscoveryClient _discoveryClient;
     private readonly ILogger<MainWindowViewModel> _logger;
-    private readonly PlaylistClient _playlistClient;
     private readonly SearchViewModel _searchViewModel;
     private readonly KgSessionManager _sessionManager;
-    private readonly ISingerViewModelFactory _singerViewModelFactory;
     private readonly UserClient _userClient;
     private readonly UserViewModel _userViewModel;
 
@@ -67,7 +65,6 @@ public partial class MainWindowViewModel : ObservableObject
         KgSessionManager sessionManager,
         AuthClient authClient,
         DiscoveryClient discoveryClient,
-        PlaylistClient playlistClient,
         UserClient userClient,
         ISingerViewModelFactory singerViewModelFactory,
         IDesktopLyricViewModelFactory desktopLyricViewModelFactory,
@@ -85,14 +82,14 @@ public partial class MainWindowViewModel : ObservableObject
         _authClient = authClient;
         _discoveryClient = discoveryClient;
 
-        _playlistClient = playlistClient;
         _userClient = userClient;
-        _singerViewModelFactory = singerViewModelFactory;
+        var singerViewModelFactory1 = singerViewModelFactory;
         _desktopLyricViewModelFactory = desktopLyricViewModelFactory;
 
         LoginViewModel = loginViewModel;
         _searchViewModel = searchViewModel;
         _userViewModel = userViewModel;
+        PlaylistsViewModel = myPlaylistsViewModel;
         _logger = logger;
 
         _userViewModel.CheckForUpdateRequested += OnCheckForUpdateRequested;
@@ -103,8 +100,10 @@ public partial class MainWindowViewModel : ObservableObject
         Pages.Add(dailyRecommendViewModel);
         Pages.Add(discoverViewModel);
         Pages.Add(rankViewModel);
-        Pages.Add(myPlaylistsViewModel);
         ActivePage = dailyRecommendViewModel;
+
+        PlaylistsViewModel.Items.CollectionChanged += OnPlaylistItemsChanged;
+        RefreshSidebarPlaylists();
 
         WeakReferenceMessenger.Default.Register<PlaySongMessage>(this, async void (_, m) =>
         {
@@ -129,7 +128,7 @@ public partial class MainWindowViewModel : ObservableObject
         WeakReferenceMessenger.Default.Register<NavigateToSingerMessage>(this, (_, m) =>
         {
             _previousPage = ActivePage;
-            var singerVm = _singerViewModelFactory.Create(m.Singer.Id.ToString(), m.Singer.Name);
+            var singerVm = singerViewModelFactory1.Create(m.Singer.Id.ToString(), m.Singer.Name);
             ActivePage = singerVm;
         });
 
@@ -163,7 +162,17 @@ public partial class MainWindowViewModel : ObservableObject
 
     public AvaloniaList<PageViewModelBase> Pages { get; } = new();
 
-    public LoginViewModel LoginViewModel { get; }
+    private LoginViewModel LoginViewModel { get; }
+    public MyPlaylistsViewModel PlaylistsViewModel { get; }
+
+    public AvaloniaList<PlaylistItem> SidebarOnlinePlaylists { get; } = new();
+    public AvaloniaList<PlaylistItem> SidebarLocalPlaylists { get; } = new();
+
+    public PlaylistItem SidebarAddPlaylistItem { get; } = new()
+    {
+        Name = "新建/添加",
+        Type = PlaylistType.AddButton
+    };
 
     // --- 登录相关 ---
     private async Task LoadLocalSessionOrLogin()
@@ -388,94 +397,27 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task NavigateToMyPlaylists()
+    private async Task OpenSidebarPlaylist(PlaylistItem? item)
     {
-        var vm = Pages.OfType<MyPlaylistsViewModel>().FirstOrDefault();
-        if (vm == null) return;
+        if (item == null || item.Type == PlaylistType.AddButton) return;
 
-        ActivePage = vm;
-        vm.IsShowingSongs = false;
-
-        if (vm.Playlists.Count == 0) await GetMyPlaylists(vm);
+        _previousPage = ActivePage;
+        ActivePage = PlaylistsViewModel;
+        await PlaylistsViewModel.OpenPlaylistCommand.ExecuteAsync(item);
     }
 
-    private async Task GetMyPlaylists(MyPlaylistsViewModel vm)
+    private void OnPlaylistItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        var playlists = await _userClient.GetPlaylistsAsync();
-        if (playlists is not null && playlists.Status == 1)
-        {
-            vm.Playlists.Clear();
-            var playlistItems = playlists.Playlists
-                .Where(item => !string.IsNullOrEmpty(item.ListCreateId))
-                .Select(item => new PlaylistItem
-                {
-                    Name = item.Name,
-                    Id = item.ListCreateId,
-                    Count = item.Count,
-                    Cover = string.IsNullOrWhiteSpace(item.Pic)
-                        ? item.IsDefault == 2 ? LikeListCover : DefaultCover
-                        : item.Pic
-                })
-                .ToList();
-            if (playlistItems.Any())
-                vm.Playlists.AddRange(playlistItems);
-        }
-        else
-        {
-            ToastManager.CreateToast()
-                .OfType(NotificationType.Warning)
-                .WithTitle("获取歌单失败")
-                .WithContent($"{playlists?.ErrorCode}")
-                .Dismiss().After(TimeSpan.FromSeconds(3))
-                .Dismiss().ByClicking()
-                .Queue();
-        }
+        RefreshSidebarPlaylists();
     }
 
-    [RelayCommand]
-    private async Task LoadPlaylistDetails(string playlistId)
+    private void RefreshSidebarPlaylists()
     {
-        var vm = Pages.OfType<MyPlaylistsViewModel>().FirstOrDefault();
-        if (vm == null) return;
+        SidebarOnlinePlaylists.Clear();
+        SidebarLocalPlaylists.Clear();
 
-        ActivePage = vm;
-        vm.SelectedPlaylist = vm.Playlists.FirstOrDefault(x => x.Id == playlistId);
-        vm.IsShowingSongs = true;
-
-        try
-        {
-            var songs = await _playlistClient.GetSongsAsync(playlistId, pageSize: 100);
-            vm.SelectedPlaylistSongs.Clear();
-            var songItems = songs.Select(item =>
-            {
-                var singerName = item.Singers.Count > 0
-                    ? string.Join("、", item.Singers.Select(s => s.Name))
-                    : "未知";
-
-                return new SongItem
-                {
-                    Name = item.Name,
-                    Singer = singerName,
-                    Hash = item.Hash,
-                    AlbumId = item.AlbumId,
-                    Cover = string.IsNullOrWhiteSpace(item.Cover) ? DefaultCover : item.Cover,
-                    DurationSeconds = item.DurationMs / 1000.0
-                };
-            }).ToList();
-
-            if (songItems.Any())
-                vm.SelectedPlaylistSongs.AddRange(songItems);
-        }
-        catch (Exception ex)
-        {
-            ToastManager.CreateToast()
-                .OfType(NotificationType.Warning)
-                .WithTitle("加载歌单失败")
-                .WithContent($"{ex.Message}")
-                .Dismiss().After(TimeSpan.FromSeconds(3))
-                .Dismiss().ByClicking()
-                .Queue();
-        }
+        SidebarOnlinePlaylists.AddRange(PlaylistsViewModel.Items.Where(x => x.Type == PlaylistType.Online));
+        SidebarLocalPlaylists.AddRange(PlaylistsViewModel.Items.Where(x => x.Type == PlaylistType.Local));
     }
 
     [RelayCommand]

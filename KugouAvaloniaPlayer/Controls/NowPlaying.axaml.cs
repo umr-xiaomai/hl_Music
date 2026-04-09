@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -16,11 +15,6 @@ public partial class NowPlaying : UserControl
     public NowPlaying()
     {
         InitializeComponent();
-    }
-
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
 
     private void OnLyricsSelectionChanged(object? sender, SelectionChangedEventArgs e)

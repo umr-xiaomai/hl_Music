@@ -141,30 +141,31 @@
                 </Button>
             </Grid>
 
-            <ScrollViewer Grid.Row="1"
-                          Padding="0,0,0,-80"
-                          Margin="0,15,0,0"
-                          ScrollChanged="OnScrollChanged">
-                <StackPanel>
-                    <ItemsControl ItemsSource="{Binding SelectedPlaylistSongs}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <localControls:SongListItemControl />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+            <Grid Grid.Row="1" Margin="0,15,0,0">
+                <ListBox Classes="SongList"
+                         ItemsSource="{Binding SelectedPlaylistSongs}"
+                         ScrollViewer.ScrollChanged="OnScrollChanged"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         Padding="0,0,0,80">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <localControls:SongListItemControl />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Margin="10"
-                                Spacing="10"
-                                IsVisible="{Binding IsLoadingMoreSongs}">
-                        <suki:Loading Width="20" Height="20" />
-                        <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center"
-                                   Foreground="{DynamicResource SukiLiquid2}" />
-                    </StackPanel>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="10"
+                            Spacing="10"
+                            IsVisible="{Binding IsLoadingMoreSongs}">
+                    <suki:Loading Width="20" Height="20" />
+                    <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center"
+                               Foreground="{DynamicResource SukiLiquid2}" />
                 </StackPanel>
-            </ScrollViewer>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

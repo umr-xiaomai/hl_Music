@@ -6,85 +6,21 @@
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
              xmlns:localControls="using:KugouAvaloniaPlayer.Controls"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
-             xmlns:models="clr-namespace:KugouAvaloniaPlayer.Models"
-             xmlns:converters="clr-namespace:KugouAvaloniaPlayer.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="KugouAvaloniaPlayer.Views.MyPlaylistsView"
              x:DataType="vm:MyPlaylistsViewModel">
 
-    <Grid Margin="15">
-        <Grid IsVisible="{Binding !IsShowingSongs}" RowDefinitions="Auto, *">
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" Margin="0,0,0,20">
-                <TextBlock Text="我的歌单" FontSize="28" FontWeight="Bold" />
-                <Button Classes="Basic" Command="{Binding LoadAllPlaylistsCommand}" Cursor="Hand">
-                    <PathIcon Data="{x:Static suki:Icons.Refresh}" Foreground="{DynamicResource SukiLowText}" />
-                </Button>
-            </StackPanel>
+    <Grid Margin="15" RowDefinitions="Auto,*">
+        <Border Grid.Row="0"
+                CornerRadius="12"
+                Padding="16"
+                IsVisible="{Binding SelectedPlaylist, Converter={x:Static ObjectConverters.IsNull}}">
+            <TextBlock Text="请从左侧导航栏选择歌单"
+                       Foreground="{DynamicResource SukiLowText}" />
+        </Border>
 
-            <ScrollViewer Grid.Row="1" Padding="0,0,0,-50">
-                <ItemsControl ItemsSource="{Binding Items}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Panel>
-                                <!-- 普通歌单卡片 -->
-                                <localControls:MediaCard
-                                    IsVisible="{Binding Type, Converter={x:Static converters:EnumEqualityConverter.NotEqual},
-                                 ConverterParameter={x:Static models:PlaylistType.AddButton}}"
-                                    Cover="{Binding Cover}"
-                                    Title="{Binding Name}"
-                                    Subtitle="{Binding Count, StringFormat='{}{0} 首'}"
-                                    Command="{Binding $parent[UserControl].((vm:MyPlaylistsViewModel)DataContext).OpenPlaylistCommand}"
-                                    CommandParameter="{Binding .}">
-                                    <localControls:MediaCard.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="移除本地歌单"
-                                                      Click="OnDeleteLocalPlaylistClick"
-                                                      IsVisible="{Binding Type, Converter={x:Static converters:EnumEqualityConverter.Equal}, ConverterParameter={x:Static models:PlaylistType.Local}}">
-                                                <MenuItem.Icon>
-                                                    <PathIcon Data="{x:Static suki:Icons.Cross}" />
-                                                </MenuItem.Icon>
-                                            </MenuItem>
-                                            <MenuItem Header="删除歌单"
-                                                      Click="OnDeleteOnlinePlaylistClick"
-                                                      IsVisible="{Binding Type, Converter={x:Static converters:EnumEqualityConverter.Equal}, ConverterParameter={x:Static models:PlaylistType.Online}}">
-                                                <MenuItem.Icon>
-                                                    <PathIcon Data="{x:Static suki:Icons.Cross}" />
-                                                </MenuItem.Icon>
-                                            </MenuItem>
-                                        </ContextMenu>
-                                    </localControls:MediaCard.ContextMenu>
-                                    <localControls:MediaCard.OverlayContent>
-                                        <Border HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                CornerRadius="0,0,0,8" Padding="6,2"
-                                                IsVisible="{Binding Type, Converter={x:Static converters:EnumEqualityConverter.Equal}, ConverterParameter={x:Static models:PlaylistType.Local}}">
-                                            <TextBlock Text="本地" FontSize="10" />
-                                        </Border>
-                                    </localControls:MediaCard.OverlayContent>
-                                </localControls:MediaCard>
-
-                                <!-- 添加按钮卡片 -->
-                                <Button Width="160" Height="200" Margin="8" Padding="0"
-                                        Click="OnPlaylistCardClick"
-                                        IsVisible="{Binding Type, Converter={x:Static converters:EnumEqualityConverter.Equal}, ConverterParameter={x:Static models:PlaylistType.AddButton}}">
-                                    <suki:GlassCard Padding="0" CornerRadius="12">
-                                        <Svg Path="/Assets/music-folder-8-svgrepo-com.svg" Width="100" Height="100" />
-                                    </suki:GlassCard>
-                                </Button>
-                            </Panel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Grid>
-
-
-        <Grid IsVisible="{Binding IsShowingSongs}" RowDefinitions="Auto, *">
+        <Grid Grid.Row="1" IsVisible="{Binding SelectedPlaylist, Converter={x:Static ObjectConverters.IsNotNull}}"
+              RowDefinitions="Auto, *">
             <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*">
                 <Border Width="80" Height="80" CornerRadius="8" ClipToBounds="True"
                         Background="{DynamicResource SukiPrimaryColorLow}">
@@ -95,7 +31,9 @@
                            TextTrimming="CharacterEllipsis"
                            MaxWidth="600"
                            HorizontalAlignment="Left" VerticalAlignment="Center" />
-                <Button Grid.Column="2" Command="{Binding GoBackCommand}" Classes="Basic" HorizontalAlignment="Right"
+                <Button Grid.Column="2"
+                        Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).NavigateBackCommand}"
+                        Classes="Basic" HorizontalAlignment="Right"
                         MaxWidth="150"
                         Cursor="Hand">
                     <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="{DynamicResource SukiLowText}"
@@ -103,33 +41,31 @@
                 </Button>
             </Grid>
 
-            <ScrollViewer Grid.Row="1"
-                          Name="SongsScrollViewer"
-                          ScrollChanged="OnScrollChanged"
-                          Padding="0,0,0,-80">
+            <Grid Grid.Row="1">
+                <ListBox Classes="SongList"
+                         ItemsSource="{Binding SelectedPlaylistSongs}"
+                         ScrollViewer.ScrollChanged="OnScrollChanged"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         Padding="0,0,0,80">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <localControls:SongListItemControl />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
-                <StackPanel>
-
-                    <ItemsControl ItemsSource="{Binding SelectedPlaylistSongs}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <localControls:SongListItemControl />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Margin="10"
-                                Spacing="10"
-                                IsVisible="{Binding IsLoadingMore}">
-                        <suki:Loading Width="20" Height="20" />
-                        <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center"
-                                   Foreground="{DynamicResource SukiLiquid2}" />
-                    </StackPanel>
-
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="10"
+                            Spacing="10"
+                            IsVisible="{Binding IsLoadingMore}">
+                    <suki:Loading Width="20" Height="20" />
+                    <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center"
+                               Foreground="{DynamicResource SukiLiquid2}" />
                 </StackPanel>
-            </ScrollViewer>
+            </Grid>
         </Grid>
     </Grid>
 </UserControl>

@@ -6,7 +6,6 @@
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
              x:Class="KugouAvaloniaPlayer.Views.SearchView"
              x:DataType="vm:SearchViewModel">
-
     <suki:GlassCard Margin="15" Padding="20">
         <Grid RowDefinitions="Auto, *">
             <!-- 顶部搜索区域 (保持不变) -->
@@ -43,24 +42,24 @@
                 </StackPanel>
 
                 <!-- 单曲搜索结果 -->
-                <ScrollViewer IsVisible="{Binding !IsSearching}" Padding="0,0,0,-50">
-                    <StackPanel>
-                        <StackPanel.IsVisible>
-                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                <Binding Path="CurrentSearchType" Converter="{x:Static ObjectConverters.Equal}"
-                                         ConverterParameter="{x:Static vm:SearchType.Song}" />
-                                <Binding Path="!IsShowingDetail" />
-                            </MultiBinding>
-                        </StackPanel.IsVisible>
-                        <ItemsControl ItemsSource="{Binding Songs}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <localControls:SongListItemControl />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </ScrollViewer>
+                <ListBox Classes="SongList"
+                         ItemsSource="{Binding Songs}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         Padding="0,0,0,50">
+                    <ListBox.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="!IsSearching" />
+                            <Binding Path="CurrentSearchType" Converter="{x:Static ObjectConverters.Equal}"
+                                     ConverterParameter="{x:Static vm:SearchType.Song}" />
+                            <Binding Path="!IsShowingDetail" />
+                        </MultiBinding>
+                    </ListBox.IsVisible>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <localControls:SongListItemControl />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
                 <!-- 歌单搜索结果 -->
                 <ScrollViewer Padding="0,0,0,-50">
@@ -152,27 +151,34 @@
                     </Grid>
 
                     <!-- 详情页列表 (支持翻页) -->
-                    <ScrollViewer Grid.Row="1"
-                                  Padding="0,0,0,-50"
-                                  ScrollChanged="OnDetailScrollChanged">
-                        <StackPanel>
-                            <ItemsControl ItemsSource="{Binding DetailSongs}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <localControls:SongListItemControl />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                    <Grid Grid.Row="1">
+                        <ListBox Classes="SongList"
+                                 ItemsSource="{Binding DetailSongs}"
+                                 ScrollViewer.ScrollChanged="OnDetailScrollChanged"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 Padding="0,0,0,50">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <localControls:SongListItemControl />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
 
-                            <!-- 底部 Loading -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10" Spacing="10"
-                                        IsVisible="{Binding IsLoadingMoreDetails}">
-                                <suki:Loading Width="20" Height="20" />
-                                <TextBlock Text="加载更多..." VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SukiLiquid2}" />
-                            </StackPanel>
+                        <!-- 底部 Loading -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                    Margin="10" Spacing="10"
+                                    IsVisible="{Binding IsLoadingMoreDetails}">
+                            <suki:Loading Width="20" Height="20" />
+                            <TextBlock Text="加载更多..." VerticalAlignment="Center"
+                                       Foreground="{DynamicResource SukiLiquid2}" />
                         </StackPanel>
-                    </ScrollViewer>
+                    </Grid>
                 </Grid>
             </Grid>
         </Grid>

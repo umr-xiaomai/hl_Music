@@ -1,5 +1,6 @@
+using System.Linq;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+using Avalonia.VisualTree;
 using KugouAvaloniaPlayer.ViewModels;
 
 namespace KugouAvaloniaPlayer.Views;
@@ -11,14 +12,10 @@ public partial class SearchView : UserControl
         InitializeComponent();
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
-
     private void OnDetailScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
-        if (sender is not ScrollViewer scrollViewer) return;
+        var scrollViewer = ResolveScrollViewer(sender, e);
+        if (scrollViewer == null) return;
         if (DataContext is not SearchViewModel vm) return;
 
         var currentBottom = scrollViewer.Offset.Y + scrollViewer.Viewport.Height;
@@ -26,5 +23,17 @@ public partial class SearchView : UserControl
         if (currentBottom >= scrollViewer.Extent.Height - 50)
             if (vm.LoadMoreDetailsCommand.CanExecute(null))
                 vm.LoadMoreDetailsCommand.Execute(null);
+    }
+
+    private static ScrollViewer? ResolveScrollViewer(object? sender, ScrollChangedEventArgs e)
+    {
+        if (e.Source is ScrollViewer eventScrollViewer)
+            return eventScrollViewer;
+        if (sender is ScrollViewer senderScrollViewer)
+            return senderScrollViewer;
+        if (sender is Control control)
+            return control.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+
+        return null;
     }
 }

@@ -1,7 +1,6 @@
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 
 namespace KugouAvaloniaPlayer.Controls;
 
@@ -82,11 +81,6 @@ public partial class MediaCard : UserControl
     {
         get => GetValue(ContextMenuProperty);
         set => SetValue(ContextMenuProperty, value);
-    }
-
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

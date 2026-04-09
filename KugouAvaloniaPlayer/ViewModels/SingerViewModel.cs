@@ -4,12 +4,14 @@ using Avalonia.Collections;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KuGou.Net.Clients;
+using Microsoft.Extensions.Logging;
 
 namespace KugouAvaloniaPlayer.ViewModels;
 
 public partial class SingerViewModel : PageViewModelBase
 {
     private readonly string _authorId;
+    private readonly ILogger<SingerViewModel> _logger;
     private readonly MusicClient _musicClient;
 
     private int _currentPage = 1;
@@ -24,9 +26,10 @@ public partial class SingerViewModel : PageViewModelBase
     [ObservableProperty] private string _singerAvatar;
     [ObservableProperty] private string _singerName;
 
-    public SingerViewModel(MusicClient musicClient, string authorId, string singerName)
+    public SingerViewModel(MusicClient musicClient, ILogger<SingerViewModel> logger, string authorId, string singerName)
     {
         _musicClient = musicClient;
+        _logger = logger;
         _authorId = authorId;
         _singerName = singerName;
         _singerAvatar = "avares://KugouAvaloniaPlayer/Assets/default_singer.png";

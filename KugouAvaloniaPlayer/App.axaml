@@ -6,7 +6,6 @@
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:converters="clr-namespace:KugouAvaloniaPlayer.Converters"
              RequestedThemeVariant="Default">
-    <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.DataTemplates>
         <local:ViewLocator />
@@ -15,10 +14,11 @@
     <Application.Styles>
         <suki:SukiTheme ThemeColor="Blue" />
         <labs:ControlThemes />
-        <StyleInclude Source="avares://KugouAvaloniaPlayer/Styles/Styles1.axaml" />
+        <StyleInclude Source="avares://KugouAvaloniaPlayer/Styles/SliderPlayer.axaml" />
         <StyleInclude Source="avares://KugouAvaloniaPlayer/Styles/SegmentedStyles.axaml" />
         <StyleInclude Source="avares://KugouAvaloniaPlayer/Styles/GorgeousThemeSwitch.axaml" />
         <StyleInclude Source="avares://KugouAvaloniaPlayer/Styles/SmoothScrollViewStyles.axaml" />
+        <StyleInclude Source="avares://KugouAvaloniaPlayer/Styles/SongListStyles.axaml" />
     </Application.Styles>
 
     <Application.Resources>

@@ -88,15 +88,17 @@
                 </Panel>
             </Border>
 
-            <ScrollViewer Grid.Row="1" Padding="0,0,0,-80">
-                <ItemsControl ItemsSource="{Binding Songs}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <localControls:SongListItemControl />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <ListBox Grid.Row="1"
+                     Classes="SongList"
+                     ItemsSource="{Binding Songs}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     Padding="0,0,0,80">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <localControls:SongListItemControl />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </Grid>
     </suki:GlassCard>
 </UserControl>

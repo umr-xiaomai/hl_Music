@@ -5,8 +5,11 @@ using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using KuGou.Net.Abstractions.Models;
 using KuGou.Net.Clients;
+using KugouAvaloniaPlayer.Models;
+using Microsoft.Extensions.Logging;
 using SukiUI.Toasts;
 
 namespace KugouAvaloniaPlayer.ViewModels;
@@ -41,6 +44,7 @@ public partial class DiscoverViewModel : PageViewModelBase
     private const string DefaultCardCover = "avares://KugouAvaloniaPlayer/Assets/default_listcard.png";
     private const string DefaultSongCover = "avares://KugouAvaloniaPlayer/Assets/default_song.png";
     private readonly DiscoveryClient _discoveryClient;
+    private readonly ILogger<DiscoverViewModel> _logger;
     private readonly PlaylistClient _playlistClient;
     private readonly ISukiToastManager _toastManager;
     private bool _hasMoreSongs = true;
@@ -60,11 +64,13 @@ public partial class DiscoverViewModel : PageViewModelBase
     public DiscoverViewModel(
         PlaylistClient playlistClient,
         DiscoveryClient discoveryClient,
-        ISukiToastManager toastManager)
+        ISukiToastManager toastManager,
+        ILogger<DiscoverViewModel> logger)
     {
         _playlistClient = playlistClient;
         _discoveryClient = discoveryClient;
         _toastManager = toastManager;
+        _logger = logger;
         _ = LoadTagsAsync();
     }
 
@@ -267,6 +273,8 @@ public partial class DiscoverViewModel : PageViewModelBase
         {
             var result = await _playlistClient.CollectPlaylistAsync(SelectedPlaylist.Name, SelectedPlaylist.GlobalId);
             if (result != null)
+            {
+                WeakReferenceMessenger.Default.Send(new RefreshPlaylistsMessage());
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Success)
                     .WithTitle("收藏成功")
@@ -274,6 +282,7 @@ public partial class DiscoverViewModel : PageViewModelBase
                     .Dismiss().After(TimeSpan.FromSeconds(3))
                     .Dismiss().ByClicking()
                     .Queue();
+            }
         }
         catch (Exception ex)
         {

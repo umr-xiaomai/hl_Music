@@ -4,16 +4,18 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:suki="https://github.com/kikipoulet/SukiUI"
-                 xmlns:views="clr-namespace:KugouAvaloniaPlayer.Views"
+                 xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
                  xmlns:localControls="clr-namespace:KugouAvaloniaPlayer.Controls"
                  mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
                  x:Class="KugouAvaloniaPlayer.Views.MainWindow"
+                 MinHeight="600"
+                 MinWidth="800"
                  x:DataType="vm:MainWindowViewModel"
                  Name="RootWindow"
                  Icon="/Assets/Test.ico"
                  Title="KuGou Avalonia Player"
                  BackgroundStyle="Bubble">
-    
+
     <suki:SukiWindow.Styles>
         <!-- 遮罩层动画 -->
         <Style Selector="Border#QueueBackdrop">
@@ -37,7 +39,6 @@
             <Setter Property="RenderTransform" Value="translateY(20px)" />
             <Setter Property="Transitions">
                 <Transitions>
-
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
                 </Transitions>
             </Setter>
@@ -78,11 +79,115 @@
             </suki:SukiSideMenu.ItemTemplate>
 
             <suki:SukiSideMenu.FooterContent>
-                <StackPanel HorizontalAlignment="Center" Margin="10,10,10,100" Spacing="8">
-                    <localControls:UserAvatarControl />
-                    <TextBlock Text="{Binding Version, StringFormat='v{0}'}"
-                               HorizontalAlignment="Center"
-                               Foreground="{DynamicResource SukiLiquid2}" FontSize="10" />
+                <StackPanel Margin="10,4,10,80" Spacing="15">
+                    <Separator Margin="0,4,0,2" />
+
+                    <ScrollViewer MaxHeight="150" HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="我的歌单" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SukiLowText}" />
+                            <ItemsControl ItemsSource="{Binding SidebarOnlinePlaylists}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Height="40" CornerRadius="8" Padding="6,4">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="删除歌单" Click="OnDeleteOnlinePlaylistClick" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <Button Classes="Basic"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).OpenSidebarPlaylistCommand}"
+                                                    CommandParameter="{Binding .}">
+                                                <Grid ColumnDefinitions="32,*,Auto" VerticalAlignment="Center">
+                                                    <Border Width="28" Height="28" CornerRadius="6" ClipToBounds="True"
+                                                            VerticalAlignment="Center">
+                                                        <controls:AsyncImage Source="{Binding Cover}"
+                                                                             Stretch="UniformToFill" />
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="10,0,0,0"
+                                                               Text="{Binding Name}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource SukiLowText}" />
+                                                    <!--<TextBlock Grid.Column="2"
+                                                               Text="{Binding Count}"
+                                                               Margin="10,0,0,0"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource SukiLowText}" />-->
+                                                </Grid>
+                                            </Button>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding SidebarLocalPlaylists}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Height="40" CornerRadius="8" Padding="6,4">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="移除本地歌单" Click="OnDeleteLocalPlaylistClick" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <Button Classes="Basic"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).OpenSidebarPlaylistCommand}"
+                                                    CommandParameter="{Binding .}">
+                                                <Grid ColumnDefinitions="32,*" VerticalAlignment="Center">
+                                                    <Border Width="28" Height="28" CornerRadius="6" ClipToBounds="True"
+                                                            VerticalAlignment="Center">
+                                                        <controls:AsyncImage Source="{Binding Cover}"
+                                                                             Stretch="UniformToFill" />
+                                                    </Border>
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="10,0,0,0"
+                                                               Text="{Binding Name}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource SukiLowText}" />
+                                                </Grid>
+                                            </Button>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Height="36"
+                                    Classes="Basic"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch"
+                                    Click="OnSidebarAddPlaylistClick">
+                                <Grid ColumnDefinitions="28,*" VerticalAlignment="Center">
+                                    <Border Grid.Column="0"
+                                            Width="20"
+                                            Height="20"
+                                            CornerRadius="4"
+                                            VerticalAlignment="Center"
+                                            Background="{DynamicResource SukiPrimaryColorLow}" />
+                                    <Svg Grid.Column="0"
+                                         Path="/Assets/music-folder-8-svgrepo-com.svg"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Column="1"
+                                               Margin="10,0,0,0"
+                                               Text="新建歌单"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{DynamicResource SukiLowText}" />
+                                </Grid>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,8,0,0">
+                        <localControls:UserAvatarControl />
+                        <TextBlock Text="{Binding Version, StringFormat='v{0}'}"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource SukiLiquid2}" FontSize="10" />
+                    </StackPanel>
                 </StackPanel>
             </suki:SukiSideMenu.FooterContent>
         </suki:SukiSideMenu>
