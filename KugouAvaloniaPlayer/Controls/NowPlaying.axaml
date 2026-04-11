@@ -88,10 +88,17 @@
 
     </UserControl.Styles>
 
-    <Grid Name="Root" Classes.open="{Binding IsNowPlayingOpen}">
+    <Grid Name="Root"
+          Classes.open="{Binding IsNowPlayingOpen}"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          ClipToBounds="True">
         <Panel>
+            <Border Background="#FF000000" />
             <controls:AsyncImage Source="{Binding Player.CurrentPlayingSong.Cover}"
-                                 Stretch="UniformToFill">
+                                 Stretch="UniformToFill"
+                                 RenderTransformOrigin="0.5,0.5"
+                                 RenderTransform="scale(1.12)">
                 <controls:AsyncImage.Effect>
                     <BlurEffect Radius="100" />
                 </controls:AsyncImage.Effect>

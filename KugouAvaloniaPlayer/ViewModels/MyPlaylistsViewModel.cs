@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 using Avalonia.Collections;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
@@ -31,6 +32,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     private readonly PlaylistClient _playlistClient;
     private readonly ISukiToastManager _toastManager;
     private readonly UserClient _userClient;
+    private CancellationTokenSource? _refreshPlaylistsCts;
 
     private int _currentPage = 1;
     private bool _hasMoreSongs = true;
@@ -60,7 +62,8 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             async void (_, m) => { await RemoveSongFromPlaylist(m.Song); });
 
         WeakReferenceMessenger.Default.Register<AuthStateChangedMessage>(this, (r, m) => { _ = LoadAllPlaylists(); });
-        WeakReferenceMessenger.Default.Register<RefreshPlaylistsMessage>(this, (r, m) => { _ = LoadAllPlaylists(); });
+        WeakReferenceMessenger.Default.Register<RefreshPlaylistsMessage>(this,
+            (r, m) => { _ = SchedulePlaylistsRefreshAsync("RefreshPlaylistsMessage", 1500); });
     }
 
     // 标识当前选中的歌单是否为网络歌单
@@ -328,8 +331,6 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                     .Dismiss().After(TimeSpan.FromSeconds(3))
                     .Dismiss().ByClicking()
                     .Queue();
-
-                await LoadAllPlaylists();
             }
         }
         catch (Exception ex)
@@ -374,8 +375,11 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             var result = await _playlistClient.DeletePlaylistAsync(item.ListId.ToString());
             if (result != null)
             {
-                WeakReferenceMessenger.Default.Send(new RefreshPlaylistsMessage());
-                Items.Remove(item);
+                var removed = RemoveOnlinePlaylistLocally(item);
+                _logger.LogInformation("删除歌单后本地移除结果: removed={Removed}, listId={ListId}, id={Id}",
+                    removed, item.ListId, item.Id);
+                _ = SchedulePlaylistsRefreshAsync("DeleteOnlinePlaylist", 1500);
+
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Success)
                     .WithTitle("删除成功")
@@ -394,6 +398,46 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Dismiss().ByClicking()
                 .Queue();
+        }
+    }
+
+    private bool RemoveOnlinePlaylistLocally(PlaylistItem item)
+    {
+        var target = Items.FirstOrDefault(x =>
+            x.Type == PlaylistType.Online &&
+            (x.ListId == item.ListId || (!string.IsNullOrEmpty(item.Id) && x.Id == item.Id)));
+
+        if (target == null)
+            return false;
+
+        Items.Remove(target);
+        if (SelectedPlaylist != null &&
+            (SelectedPlaylist.ListId == target.ListId || SelectedPlaylist.Id == target.Id))
+        {
+            SelectedPlaylist = null;
+            SelectedPlaylistSongs.Clear();
+            IsShowingSongs = false;
+        }
+
+        return true;
+    }
+
+    private async Task SchedulePlaylistsRefreshAsync(string reason, int delayMs)
+    {
+        _refreshPlaylistsCts?.Cancel();
+        _refreshPlaylistsCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _refreshPlaylistsCts = cts;
+
+        try
+        {
+            await Task.Delay(delayMs, cts.Token);
+            if (cts.IsCancellationRequested) return;
+            await LoadAllPlaylists();
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("取消歌单刷新: reason={Reason}", reason);
         }
     }
 
