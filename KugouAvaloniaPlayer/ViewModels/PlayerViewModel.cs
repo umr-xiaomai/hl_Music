@@ -77,7 +77,19 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         WeakReferenceMessenger.Default.Register<AddToNextMessage>(this,
             (_, m) => { _queueManager.AddToNext(m.Song, CurrentPlayingSong); });
         WeakReferenceMessenger.Default.Register<ShowPlaylistDialogMessage>(this,
-            async void (_, m) => { await _favoriteService.ShowAddToPlaylistDialogAsync(m.Song); });
+            (_, m) => _ = ShowPlaylistDialogSafelyAsync(m.Song));
+    }
+
+    private async Task ShowPlaylistDialogSafelyAsync(SongItem song)
+    {
+        try
+        {
+            await _favoriteService.ShowAddToPlaylistDialogAsync(song);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "打开添加到歌单对话框失败");
+        }
     }
 
     public AvaloniaList<SongItem> PlaybackQueue => _queueManager.PlaybackQueue;

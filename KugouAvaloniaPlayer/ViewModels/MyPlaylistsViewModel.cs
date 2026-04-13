@@ -14,11 +14,9 @@ using KuGou.Net.Clients;
 using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.Services;
 using Microsoft.Extensions.Logging;
-using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using TagLib;
 using File = TagLib.File;
-using TextBox = Avalonia.Controls.TextBox;
 
 namespace KugouAvaloniaPlayer.ViewModels;
 
@@ -27,7 +25,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     private const string DefaultCover = "avares://KugouAvaloniaPlayer/Assets/default_listcard.png";
     private const string DefaultSongCover = "avares://KugouAvaloniaPlayer/Assets/default_song.png";
     private const string LikeCover = "avares://KugouAvaloniaPlayer/Assets/LikeList.jpg";
-    private readonly ISukiDialogManager _dialogManager;
+    private readonly ICreatePlaylistDialogService _createPlaylistDialogService;
     private readonly IFolderPickerService _folderPickerService;
     private readonly ILogger<MyPlaylistsViewModel> _logger;
     private readonly PlaylistClient _playlistClient;
@@ -48,21 +46,21 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         UserClient userClient,
         PlaylistClient playlistClient,
         ISukiToastManager toastManager,
-        ISukiDialogManager dialogManager,
+        ICreatePlaylistDialogService createPlaylistDialogService,
         IFolderPickerService folderPickerService,
         ILogger<MyPlaylistsViewModel> logger)
     {
         _userClient = userClient;
         _playlistClient = playlistClient;
         _toastManager = toastManager;
-        _dialogManager = dialogManager;
+        _createPlaylistDialogService = createPlaylistDialogService;
         _folderPickerService = folderPickerService;
         _logger = logger;
 
         _ = LoadAllPlaylists();
 
         WeakReferenceMessenger.Default.Register<RemoveFromPlaylistMessage>(this,
-            async void (_, m) => { await RemoveSongFromPlaylist(m.Song); });
+            (_, m) => _ = RemoveSongFromPlaylistSafelyAsync(m.Song));
 
         WeakReferenceMessenger.Default.Register<AuthStateChangedMessage>(this, (r, m) => { _ = LoadAllPlaylists(); });
         WeakReferenceMessenger.Default.Register<RefreshPlaylistsMessage>(this,
@@ -357,25 +355,11 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     }
 
     [RelayCommand]
-    private void ShowCreatePlaylistDialog()
+    private async Task ShowCreatePlaylistDialog()
     {
-        var textBox = new TextBox
-        {
-            Watermark = "请输入歌单名称",
-            Width = 300
-        };
-
-        _dialogManager.CreateDialog()
-            .WithTitle("新建歌单")
-            .WithContent(textBox)
-            .WithActionButton("取消", _ => { }, true, "Flat")
-            .WithActionButton("创建", async _ =>
-            {
-                var name = textBox.Text;
-                if (!string.IsNullOrWhiteSpace(name))
-                    await CreateOnlinePlaylistCommand.ExecuteAsync(name);
-            }, true, "Accent")
-            .TryShow();
+        var name = await _createPlaylistDialogService.PromptPlaylistNameAsync();
+        if (!string.IsNullOrWhiteSpace(name))
+            await CreateOnlinePlaylistCommand.ExecuteAsync(name);
     }
 
     [RelayCommand]
@@ -488,6 +472,18 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Dismiss().ByClicking()
                 .Queue();
+        }
+    }
+
+    private async Task RemoveSongFromPlaylistSafelyAsync(SongItem? song)
+    {
+        try
+        {
+            await RemoveSongFromPlaylist(song);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "处理移除歌曲消息失败");
         }
     }
 }

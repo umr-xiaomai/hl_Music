@@ -148,12 +148,7 @@ public class FavoritePlaylistService(
                 .WithTitle("添加到歌单")
                 .WithContent(listBox)
                 .WithActionButton("取消", _ => { }, true, "Standard")
-                .WithActionButton("添加", async void (_) =>
-                {
-                    if (listBox.SelectedItem is UserPlaylistItem selectedPlaylist)
-                        await AddSongToPlaylistInnerAsync(song, selectedPlaylist.ListId.ToString(),
-                            selectedPlaylist.Name);
-                }, true, "Standard")
+                .WithActionButton("添加", _ => HandleAddToPlaylistClick(song, listBox), true, "Standard")
                 .TryShow();
         }
         else
@@ -206,5 +201,23 @@ public class FavoritePlaylistService(
         {
             logger.LogError(ex, "添加歌曲到歌单失败");
         }
+    }
+
+    private async Task AddSongToPlaylistSafelyAsync(SongItem song, UserPlaylistItem selectedPlaylist)
+    {
+        try
+        {
+            await AddSongToPlaylistInnerAsync(song, selectedPlaylist.ListId.ToString(), selectedPlaylist.Name);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "添加歌曲到歌单失败");
+        }
+    }
+
+    private void HandleAddToPlaylistClick(SongItem song, ListBox listBox)
+    {
+        if (listBox.SelectedItem is UserPlaylistItem selectedPlaylist)
+            _ = AddSongToPlaylistSafelyAsync(song, selectedPlaylist);
     }
 }
