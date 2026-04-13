@@ -215,7 +215,8 @@
                     </StackPanel>
                 </StackPanel>
 
-                <controls1:MeasuredLyricScrollView Grid.Column="1"
+                <controls1:MeasuredLyricScrollView x:Name="LyricScrollView"
+                                                   Grid.Column="1"
                                                    ItemsSource="{Binding Player.LyricLines}"
                                                    ActiveItem="{Binding Player.CurrentLyricLine}"
                                                    ScrollDuration="0:0:0.37"

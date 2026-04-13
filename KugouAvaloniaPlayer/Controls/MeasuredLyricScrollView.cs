@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
@@ -14,6 +15,10 @@ public class MeasuredLyricScrollView : ItemsControl
 {
     private const int StaggerRange = 3;
     private const int StaggerStepMs = 60;
+    private const int EntranceStepMs = 35;
+    private static readonly TimeSpan EntranceDuration = TimeSpan.FromMilliseconds(520);
+    private const double DefaultEstimatedLineHeight = 72;
+    private const double EntranceRiseOffset = 110;
 
     public static readonly StyledProperty<object?> ActiveItemProperty =
         AvaloniaProperty.Register<MeasuredLyricScrollView, object?>(nameof(ActiveItem));
@@ -34,6 +39,8 @@ public class MeasuredLyricScrollView : ItemsControl
     private int? _lockedActiveIndex;
     private bool _layoutUpdateQueued;
     private double _manualOffset;
+    private bool _isFirstLayoutPass = true;
+    private readonly Dictionary<int, double> _knownHeights = new();
 
     public MeasuredLyricScrollView()
     {
@@ -102,6 +109,7 @@ public class MeasuredLyricScrollView : ItemsControl
         if (change.Property == ItemsSourceProperty)
         {
             HookCollectionChanged(change.NewValue);
+            ResetFirstLayoutState();
             QueueLayoutUpdate();
         }
     }
@@ -159,6 +167,7 @@ public class MeasuredLyricScrollView : ItemsControl
 
     private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        ResetFirstLayoutState();
         QueueLayoutUpdate();
     }
 
@@ -200,7 +209,9 @@ public class MeasuredLyricScrollView : ItemsControl
             if (height <= 0)
                 height = container.DesiredSize.Height;
             if (height <= 0)
-                height = 1;
+                height = _knownHeights.GetValueOrDefault(i, DefaultEstimatedLineHeight);
+            else
+                _knownHeights[i] = height;
 
             heights[i] = height;
         }
@@ -211,8 +222,17 @@ public class MeasuredLyricScrollView : ItemsControl
         {
             if (ContainerFromIndex(i) is not Control container) continue;
 
-            var topDelay = _isUserScrolling ? TimeSpan.Zero : GetTopTransitionDelay(i, staggerAnchorIndex);
-            var topDuration = _isUserScrolling ? TimeSpan.Zero : ScrollDuration;
+            var isEntrance = _isFirstLayoutPass && !_isUserScrolling;
+            var topDelay = _isUserScrolling
+                ? TimeSpan.Zero
+                : isEntrance
+                    ? GetEntranceDelay(i, activeIndex)
+                    : GetTopTransitionDelay(i, staggerAnchorIndex);
+            var topDuration = _isUserScrolling
+                ? TimeSpan.Zero
+                : isEntrance
+                    ? EntranceDuration
+                    : ScrollDuration;
             EnsureTransitions(container, topDelay, topDuration);
 
             var targetCenterY = centerY;
@@ -229,6 +249,13 @@ public class MeasuredLyricScrollView : ItemsControl
             }
 
             var targetTop = targetCenterY - heights[i] / 2;
+
+            if (isEntrance)
+            {
+                // 首次加载从下往上依次抬升，避免“先挤成一团再展开”
+                SetTopImmediate(container, targetTop + EntranceRiseOffset + Math.Abs(i - activeIndex) * 8);
+            }
+
             Canvas.SetTop(container, targetTop);
             Canvas.SetLeft(container, 0);
             container.Width = Bounds.Width;
@@ -236,6 +263,8 @@ public class MeasuredLyricScrollView : ItemsControl
             var distance = Math.Abs(i - activeIndex);
             container.Opacity = Math.Clamp(1 - distance * 0.16, 0.24, 1);
         }
+
+        _isFirstLayoutPass = false;
     }
 
     private int GetActiveIndex()
@@ -257,6 +286,39 @@ public class MeasuredLyricScrollView : ItemsControl
             return TimeSpan.Zero;
         var delayMs = (StaggerRange + delta) * StaggerStepMs;
         return TimeSpan.FromMilliseconds(Math.Max(0, delayMs));
+    }
+
+    private static TimeSpan GetEntranceDelay(int index, int activeIndex)
+    {
+        var distance = Math.Abs(index - activeIndex);
+        return TimeSpan.FromMilliseconds(Math.Min(220, distance * EntranceStepMs));
+    }
+
+    private static void SetTopImmediate(Control container, double top)
+    {
+        var transitions = container.Transitions;
+        container.Transitions = null;
+        Canvas.SetTop(container, top);
+        container.Transitions = transitions;
+    }
+
+    private void ResetFirstLayoutState()
+    {
+        _isFirstLayoutPass = true;
+        _knownHeights.Clear();
+    }
+
+    public void ForceSecondPassLayout()
+    {
+        InvalidateMeasure();
+        InvalidateArrange();
+        QueueLayoutUpdate();
+        Dispatcher.UIThread.Post(() =>
+        {
+            InvalidateMeasure();
+            InvalidateArrange();
+            QueueLayoutUpdate();
+        }, DispatcherPriority.Render);
     }
 
     private void EnsureTransitions(Control container, TimeSpan topDelay, TimeSpan topDuration)
