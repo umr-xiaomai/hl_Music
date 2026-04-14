@@ -273,7 +273,8 @@ internal class Program
     // --- 加载歌单 (适配 PlaylistClient) ---
     private static async Task GetPlaylist(string pid)
     {
-        var songs = await _playlistClient.GetSongsAsync(pid, pageSize: 60);
+        var data = await _playlistClient.GetSongsAsync(pid, pageSize: 60);
+        var songs = data.Songs;
 
         if (songs == null || songs.Count == 0)
         {

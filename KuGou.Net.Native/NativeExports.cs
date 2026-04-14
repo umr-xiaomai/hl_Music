@@ -243,7 +243,7 @@ public static class NativeExports
     public static IntPtr KgPlaylist_GetSongs(IntPtr playlistIdPtr, int page, int pageSize)
     {
         return ToJsonPtr(_playlistClient!.GetSongsAsync(GetStr(playlistIdPtr), page, pageSize).GetAwaiter().GetResult(),
-            NativeJsonContext.Default.ListPlaylistSong);
+            NativeJsonContext.Default.PlaylistSongResponse);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "KgPlaylist_GetInfo")]

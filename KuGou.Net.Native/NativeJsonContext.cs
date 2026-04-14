@@ -37,6 +37,7 @@ public record NativeAddSongItemDto(string Name, string Hash, string AlbumId, str
 [JsonSerializable(typeof(List<SearchAlbumItem>))]
 // Playlist
 [JsonSerializable(typeof(List<PlaylistSong>))]
+[JsonSerializable(typeof(PlaylistSongResponse))]
 [JsonSerializable(typeof(PlaylistInfo))]
 [JsonSerializable(typeof(AddSongResponse))]
 [JsonSerializable(typeof(RemoveSongResponse))]
