@@ -14,7 +14,9 @@
                  Name="RootWindow"
                  Icon="/Assets/Test.ico"
                  Title="KuGou Avalonia Player"
-                 BackgroundStyle="Bubble">
+                 BackgroundStyle="Bubble"
+                 CanFullScreen="True"
+                 TitleBarVisibilityOnFullScreen="AutoHidden">
 
     <suki:SukiWindow.Styles>
         <!-- 遮罩层动画 -->
