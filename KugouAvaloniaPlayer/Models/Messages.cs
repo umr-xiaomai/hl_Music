@@ -16,6 +16,7 @@ public record RemoveFromPlaylistMessage(SongItem Song);
 public record AuthStateChangedMessage(bool IsLoggedIn);
 
 public record NavigatePageMessage(PageViewModelBase TargetPage);
+public record RequestNavigateBackMessage;
 
 public record RefreshPlaylistsMessage;
 

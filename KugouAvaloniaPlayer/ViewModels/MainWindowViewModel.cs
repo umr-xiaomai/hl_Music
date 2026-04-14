@@ -133,6 +133,8 @@ public partial class MainWindowViewModel : ObservableObject
             ActivePage = m.TargetPage;
         });
 
+        WeakReferenceMessenger.Default.Register<RequestNavigateBackMessage>(this, (_, _) => { NavigateBack(); });
+
         Task.Run(async () =>
         {
             await LoadLocalSessionOrLogin();

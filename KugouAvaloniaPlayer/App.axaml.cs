@@ -39,6 +39,7 @@ public partial class App : Application
         collection.AddSingleton<ISukiToastManager, SukiToastManager>();
         collection.AddSingleton<ISukiDialogManager, SukiDialogManager>();
         collection.AddSingleton<ICreatePlaylistDialogService, CreatePlaylistDialogService>();
+        collection.AddSingleton<INeteasePlaylistImportService, NeteasePlaylistImportService>();
         collection.AddSingleton<ILoginDialogService, LoginDialogService>();
         collection.AddSingleton<IDesktopLyricMousePassthroughService, DesktopLyricMousePassthroughService>();
         collection.AddSingleton<IDesktopLyricWindowService, DesktopLyricWindowService>();

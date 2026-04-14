@@ -29,6 +29,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     private readonly FavoritePlaylistService _favoritePlaylistService;
     private readonly IFolderPickerService _folderPickerService;
     private readonly ILogger<MyPlaylistsViewModel> _logger;
+    private readonly INeteasePlaylistImportService _neteasePlaylistImportService;
     private readonly PlaylistClient _playlistClient;
     private readonly ISukiToastManager _toastManager;
     private readonly UserClient _userClient;
@@ -38,6 +39,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     private bool _hasMoreSongs = true;
     private bool _isLikePlaylistLocalMode;
     [ObservableProperty] private bool _isLoadingMore;
+    [ObservableProperty] private bool _isImportingExternalPlaylist;
 
     [ObservableProperty] private bool _isShowingSongs;
 
@@ -51,6 +53,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         ISukiToastManager toastManager,
         ICreatePlaylistDialogService createPlaylistDialogService,
         IFolderPickerService folderPickerService,
+        INeteasePlaylistImportService neteasePlaylistImportService,
         ILogger<MyPlaylistsViewModel> logger)
     {
         _userClient = userClient;
@@ -59,6 +62,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         _toastManager = toastManager;
         _createPlaylistDialogService = createPlaylistDialogService;
         _folderPickerService = folderPickerService;
+        _neteasePlaylistImportService = neteasePlaylistImportService;
         _logger = logger;
 
         _ = LoadAllPlaylists();
@@ -366,6 +370,87 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     }
 
     [RelayCommand]
+    private async Task ImportNeteasePlaylist()
+    {
+        if (IsImportingExternalPlaylist)
+            return;
+
+        var link = await _createPlaylistDialogService.PromptTextAsync(
+            "导入网易云歌单",
+            "请输入网易云歌单分享链接",
+            confirmText: "下一步");
+
+        if (string.IsNullOrWhiteSpace(link))
+            return;
+
+        IsImportingExternalPlaylist = true;
+        try
+        {
+            var parseResult = await _neteasePlaylistImportService.ParseAndLoadAsync(link);
+            if (!parseResult.Success)
+            {
+                _toastManager.CreateToast()
+                    .OfType(NotificationType.Error)
+                    .WithTitle("解析失败")
+                    .WithContent(parseResult.ErrorMessage)
+                    .Dismiss().After(TimeSpan.FromSeconds(4))
+                    .Dismiss().ByClicking()
+                    .Queue();
+                return;
+            }
+
+            var targetName = await _createPlaylistDialogService.PromptPlaylistNameAsync(parseResult.SourcePlaylistName);
+            if (string.IsNullOrWhiteSpace(targetName))
+                return;
+
+            var importResult = await _neteasePlaylistImportService.ImportToKugouAsync(parseResult, targetName);
+            if (!importResult.Success)
+            {
+                _toastManager.CreateToast()
+                    .OfType(NotificationType.Error)
+                    .WithTitle("导入失败")
+                    .WithContent(importResult.ErrorMessage)
+                    .Dismiss().After(TimeSpan.FromSeconds(4))
+                    .Dismiss().ByClicking()
+                    .Queue();
+                return;
+            }
+
+            WeakReferenceMessenger.Default.Send(new RefreshPlaylistsMessage());
+
+            var preview = string.Join("、", importResult.FailedNames.Take(10));
+            var summary = $"总计 {importResult.Total} 首，匹配 {importResult.Matched} 首，成功导入 {importResult.Imported} 首。";
+            if (importResult.FailedNames.Count > 0)
+                summary += $"\n未命中 {importResult.FailedNames.Count} 首：{preview}";
+            else if (importResult.Matched == 0)
+                summary += "\n未匹配到可导入歌曲。";
+
+            _toastManager.CreateToast()
+                .OfType(NotificationType.Success)
+                .WithTitle("导入完成")
+                .WithContent(summary)
+                .Dismiss().After(TimeSpan.FromSeconds(6))
+                .Dismiss().ByClicking()
+                .Queue();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "导入网易云歌单时发生异常");
+            _toastManager.CreateToast()
+                .OfType(NotificationType.Error)
+                .WithTitle("导入失败")
+                .WithContent(ex.Message)
+                .Dismiss().After(TimeSpan.FromSeconds(4))
+                .Dismiss().ByClicking()
+                .Queue();
+        }
+        finally
+        {
+            IsImportingExternalPlaylist = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task CreateOnlinePlaylist(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return;
@@ -457,6 +542,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             SelectedPlaylist = null;
             SelectedPlaylistSongs.Clear();
             IsShowingSongs = false;
+            WeakReferenceMessenger.Default.Send(new RequestNavigateBackMessage());
         }
 
         return true;

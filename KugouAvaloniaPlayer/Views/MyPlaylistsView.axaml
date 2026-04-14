@@ -10,16 +10,8 @@
              x:Class="KugouAvaloniaPlayer.Views.MyPlaylistsView"
              x:DataType="vm:MyPlaylistsViewModel">
 
-    <Grid Margin="15" RowDefinitions="Auto,*">
-        <Border Grid.Row="0"
-                CornerRadius="12"
-                Padding="16"
-                IsVisible="{Binding SelectedPlaylist, Converter={x:Static ObjectConverters.IsNull}}">
-            <TextBlock Text="请从左侧导航栏选择歌单"
-                       Foreground="{DynamicResource SukiLowText}" />
-        </Border>
-
-        <Grid Grid.Row="1" IsVisible="{Binding SelectedPlaylist, Converter={x:Static ObjectConverters.IsNotNull}}"
+    <Grid Margin="15">
+        <Grid IsVisible="{Binding SelectedPlaylist, Converter={x:Static ObjectConverters.IsNotNull}}"
               RowDefinitions="Auto, *">
             <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*">
                 <Border Width="80" Height="80" CornerRadius="8" ClipToBounds="True"

@@ -7,12 +7,22 @@ namespace KugouAvaloniaPlayer.Services;
 
 public interface ICreatePlaylistDialogService
 {
-    Task<string?> PromptPlaylistNameAsync();
+    Task<string?> PromptPlaylistNameAsync(string? defaultValue = null);
+    Task<string?> PromptTextAsync(string title, string watermark, string? defaultValue = null, string confirmText = "确定");
 }
 
 public sealed class CreatePlaylistDialogService(ISukiDialogManager dialogManager) : ICreatePlaylistDialogService
 {
-    public Task<string?> PromptPlaylistNameAsync()
+    public Task<string?> PromptPlaylistNameAsync(string? defaultValue = null)
+    {
+        return PromptTextAsync("新建歌单", "请输入歌单名称", defaultValue, "创建");
+    }
+
+    public Task<string?> PromptTextAsync(
+        string title,
+        string watermark,
+        string? defaultValue = null,
+        string confirmText = "确定")
     {
         var tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -20,15 +30,16 @@ public sealed class CreatePlaylistDialogService(ISukiDialogManager dialogManager
         {
             var textBox = new TextBox
             {
-                Watermark = "请输入歌单名称",
+                Watermark = watermark,
+                Text = defaultValue ?? string.Empty,
                 Width = 300
             };
 
             dialogManager.CreateDialog()
-                .WithTitle("新建歌单")
+                .WithTitle(title)
                 .WithContent(textBox)
                 .WithActionButton("取消", _ => { tcs.TrySetResult(null); }, true, "Standard")
-                .WithActionButton("创建", _ =>
+                .WithActionButton(confirmText, _ =>
                 {
                     var name = textBox.Text?.Trim();
                     tcs.TrySetResult(string.IsNullOrWhiteSpace(name) ? null : name);

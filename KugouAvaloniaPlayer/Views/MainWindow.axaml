@@ -173,6 +173,8 @@
                                     <MenuFlyout Placement="Bottom">
                                         <MenuItem Header="导入本地文件夹..."
                                                   Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.ImportLocalFolderCommand}" />
+                                        <MenuItem Header="导入网易云歌单链接..."
+                                                  Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.ImportNeteasePlaylistCommand}" />
                                         <MenuItem Header="新建歌单..."
                                                   Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.ShowCreatePlaylistDialogCommand}" />
                                     </MenuFlyout>
