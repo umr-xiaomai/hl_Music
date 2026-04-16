@@ -61,6 +61,7 @@ jobs:
             -v "$VERSION" \
             -p ./publish \
             -e "$EXE_NAME" \
+            -i ./KugouAvaloniaPlayer/Assets/Test.ico \
             -o ./releases
 
       - name: Upload Artifacts
@@ -207,6 +208,7 @@ jobs:
             -v "$VERSION" \
             -p ./publish/macos \
             -e "$APP_NAME" \
+            -i ./KugouAvaloniaPlayer/Assets/Test.ico \
             -o ./releases
 
       - name: Upload macOS artifacts
@@ -238,7 +240,6 @@ jobs:
           cp ./all_artifacts/*.exe ./release_files/KugouAvaloniaPlayer-win.exe 2>/dev/null || true
           cp ./all_artifacts/*.AppImage ./release_files/KugouAvaloniaPlayer-linux.AppImage 2>/dev/null || true
           cp ./all_artifacts/*-mac.app.zip ./release_files/KugouAvaloniaPlayer-mac.app.zip 2>/dev/null || true
-          cp ./all_artifacts/*-mac-unsigned.pkg ./release_files/KugouAvaloniaPlayer-mac-unsigned.pkg 2>/dev/null || true
           cp ./all_artifacts/*-osx-Setup.pkg ./release_files/KugouAvaloniaPlayer-mac-Setup.pkg 2>/dev/null || true
           cp ./all_artifacts/*.nupkg ./release_files/ 2>/dev/null || true
           cp ./all_artifacts/RELEASES* ./release_files/ 2>/dev/null || true

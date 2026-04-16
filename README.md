@@ -19,12 +19,12 @@
 
 ## 功能总览
 
-| 领域    | 已实现能力                                                    | 入口 | 状态 |
-|-------|----------------------------------------------------------|---|---|
-| 登录    | 手机验证码登录、二维码登录、登录持久化                                      | 桌面端 / SDK / Web API | ✅ |
-| 音乐内容  | 每日推荐、发现歌单、排行榜、歌手页、搜索（歌曲/歌单/专辑）                           | 桌面端 / SDK / Web API | ✅ |
-| 播放与音效 | 在线播放、本地文件夹导入、播放队列、随机播放、下一首插队、均衡器                         | 桌面端 / SimpleAudio | ✅ |
-| 歌词与交互 | 在线 KRC、本地 KRC/LRC/VTT、逐字高亮、桌面歌词浮窗、托盘控制、自动更新、网易云歌单导入、全屏播放 | 桌面端 | ✅ |
+| 领域    | 已实现能力                                                                    | 入口 | 状态 |
+|-------|--------------------------------------------------------------------------|---|---|
+| 登录    | 手机验证码登录、二维码登录、登录持久化                                                      | 桌面端 / SDK / Web API | ✅ |
+| 音乐内容  | 每日推荐、发现歌单、排行榜、歌手页、搜索（歌曲/歌单/专辑）                                           | 桌面端 / SDK / Web API | ✅ |
+| 播放与音效 | 在线播放、本地文件夹导入、播放队列、随机播放、下一首插队、均衡器                                         | 桌面端 / SimpleAudio | ✅ |
+| 歌词与交互 | 在线 KRC、本地 KRC/LRC/VTT、逐字高亮、桌面歌词浮窗、托盘控制、自动更新、网易云/QQ音乐歌单导入、自定义歌词字体和颜色、全屏播放 | 桌面端 | ✅ |
 
 ## 截图
 
@@ -226,15 +226,7 @@ KugouMusic.NET
 
 自动更新依赖 Velopack 安装上下文。若你通过 `dotnet run` 或手动复制文件运行，应用会跳过自动更新检查。请使用 Releases 安装包安装。
 
-### 1.1 macOS 提示“已损坏”或双击无响应怎么办？
 
-当前发布包未签名/未公证，macOS 可能会拦截。可先执行：
-
-```bash
-xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
-```
-
-再重新启动应用。
 
 ### 2. 为什么未登录时不能播放在线歌曲？
 
@@ -247,6 +239,9 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 ## 更新日志
 
 完整版本历史请查看 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)。
+### v0.9.6
+
+- 新增解析QQ音乐歌单导入
 
 ### v0.9.5
 
@@ -270,3 +265,4 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 
 - 本项目仅用于技术学习与交流，请勿用于任何侵犯版权或违反服务条款的用途。
 - 灵感来源： [MakcRe/KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
+ 
