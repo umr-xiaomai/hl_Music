@@ -33,6 +33,7 @@ public class AppSettings
     public string DesktopLyricCustomTranslationColor { get; set; } = "#CCFFFFFF";
     public bool DesktopLyricUseCustomFont { get; set; }
     public string DesktopLyricCustomFontFamily { get; set; } = string.Empty;
+    public double DesktopLyricFontSize { get; set; } = 30;
 }
 
 [JsonSerializable(typeof(AppSettings))]

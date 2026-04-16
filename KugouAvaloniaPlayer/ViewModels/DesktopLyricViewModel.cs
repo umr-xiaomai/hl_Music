@@ -10,6 +10,10 @@ namespace KugouAvaloniaPlayer.ViewModels;
 
 public partial class DesktopLyricViewModel : ViewModelBase
 {
+    private const double MinFontSize = 18;
+    private const double MaxFontSize = 50;
+    private const double FontSizeStep = 2;
+
     private static readonly IBrush DefaultLyricBrush = new SolidColorBrush(Colors.White);
     private static readonly IBrush DefaultTranslationLineBrush = new SolidColorBrush(Color.Parse("#CCFFFFFF"));
     private static readonly IBrush DefaultTranslationWordBrush = new SolidColorBrush(Colors.White);
@@ -18,6 +22,7 @@ public partial class DesktopLyricViewModel : ViewModelBase
     {
         Player = player;
         CanMousePassthrough = canMousePassthrough;
+        FontSize = ClampFontSize(SettingsManager.Settings.DesktopLyricFontSize);
         ApplyLyricStyleSettings(
             SettingsManager.Settings.DesktopLyricUseCustomMainColor,
             SettingsManager.Settings.DesktopLyricCustomMainColor,
@@ -39,6 +44,7 @@ public partial class DesktopLyricViewModel : ViewModelBase
     }
 
     [ObservableProperty] private double _fontSize = 30;
+    [ObservableProperty] private double _translationFontSize = 18;
 
     [ObservableProperty] private bool _isLocked;
 
@@ -55,6 +61,35 @@ public partial class DesktopLyricViewModel : ViewModelBase
     private void ToggleLock()
     {
         IsLocked = !IsLocked;
+    }
+
+    [RelayCommand]
+    private void IncreaseFontSize()
+    {
+        FontSize = ClampFontSize(FontSize + FontSizeStep);
+    }
+
+    [RelayCommand]
+    private void DecreaseFontSize()
+    {
+        FontSize = ClampFontSize(FontSize - FontSizeStep);
+    }
+
+    public string FontSizeDisplay => $"{Math.Round(FontSize):0}pt";
+
+    partial void OnFontSizeChanged(double value)
+    {
+        var clamped = ClampFontSize(value);
+        if (Math.Abs(clamped - value) > double.Epsilon)
+        {
+            FontSize = clamped;
+            return;
+        }
+
+        TranslationFontSize = Math.Max(14, Math.Round(value * 0.6, 1));
+        SettingsManager.Settings.DesktopLyricFontSize = value;
+        SettingsManager.Save();
+        OnPropertyChanged(nameof(FontSizeDisplay));
     }
 
     private void ApplyLyricStyleSettings(
@@ -110,5 +145,10 @@ public partial class DesktopLyricViewModel : ViewModelBase
     private static Color ParseColorOrDefault(string? colorText, Color fallback)
     {
         return Color.TryParse(colorText, out var parsed) ? parsed : fallback;
+    }
+
+    private static double ClampFontSize(double fontSize)
+    {
+        return Math.Clamp(fontSize, MinFontSize, MaxFontSize);
     }
 }

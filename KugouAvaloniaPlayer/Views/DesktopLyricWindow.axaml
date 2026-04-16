@@ -53,7 +53,7 @@
         </Style>
 
         <Style Selector="TextBlock.DesktopTrans">
-            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontSize" Value="{Binding $parent[Window].((vm:DesktopLyricViewModel)DataContext).TranslationFontSize}" />
             <Setter Property="FontFamily" Value="{Binding $parent[Window].((vm:DesktopLyricViewModel)DataContext).LyricFontFamily}" />
         </Style>
     </Window.Styles>
@@ -145,7 +145,7 @@
             </ItemsControl>
         </StackPanel>
 
-        <Grid Name="ControlPanel" ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Top" Margin="10">
+        <Grid Name="ControlPanel" ColumnDefinitions="Auto, Auto, *, Auto" VerticalAlignment="Top" Margin="10">
             <Button Grid.Column="0"
                     Command="{Binding ToggleLockCommand}"
                     IsVisible="{Binding CanMousePassthrough}"
@@ -162,7 +162,19 @@
                 </Panel>
             </Button>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="15">
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="12,0,0,0">
+                <Button Command="{Binding DecreaseFontSizeCommand}" Classes="Basic" ToolTip.Tip="减小歌词字号">
+                    <TextBlock Text="A-" Foreground="White" FontWeight="SemiBold" />
+                </Button>
+
+                <TextBlock Text="{Binding FontSizeDisplay}" Foreground="White" VerticalAlignment="Center" />
+
+                <Button Command="{Binding IncreaseFontSizeCommand}" Classes="Basic" ToolTip.Tip="增大歌词字号">
+                    <TextBlock Text="A+" Foreground="White" FontWeight="SemiBold" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="15">
                 <Button Command="{Binding Player.PlayPreviousCommand}" Classes="Basic">
                     <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="White" />
                 </Button>
@@ -183,7 +195,7 @@
                 </Button>
             </StackPanel>
 
-            <Button Grid.Column="2" Click="OnCloseClicked" Classes="Basic" ToolTip.Tip="关闭歌词">
+            <Button Grid.Column="3" Click="OnCloseClicked" Classes="Basic" ToolTip.Tip="关闭歌词">
                 <PathIcon Data="{x:Static suki:Icons.Cross}" Foreground="White" Width="12" />
             </Button>
         </Grid>
