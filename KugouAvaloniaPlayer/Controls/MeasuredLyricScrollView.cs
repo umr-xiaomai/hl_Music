@@ -13,7 +13,7 @@ namespace KugouAvaloniaPlayer.Controls;
 
 public class MeasuredLyricScrollView : ItemsControl
 {
-    private const int StaggerRange = 3;
+    private const int StaggerRange = 5;
     private const int StaggerStepMs = 60;
     private const int EntranceStepMs = 35;
     private static readonly TimeSpan EntranceDuration = TimeSpan.FromMilliseconds(520);

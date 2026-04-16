@@ -61,7 +61,7 @@ partial class App
         _trayIcon = new TrayIcon
         {
             Icon = icon,
-            ToolTipText = "KuGou Avalonia Player",
+            ToolTipText = "KA Music",
             Menu = menu,
             IsVisible = true
         };

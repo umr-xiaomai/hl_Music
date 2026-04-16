@@ -107,7 +107,7 @@
             <Grid Grid.Row="1" ColumnDefinitions="4*, 6*" Margin="0,30,0,50">
 
                 <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="40">
-                    <suki:GlassCard CornerRadius="20" Padding="0" Width="350" Height="350">
+                    <suki:GlassCard CornerRadius="20" Padding="0" Width="320" Height="320" MinWidth="220" MinHeight="220" MaxWidth="350" MaxHeight="350">
                         <controls:AsyncImage Source="{Binding Player.CurrentPlayingSong.Cover}" Stretch="UniformToFill" />
                     </suki:GlassCard>
 
@@ -176,7 +176,7 @@
                                 </Button>
                             </StackPanel>
 
-                            <Grid Grid.Row="1" ColumnDefinitions="Auto, *" Width="400" Margin="0,4,0,0">
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto, *" MinWidth="220" MaxWidth="420" Margin="0,4,0,0" HorizontalAlignment="Stretch">
                                 <Slider Grid.Column="1" Minimum="0" Maximum="{Binding Player.TotalDurationSeconds}"
                                         Value="{Binding Player.CurrentPositionSeconds}"
                                         Margin="8,0" IsSnapToTickEnabled="False"
@@ -186,7 +186,8 @@
 
                             <Grid Grid.Row="2"
                                   ColumnDefinitions="Auto, *, Auto"
-                                  Width="240"
+                                  MinWidth="200"
+                                  MaxWidth="320"
                                   Margin="0,10,0,0"
                                   HorizontalAlignment="Center"
                                   IsVisible="{Binding IsNowPlayingVolumeVisible}">

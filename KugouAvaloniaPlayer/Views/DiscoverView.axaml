@@ -3,8 +3,10 @@
              xmlns:vm="using:KugouAvaloniaPlayer.ViewModels"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:localControls="using:KugouAvaloniaPlayer.Controls"
+             xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
              x:Class="KugouAvaloniaPlayer.Views.DiscoverView"
+             x:Name="DiscoverRoot"
              x:DataType="vm:DiscoverViewModel">
 
     <UserControl.Styles>
@@ -47,8 +49,8 @@
                             <DataTemplate DataType="vm:PlaylistTagGroup">
                                 <RadioButton Classes="Segmented"
                                              GroupName="MainTags"
-                                             IsChecked="{Binding $parent[UserControl].((vm:DiscoverViewModel)DataContext).SelectedMainIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={Binding Index}}"
-                                             Command="{Binding $parent[UserControl].((vm:DiscoverViewModel)DataContext).SelectMainCategoryCommand}"
+                                             IsChecked="{Binding #DiscoverRoot.((vm:DiscoverViewModel)DataContext).SelectedMainIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={Binding Index}}"
+                                             Command="{Binding #DiscoverRoot.((vm:DiscoverViewModel)DataContext).SelectMainCategoryCommand}"
                                              CommandParameter="{Binding Index}">
                                     <TextBlock Text="{Binding TagName}" VerticalAlignment="Center" />
                                 </RadioButton>
@@ -70,8 +72,8 @@
                             <DataTemplate DataType="vm:PlaylistTag">
                                 <RadioButton Classes="Segmented"
                                              GroupName="SubTags"
-                                             IsChecked="{Binding $parent[UserControl].((vm:DiscoverViewModel)DataContext).SelectedSubIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={Binding Index}}"
-                                             Command="{Binding $parent[UserControl].((vm:DiscoverViewModel)DataContext).SelectSubCategoryCommand}"
+                                             IsChecked="{Binding #DiscoverRoot.((vm:DiscoverViewModel)DataContext).SelectedSubIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={Binding Index}}"
+                                             Command="{Binding #DiscoverRoot.((vm:DiscoverViewModel)DataContext).SelectSubCategoryCommand}"
                                              CommandParameter="{Binding Index}">
                                     <TextBlock Text="{Binding TagName}" VerticalAlignment="Center" />
                                 </RadioButton>
@@ -104,7 +106,7 @@
                                 <localControls:MediaCard Cover="{Binding Cover}"
                                                          Title="{Binding Name}"
                                                          Subtitle="{Binding PlayCount, StringFormat='播放 {0}'}"
-                                                         Command="{Binding $parent[UserControl].((vm:DiscoverViewModel)DataContext).OpenPlaylistCommand}"
+                                                         Command="{Binding #DiscoverRoot.((vm:DiscoverViewModel)DataContext).OpenPlaylistCommand}"
                                                          CommandParameter="{Binding .}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -144,7 +146,7 @@
             <Grid Grid.Row="1" Margin="0,15,0,0">
                 <ListBox Classes="SongList"
                          ItemsSource="{Binding SelectedPlaylistSongs}"
-                         ScrollViewer.ScrollChanged="OnScrollChanged"
+                         behaviors:InteractionBehaviors.ScrollNearBottomCommand="{Binding LoadMoreSongsCommand}"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          Padding="0,0,0,80">

@@ -3,10 +3,12 @@
              xmlns:vm="using:KugouAvaloniaPlayer.ViewModels"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:converters="clr-namespace:KugouAvaloniaPlayer.Converters"
+             xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              x:Class="KugouAvaloniaPlayer.Views.LoginView"
              x:DataType="vm:LoginViewModel"
-             Width="350"
-             Unloaded="OnUnloaded">
+             MinWidth="280"
+             MaxWidth="420"
+             behaviors:InteractionBehaviors.DetachedFromVisualTreeCommand="{Binding StopQrPollingOnUnloadCommand}">
 
     <UserControl.Resources>
         <converters:Base64ImageConverter x:Key="Base64ImageConverter" />

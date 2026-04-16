@@ -29,6 +29,7 @@
         <converters:CloseBehaviorConverter x:Key="CloseBehaviorConverter" />
         <converters:SingerNameConverter x:Key="SingerNameConverter" />
         <converters:EnumEqualityConverter x:Key="EnumEqualityConverter" />
+        <converters:PlaybackQualityDisplayConverter x:Key="PlaybackQualityDisplayConverter" />
         <converters:WordLiftTransformConverter x:Key="WordLiftTransformConverter" />
     </Application.Resources>
 

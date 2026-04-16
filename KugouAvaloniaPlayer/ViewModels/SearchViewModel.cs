@@ -28,6 +28,20 @@ public enum DetailType
     Album
 }
 
+public partial class SearchHotTagItem : ObservableObject
+{
+    [ObservableProperty] private int _index;
+    [ObservableProperty] private string _keyword = "";
+    [ObservableProperty] private string _reason = "";
+}
+
+public partial class SearchHotTagGroup : ObservableObject
+{
+    [ObservableProperty] private int _index;
+    [ObservableProperty] private string _name = "";
+    public AvaloniaList<SearchHotTagItem> Keywords { get; } = new();
+}
+
 public partial class SearchViewModel(
     MusicClient musicClient,
     PlaylistClient playlistClient,
@@ -45,17 +59,21 @@ public partial class SearchViewModel(
     // 用于收藏歌单的信息
     private string _currentPlaylistGlobalId = "";
     private string _currentPlaylistName = "";
+    [ObservableProperty] private bool _isLoadingHot;
+    [ObservableProperty] private int _selectedHotMainIndex;
     [ObservableProperty] private SearchType _currentSearchType = SearchType.Song;
     [ObservableProperty] private string? _detailCover;
     [ObservableProperty] private string? _detailSubTitle;
     [ObservableProperty] private string? _detailTitle;
     private bool _hasMoreDetails = true;
+    [ObservableProperty] private bool _hasSearched;
     [ObservableProperty] private bool _isLoadingMoreDetails;
 
     [ObservableProperty] private bool _isSearching;
 
     [ObservableProperty] private bool _isShowingDetail;
     [ObservableProperty] private string _searchKeyword = "";
+    private bool _suppressHotSelectionChanged;
 
     public override string DisplayName => "搜索";
     public override string Icon => "/Assets/Search.svg";
@@ -64,6 +82,8 @@ public partial class SearchViewModel(
     public AvaloniaList<SearchPlaylistItem> Playlists { get; } = new();
     public AvaloniaList<SearchAlbumItem> Albums { get; } = new();
     public AvaloniaList<SongItem> DetailSongs { get; } = new();
+    public AvaloniaList<SearchHotTagGroup> HotCategories { get; } = new();
+    public AvaloniaList<SearchHotTagItem> CurrentHotKeywords { get; } = new();
 
     // 当前是否显示歌单详情（用于控制收藏按钮可见性）
     public bool IsPlaylistDetail => _currentDetailType == DetailType.Playlist;
@@ -73,6 +93,7 @@ public partial class SearchViewModel(
     {
         if (string.IsNullOrWhiteSpace(SearchKeyword)) return;
 
+        HasSearched = true;
         IsShowingDetail = false;
 
         IsSearching = true;
@@ -103,6 +124,92 @@ public partial class SearchViewModel(
         {
             IsSearching = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task LoadSearchHot()
+    {
+        if (IsLoadingHot) return;
+        if (HotCategories.Count > 0) return;
+
+        IsLoadingHot = true;
+        try
+        {
+            var response = await musicClient.GetSearchHotAsync();
+            HotCategories.Clear();
+            CurrentHotKeywords.Clear();
+
+            if (response?.Categories == null || response.Categories.Count == 0)
+                return;
+
+            var groups = response.Categories
+                .Select((category, groupIndex) => new SearchHotTagGroup
+                {
+                    Index = groupIndex,
+                    Name = category.Name
+                })
+                .ToList();
+
+            for (var i = 0; i < groups.Count; i++)
+            {
+                var keywords = response.Categories[i].Keywords
+                    .Where(k => !string.IsNullOrWhiteSpace(k.Keyword))
+                    .Select((k, keywordIndex) => new SearchHotTagItem
+                    {
+                        Index = keywordIndex,
+                        Keyword = k.Keyword,
+                        Reason = k.Reason
+                    })
+                    .ToList();
+                if (keywords.Count > 0)
+                    groups[i].Keywords.AddRange(keywords);
+            }
+
+            if (groups.Count == 0)
+                return;
+
+            HotCategories.AddRange(groups);
+
+            _suppressHotSelectionChanged = true;
+            SelectedHotMainIndex = 0;
+            ResetCurrentHotKeywords(0);
+            _suppressHotSelectionChanged = false;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "加载热搜失败");
+        }
+        finally
+        {
+            IsLoadingHot = false;
+        }
+    }
+
+    [RelayCommand]
+    private void SelectHotMainCategory(int index)
+    {
+        if (index < 0 || index >= HotCategories.Count)
+            return;
+
+        SelectedHotMainIndex = index;
+    }
+
+    partial void OnSelectedHotMainIndexChanged(int value)
+    {
+        if (_suppressHotSelectionChanged)
+            return;
+
+        ResetCurrentHotKeywords(value);
+    }
+
+    private void ResetCurrentHotKeywords(int mainIndex)
+    {
+        CurrentHotKeywords.Clear();
+        if (mainIndex < 0 || mainIndex >= HotCategories.Count)
+            return;
+
+        if (HotCategories[mainIndex].Keywords.Count > 0)
+            CurrentHotKeywords.AddRange(HotCategories[mainIndex].Keywords);
     }
 
     private void ClearResults()
@@ -145,6 +252,39 @@ public partial class SearchViewModel(
             ClearResults();
             if (!string.IsNullOrWhiteSpace(SearchKeyword)) _ = Search();
         }
+    }
+
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        SearchKeyword = string.Empty;
+        IsSearching = false;
+        IsShowingDetail = false;
+        HasSearched = false;
+
+        _currentDetailType = DetailType.None;
+        _currentDetailId = string.Empty;
+        _currentDetailPage = 1;
+        _hasMoreDetails = true;
+        DetailTitle = null;
+        DetailSubTitle = null;
+        DetailCover = null;
+        _currentPlaylistGlobalId = string.Empty;
+        _currentPlaylistName = string.Empty;
+
+        ClearResults();
+        DetailSongs.Clear();
+        OnPropertyChanged(nameof(IsPlaylistDetail));
+    }
+
+    [RelayCommand]
+    private async Task QuickSearchHotKeyword(SearchHotTagItem? item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.Keyword))
+            return;
+
+        SearchKeyword = item.Keyword;
+        await Search();
     }
 
     [RelayCommand]
@@ -213,6 +353,14 @@ public partial class SearchViewModel(
             if (_currentDetailType == DetailType.Playlist)
             {
                 var data = await playlistClient.GetSongsAsync(_currentDetailId, _currentDetailPage, 100);
+                if (data == null)
+                {
+                    logger.LogWarning("Playlist detail response is null. detailId={DetailId} page={Page}",
+                        _currentDetailId, _currentDetailPage);
+                    if (_currentDetailPage > 1) _currentDetailPage--;
+                    return;
+                }
+
                 if (data.Status != 1)
                 {
                     logger.LogError($"Error : {data.ErrorCode}");

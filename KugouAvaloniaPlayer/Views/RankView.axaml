@@ -3,8 +3,10 @@
              xmlns:vm="using:KugouAvaloniaPlayer.ViewModels"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:localControls="using:KugouAvaloniaPlayer.Controls"
+             xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
              x:Class="KugouAvaloniaPlayer.Views.RankView"
+             x:Name="RankRoot"
              x:DataType="vm:RankViewModel">
 
     <Grid Margin="15">
@@ -28,7 +30,7 @@
                         <DataTemplate DataType="vm:RankItem">
                             <localControls:MediaCard Cover="{Binding Cover}"
                                                      Title="{Binding Name}"
-                                                     Command="{Binding $parent[UserControl].((vm:RankViewModel)DataContext).OpenRankCommand}"
+                                                     Command="{Binding #RankRoot.((vm:RankViewModel)DataContext).OpenRankCommand}"
                                                      CommandParameter="{Binding .}" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -55,7 +57,7 @@
             <Grid Grid.Row="1" Margin="0,15,0,0">
                 <ListBox Classes="SongList"
                          ItemsSource="{Binding SelectedRankSongs}"
-                         ScrollViewer.ScrollChanged="OnScrollChanged"
+                         behaviors:InteractionBehaviors.ScrollNearBottomCommand="{Binding LoadMoreCommand}"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          Padding="0,0,0,80">

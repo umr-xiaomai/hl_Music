@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Input;
 using KugouAvaloniaPlayer.Services;
 using KugouAvaloniaPlayer.ViewModels;
 using SukiUI.Controls;
@@ -28,10 +27,5 @@ public partial class MainWindow : SukiWindow
         if (DataContext is MainWindowViewModel vm) vm.ForceCloseDesktopLyric();
 
         base.OnClosing(e);
-    }
-
-    private void OnBackdropPointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is MainWindowViewModel vm) vm.IsQueuePaneOpen = false;
     }
 }

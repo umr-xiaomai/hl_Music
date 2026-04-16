@@ -4,6 +4,7 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:suki="https://github.com/kikipoulet/SukiUI"
+                 xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
                  xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
                  xmlns:localControls="clr-namespace:KugouAvaloniaPlayer.Controls"
                  mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
@@ -13,7 +14,7 @@
                  x:DataType="vm:MainWindowViewModel"
                  Name="RootWindow"
                  Icon="/Assets/Test.ico"
-                 Title="KuGou Avalonia Player"
+                 Title="KA Music"
                  BackgroundStyle="Bubble"
                  CanFullScreen="True"
                  TitleBarVisibilityOnFullScreen="AutoHidden">
@@ -60,17 +61,12 @@
             IsSearchEnabled="False">
 
             <suki:SukiSideMenu.HeaderContent>
-                <Grid ColumnDefinitions="Auto, *" Margin="20,10,20,30">
-                    <TextBox Text="{Binding SearchKeyword}" Watermark="搜索歌曲..." Grid.ColumnSpan="2">
-                        <TextBox.KeyBindings>
-                            <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}" />
-                        </TextBox.KeyBindings>
-                    </TextBox>
-                    <Button Grid.Column="1" Classes="Basic" Command="{Binding SearchCommand}"
-                            HorizontalAlignment="Right">
-                        <PathIcon Data="{x:Static suki:Icons.Search}" Margin="0,0,5,0" />
-                    </Button>
-                </Grid>
+                <Border Margin="16,10,16,14"
+                        Padding="8"
+                        CornerRadius="10"
+                        Background="{DynamicResource SukiPrimaryColorLow}">
+                    <localControls:UserAvatarControl />
+                </Border>
             </suki:SukiSideMenu.HeaderContent>
 
             <suki:SukiSideMenu.ItemTemplate>
@@ -97,17 +93,17 @@
                                     <DataTemplate DataType="vm:PlaylistItem">
                                         <Border Height="40" CornerRadius="8" Padding="6,4">
                                             <Border.ContextMenu>
-                                                <ContextMenu>
+                                                <ContextMenu DataContext="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel}">
                                                     <MenuItem Header="删除歌单"
-                                                              Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.DeleteOnlinePlaylistCommand}"
-                                                              CommandParameter="{Binding .}" />
+                                                              Command="{Binding DeleteOnlinePlaylistCommand}"
+                                                              CommandParameter="{Binding $parent[ContextMenu].PlacementTarget.DataContext}" />
                                                 </ContextMenu>
                                             </Border.ContextMenu>
-                                            <Button Classes="Basic"
-                                                    Cursor="Hand"
-                                                    HorizontalContentAlignment="Stretch"
-                                                    Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).OpenSidebarPlaylistCommand}"
-                                                    CommandParameter="{Binding .}">
+                                                    <Button Classes="Basic"
+                                                            Cursor="Hand"
+                                                            HorizontalContentAlignment="Stretch"
+                                                    Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).OpenSidebarPlaylistCommand}"
+                                                            CommandParameter="{Binding .}">
                                                 <Grid ColumnDefinitions="32,*,Auto" VerticalAlignment="Center">
                                                     <Border Width="28" Height="28" CornerRadius="6" ClipToBounds="True"
                                                             VerticalAlignment="Center">
@@ -136,15 +132,15 @@
                                     <DataTemplate DataType="vm:PlaylistItem">
                                         <Border Height="40" CornerRadius="8" Padding="6,4">
                                             <Border.ContextMenu>
-                                                <ContextMenu>
+                                                <ContextMenu DataContext="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel}">
                                                     <MenuItem Header="移除本地歌单"
-                                                              Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.DeleteLocalPlaylistCommand}"
-                                                              CommandParameter="{Binding .}" />
+                                                              Command="{Binding DeleteLocalPlaylistCommand}"
+                                                              CommandParameter="{Binding $parent[ContextMenu].PlacementTarget.DataContext}" />
                                                 </ContextMenu>
                                             </Border.ContextMenu>
                                             <Button Classes="Basic"
                                                     HorizontalContentAlignment="Stretch"
-                                                    Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).OpenSidebarPlaylistCommand}"
+                                                    Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).OpenSidebarPlaylistCommand}"
                                                     CommandParameter="{Binding .}">
                                                 <Grid ColumnDefinitions="32,*" VerticalAlignment="Center">
                                                     <Border Width="28" Height="28" CornerRadius="6" ClipToBounds="True"
@@ -172,11 +168,11 @@
                                 <Button.Flyout>
                                     <MenuFlyout Placement="Bottom">
                                         <MenuItem Header="导入本地文件夹..."
-                                                  Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.ImportLocalFolderCommand}" />
+                                                  Command="{Binding PlaylistsViewModel.ImportLocalFolderCommand}" />
                                         <MenuItem Header="导入其他平台歌单链接..."
-                                                  Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.ImportExternalPlaylistCommand}" />
+                                                  Command="{Binding PlaylistsViewModel.ImportExternalPlaylistCommand}" />
                                         <MenuItem Header="新建歌单..."
-                                                  Command="{Binding #RootWindow.((vm:MainWindowViewModel)DataContext).PlaylistsViewModel.ShowCreatePlaylistDialogCommand}" />
+                                                  Command="{Binding PlaylistsViewModel.ShowCreatePlaylistDialogCommand}" />
                                     </MenuFlyout>
                                 </Button.Flyout>
                                 <Grid ColumnDefinitions="28,*" VerticalAlignment="Center">
@@ -203,7 +199,20 @@
                     </ScrollViewer>
 
                     <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,8,0,0">
-                        <localControls:UserAvatarControl />
+                        <Button Classes="Basic"
+                                Cursor="Hand"
+                                HorizontalAlignment="Stretch"
+                                Command="{Binding NavigateToUserCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Svg Path="/Assets/gear-svgrepo-com.svg"
+                                     Width="25"
+                                     Height="25"
+                                     VerticalAlignment="Center" />
+                                <TextBlock Text="设置"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SukiLowText}" />
+                            </StackPanel>
+                        </Button>
                         <TextBlock Text="{Binding Version, StringFormat='v{0}'}"
                                    HorizontalAlignment="Center"
                                    Foreground="{DynamicResource SukiLiquid2}" FontSize="10" />
@@ -221,7 +230,7 @@
                 Background="#40000000"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                PointerPressed="OnBackdropPointerPressed"
+                behaviors:InteractionBehaviors.PointerPressedCommand="{Binding CloseQueuePaneCommand}"
                 IsVisible="False" />
 
         <Border Name="QueuePanel"
@@ -229,8 +238,10 @@
                 Classes.open="{Binding IsQueuePaneOpen}"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
-                Width="350"
-                Height="500"
+                Width="360"
+                MinWidth="280"
+                MaxWidth="460"
+                MaxHeight="560"
                 Margin="0,0,20,100"
                 ClipToBounds="False">
             <localControls:PlaybackQueueControl />

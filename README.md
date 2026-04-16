@@ -5,28 +5,42 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-brightgreen.svg)](https://github.com/Linsxyx/KugouMusic.NET/releases)
 [![Release](https://img.shields.io/github/v/release/Linsxyx/KugouMusic.NET)](https://github.com/Linsxyx/KugouMusic.NET/releases)
 
-基于 **.NET 10 + Avalonia** 的跨平台酷狗音乐生态项目，包含桌面客户端、SDK、Web API 与 Native 导出层。
+基于 **.NET 10 + Avalonia** 的跨平台酷狗音乐生态项目，包含桌面客户端、SDK、Web API 与 Native 导出层，客户端启动后自动领取并升级VIP。
+
+## 快速入口
+
+- Releases（下载）：<https://github.com/Linsxyx/KugouMusic.NET/releases>
+- 问题反馈：<https://github.com/Linsxyx/KugouMusic.NET/issues>
 
 ## 项目简介
 
 本仓库围绕酷狗音乐能力提供三类对外入口：桌面用户入口、SDK 开发入口、REST API 入口。
 
-- `KugouAvaloniaPlayer`：跨平台桌面音乐播放器（Avalonia + MVVM）
+- `KugouAvaloniaPlayer`：跨平台桌面音乐播放器，现正式命名为`KA Music` （Avalonia + MVVM）
 - `KuGou.Net`：酷狗业务 SDK（登录、搜索、歌单、歌词、榜单、用户等）
 - `KgWebApi.Net`：基于 SDK 的 ASP.NET Core Web API 封装
 - `SimpleAudio`：基于 ManagedBass 的跨平台音频播放与音效层
 - `KuGou.Net.Native`：将 SDK 能力导出为 Native AOT 友好的 C ABI
 
+## 核心特性
+
+- 登录与账号：手机号验证码登录、二维码登录、登录持久化、用户信息与 VIP 状态展示
+- 音乐浏览：每日推荐、发现歌单、排行榜、歌手页、搜索（歌曲/歌单/专辑）
+- 播放能力：在线播放、本地文件夹导入、播放队列、随机播放、下一首插队、收藏
+- 歌词体验：在线 KRC、本地 KRC/LRC/VTT、逐字高亮、桌面歌词浮窗
+- 音效能力：10 段均衡器（预设 + 自定义）
+- 系统集成：托盘菜单、窗口关闭行为配置、Velopack 自动更新
+
 ## 功能总览
 
-| 领域    | 已实现能力                                                                    | 入口 | 状态 |
-|-------|--------------------------------------------------------------------------|---|---|
-| 登录    | 手机验证码登录、二维码登录、登录持久化                                                      | 桌面端 / SDK / Web API | ✅ |
-| 音乐内容  | 每日推荐、发现歌单、排行榜、歌手页、搜索（歌曲/歌单/专辑）                                           | 桌面端 / SDK / Web API | ✅ |
-| 播放与音效 | 在线播放、本地文件夹导入、播放队列、随机播放、下一首插队、均衡器                                         | 桌面端 / SimpleAudio | ✅ |
-| 歌词与交互 | 在线 KRC、本地 KRC/LRC/VTT、逐字高亮、桌面歌词浮窗、托盘控制、自动更新、网易云/QQ音乐歌单导入、自定义歌词字体和颜色、全屏播放 | 桌面端 | ✅ |
+| 领域 | 已实现能力 | 入口 | 状态 |
+|---|---|---|---|
+| 登录 | 手机验证码登录、二维码登录、登录持久化 | 桌面端 / SDK / Web API | ✅ |
+| 音乐内容 | 每日推荐、发现歌单、排行榜、歌手页、搜索（歌曲/歌单/专辑） | 桌面端 / SDK / Web API | ✅ |
+| 播放与音效 | 在线播放、本地文件夹导入、播放队列、随机播放、下一首插队、均衡器 | 桌面端 / SimpleAudio | ✅ |
+| 歌词与交互 | 在线/本地歌词、逐字高亮、桌面歌词浮窗、托盘控制、自动更新、外部歌单导入 | 桌面端 | ✅ |
 
-## 截图
+## 界面截图
 
 ![歌词界面](docs/images/lyrics.png)
 ![主界面](docs/images/main.png)
@@ -38,19 +52,20 @@
 
 ### 下载
 
-请前往 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases) 下载最新包：
+请前往 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases) 下载最新安装包：
 
 - Windows：`KugouAvaloniaPlayer-win.exe`
 - Linux：`KugouAvaloniaPlayer-linux.AppImage`
 - macOS（Velopack 安装包）：`KugouAvaloniaPlayer-mac-Setup.pkg`
 - macOS（便携包）：`KugouAvaloniaPlayer-mac.app.zip`
 
+
 ### 自动更新说明
 
 项目通过 **Velopack + GitHub Releases** 提供更新能力。
 
 - 使用 Velopack 安装包安装后：可在应用内检查更新
-- 可在「用户中心」启用“启动时自动检查更新”
+- 可在「设置」中启用“启动时自动检查更新”
 - 非安装包直接运行（如 `.app.zip`、本地 `dotnet run`）时，自动更新会被跳过
 
 ### macOS 使用说明（当前未签名）
@@ -63,8 +78,6 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 ```
 
 3. 如果安装或启动 `KugouAvaloniaPlayer-mac-Setup.pkg` 失败，也可以下载 `KugouAvaloniaPlayer-mac.app.zip` 解压直接运行（这种方式不支持自动更新）。
-   解压后可双击运行：`KugouAvaloniaPlayer-mac.app/KugouAvaloniaPlayer.app`。
-   若从终端启动，请运行：`./KugouAvaloniaPlayer-mac.app/KugouAvaloniaPlayer.app/Contents/MacOS/KugouAvaloniaPlayer`。
 
 ## 快速开始（开发者）
 
@@ -101,7 +114,7 @@ Web API 文档（开发环境）：`http://localhost:5058/scalar/v1`
 - 发现页（歌单标签与推荐歌单）
 - 排行榜与榜单歌曲分页加载
 - 歌手详情页与歌曲列表
-- 搜索：歌曲 / 歌单 / 专辑，支持详情页继续播放
+- 搜索：歌曲 / 歌单 / 专辑（支持热搜快捷搜索）
 
 ### 播放与歌单管理
 
@@ -110,14 +123,14 @@ Web API 文档（开发环境）：`http://localhost:5058/scalar/v1`
 - 播放队列管理：清空、移除、下一首播放、随机模式
 - 收藏当前歌曲、移除歌单歌曲
 - 在线歌单新建、删除、收藏
-- 网易云歌单链接解析并导入到酷狗歌单
+- 网易云 / QQ 音乐歌单链接解析并导入到酷狗歌单
 
 ### 歌词、音效与交互
 
 - 歌词：在线 KRC + 本地 KRC/LRC/VTT
 - 逐行高亮与逐字进度动画
 - 桌面歌词浮窗（可锁定）
-- 鼠标穿透：Windows / macOS 支持
+- 鼠标穿透：Windows / macOS / Linux 全平台支持
 - 10 段均衡器（预设 + 自定义）
 - 系统托盘菜单：显示主界面、上一首、播放/暂停、下一首、退出
 - 关闭行为可配置：退出程序 / 最小化到托盘
@@ -142,7 +155,7 @@ builder.Services.AddKuGouSdk();
 - `UserClient`：用户信息、歌单、听歌数据、VIP 任务
 - `LyricClient`：歌词搜索与拉取
 - `AlbumClient`：专辑歌曲
-- `DeviceClient`：获取设备ID
+- `DeviceClient`：获取设备 ID
 
 ### 最小调用示例
 
@@ -205,14 +218,11 @@ dotnet run --project KgWebApi.Net/KgWebApi.Net.csproj
   - `GET /User/playlist`
   - `GET /Youth/day/vip`
 
-
-
-
 ## 项目结构
 
 ```text
 KugouMusic.NET
-├─ KugouAvaloniaPlayer   # Avalonia 桌面客户端
+├─ KugouAvaloniaPlayer   # Avalonia 桌面客户端（品牌名：KA Music）
 ├─ KuGou.Net             # 核心 SDK
 ├─ SimpleAudio           # 音频播放与音效层
 ├─ KgWebApi.Net          # ASP.NET Core Web API
@@ -226,21 +236,30 @@ KugouMusic.NET
 
 自动更新依赖 Velopack 安装。若你通过 `dotnet run` 或手动复制文件运行，应用会跳过自动更新检查。请使用 Releases 安装包安装。
 
-
-
 ### 2. 为什么未登录时不能播放在线歌曲？
 
 当前播放器对在线播放要求有效登录态。请先在登录弹窗中完成验证码登录或二维码登录。
 
+### 3. 为什么应用显示是 KA Music，但安装包名是 KugouAvaloniaPlayer？
 
+这是为了兼容历史版本升级链路。应用显示名可以调整，但安装包标识（PackageId/AssemblyName）保持稳定，避免老版本无法识别更新。
 
 ## 更新日志
 
 完整版本历史请查看 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)。
+
+### v1.0.0
+
+- 正式发布 `KA Music` 1.0 版本
+- 设置页重构为标准双栏布局（分类导航 + 分组设置）
+- 搜索页新增初始空页面、热搜标签快捷搜索、清空回到初始页
+- 播放队列播放行为统一，修复页面切换后双击导致队列被重建的问题
+
+
 ### v0.9.6
 
-- 新增解析QQ音乐歌单导入
-- Linux下增加歌词悬浮窗鼠标穿透
+- 新增解析 QQ 音乐歌单导入
+- Linux 下增加歌词悬浮窗鼠标穿透
 
 ### v0.9.5
 
@@ -259,9 +278,7 @@ KugouMusic.NET
 - 重构设置页面，并新增歌词悬浮窗字体颜色设置
 - 对获取“我喜欢”歌单时概率报错 `39013` 做错误处理
 
-
 ## 免责声明与致谢
 
 - 本项目仅用于技术学习与交流，请勿用于任何侵犯版权或违反服务条款的用途。
-- 灵感来源： [MakcRe/KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
- 
+- 灵感来源：[MakcRe/KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)

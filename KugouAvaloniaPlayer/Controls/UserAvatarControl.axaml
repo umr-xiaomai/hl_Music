@@ -7,36 +7,34 @@
 
     <Panel>
         <!-- 未登录状态 -->
-        <Button Classes="Basic" Cursor="Hand"
+        <Button Classes="Basic"
+                Cursor="Hand"
                 Command="{Binding ShowLoginDialogCommand}"
+                HorizontalAlignment="Stretch"
                 IsVisible="{Binding !IsLoggedIn}">
             <TextBlock Text="点击登录" Foreground="{DynamicResource SukiLowText}" />
         </Button>
 
         <!-- 已登录状态 -->
-        <Button Classes="Basic" Cursor="Hand"
-                Command="{Binding NavigateToUserCommand}"
-                IsVisible="{Binding IsLoggedIn}"
-                Padding="5">
-            <Grid ColumnDefinitions="Auto, Auto">
-                <!-- 圆形头像 -->
-                <Border Grid.Column="0"
-                        Width="32" Height="32"
-                        CornerRadius="16"
+        <Border IsVisible="{Binding IsLoggedIn}"
+                Padding="8"
+                Background="Transparent">
+            <StackPanel HorizontalAlignment="Center" Spacing="8">
+                <Border Width="60"
+                        Height="60"
+                        CornerRadius="26"
                         ClipToBounds="True"
                         Background="#E0E0E0">
                     <controls:AsyncImage Source="{Binding UserAvatar}"
                                          Stretch="UniformToFill" />
                 </Border>
-                <!-- 用户名 -->
-                <TextBlock Grid.Column="1"
-                           Text="{Binding UserName}"
-                           VerticalAlignment="Center"
-                           Margin="8,0,0,0"
-                           MaxWidth="80"
+                <TextBlock Text="{Binding UserName}"
+                           MaxWidth="130"
                            TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource SukiLowText}" />
-            </Grid>
-        </Button>
+                           FontSize="13"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource SukiText}" />
+            </StackPanel>
+        </Border>
     </Panel>
 </UserControl>

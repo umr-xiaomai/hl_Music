@@ -152,6 +152,12 @@ public partial class LoginViewModel(AuthClient authClient, DeviceClient deviceCl
     }
 
     [RelayCommand]
+    private void StopQrPollingOnUnload()
+    {
+        StopQrPolling();
+    }
+
+    [RelayCommand]
     private async Task SendCode()
     {
         if (string.IsNullOrWhiteSpace(Mobile) || Mobile.Length != 11)

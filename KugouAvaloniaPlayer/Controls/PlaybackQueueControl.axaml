@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:KugouAvaloniaPlayer.ViewModels"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              x:Class="KugouAvaloniaPlayer.Controls.PlaybackQueueControl"
              x:DataType="vm:MainWindowViewModel">
 
@@ -243,7 +244,7 @@
                         <Grid ColumnDefinitions="Auto, *, Auto"
                               Height="50"
                               Margin="4,0"
-                              DoubleTapped="OnQueueItemDoubleTapped">
+                              behaviors:InteractionBehaviors.DoubleTappedCommand="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).Player.PlaySongCommand}">
 
                             <Grid.ContextMenu>
                                 <ContextMenu>
@@ -266,7 +267,7 @@
                                               CommandParameter="{Binding .}" />
 
                                     <MenuItem Header="从队列移除"
-                                              Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).Player.RemoveFromQueueCommand}"
+                                              Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).Player.RemoveFromQueueCommand}"
                                               CommandParameter="{Binding .}" />
                                 </ContextMenu>
                             </Grid.ContextMenu>
@@ -318,14 +319,14 @@
                                 <!-- 播放按钮 -->
                                 <Button Classes="Basic"
                                         ToolTip.Tip="播放"
-                                        Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).Player.PlaySongCommand}"
+                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).Player.PlaySongCommand}"
                                         CommandParameter="{Binding .}"
                                         Foreground="{DynamicResource SukiLowText}">
                                     <Svg Path="/Assets/Play-2.svg" Width="10" Height="10" />
                                 </Button>
                                 <Button Classes="Basic"
                                         ToolTip.Tip="移除"
-                                        Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).Player.RemoveFromQueueCommand}"
+                                        Command="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).Player.RemoveFromQueueCommand}"
                                         CommandParameter="{Binding .}">
                                     <TextBlock Text="✕" FontSize="10" Foreground="{DynamicResource SukiText}" />
                                 </Button>

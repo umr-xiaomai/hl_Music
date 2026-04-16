@@ -3,6 +3,7 @@
              xmlns:vm="using:KugouAvaloniaPlayer.ViewModels"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:localControls="using:KugouAvaloniaPlayer.Controls"
+             xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
              x:Class="KugouAvaloniaPlayer.Views.SingerView"
              x:DataType="vm:SingerViewModel">
@@ -36,7 +37,7 @@
             <Grid Grid.Row="1">
                 <ListBox Classes="SongList"
                          ItemsSource="{Binding Songs}"
-                         ScrollViewer.ScrollChanged="OnScrollChanged"
+                         behaviors:InteractionBehaviors.ScrollNearBottomCommand="{Binding LoadMoreCommand}"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          Padding="0,0,0,50">

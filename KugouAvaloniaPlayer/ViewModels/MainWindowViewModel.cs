@@ -32,6 +32,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IDesktopLyricWindowService _desktopLyricWindowService;
     private readonly DiscoveryClient _discoveryClient;
     private readonly ILoginDialogService _loginDialogService;
+    private readonly INavigationService _navigationService;
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly SearchViewModel _searchViewModel;
     private readonly KgSessionManager _sessionManager;
@@ -48,8 +49,7 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private bool _isNowPlayingOpen;
     [ObservableProperty] private bool _isNowPlayingVolumeVisible;
     [ObservableProperty] private bool _isQueuePaneOpen;
-
-    private PageViewModelBase? _previousPage;
+    private bool _isUpdatingActivePageFromNavigation;
 
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
     private string _searchKeyword = "";
@@ -69,6 +69,7 @@ public partial class MainWindowViewModel : ObservableObject
         ISingerViewModelFactory singerViewModelFactory,
         IDesktopLyricWindowService desktopLyricWindowService,
         ILoginDialogService loginDialogService,
+        INavigationService navigationService,
         LoginViewModel loginViewModel,
         SearchViewModel searchViewModel,
         UserViewModel userViewModel,
@@ -87,6 +88,7 @@ public partial class MainWindowViewModel : ObservableObject
         var singerViewModelFactory1 = singerViewModelFactory;
         _desktopLyricWindowService = desktopLyricWindowService;
         _loginDialogService = loginDialogService;
+        _navigationService = navigationService;
 
         LoginViewModel = loginViewModel;
         _searchViewModel = searchViewModel;
@@ -103,6 +105,9 @@ public partial class MainWindowViewModel : ObservableObject
         Pages.Add(dailyRecommendViewModel);
         Pages.Add(discoverViewModel);
         Pages.Add(rankViewModel);
+        Pages.Add(_searchViewModel);
+        _navigationService.CurrentPageChanged += OnNavigationCurrentPageChanged;
+        _navigationService.ReplaceRoot(dailyRecommendViewModel);
         ActivePage = dailyRecommendViewModel;
         IsDesktopLyricEnabled = _desktopLyricWindowService.IsOpen;
 
@@ -114,9 +119,8 @@ public partial class MainWindowViewModel : ObservableObject
 
         WeakReferenceMessenger.Default.Register<NavigateToSingerMessage>(this, (_, m) =>
         {
-            _previousPage = ActivePage;
             var singerVm = singerViewModelFactory1.Create(m.Singer.Id.ToString(), m.Singer.Name);
-            ActivePage = singerVm;
+            _navigationService.Push(singerVm);
         });
 
         WeakReferenceMessenger.Default.Register<AuthStateChangedMessage>(this, (_, m) =>
@@ -129,8 +133,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         WeakReferenceMessenger.Default.Register<NavigatePageMessage>(this, (_, m) =>
         {
-            _previousPage = ActivePage;
-            ActivePage = m.TargetPage;
+            _navigationService.Push(m.TargetPage);
         });
 
         WeakReferenceMessenger.Default.Register<RequestNavigateBackMessage>(this, (_, _) => { NavigateBack(); });
@@ -152,6 +155,36 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         Dispatcher.UIThread.Post(() => IsDesktopLyricEnabled = isOpen);
+    }
+
+    partial void OnActivePageChanged(PageViewModelBase value)
+    {
+        if (_isUpdatingActivePageFromNavigation)
+            return;
+
+        if (_navigationService.CurrentPage != value)
+            _navigationService.Push(value);
+    }
+
+    private void OnNavigationCurrentPageChanged(PageViewModelBase? page)
+    {
+        if (page == null)
+            return;
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            _isUpdatingActivePageFromNavigation = true;
+            ActivePage = page;
+            _isUpdatingActivePageFromNavigation = false;
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            _isUpdatingActivePageFromNavigation = true;
+            ActivePage = page;
+            _isUpdatingActivePageFromNavigation = false;
+        });
     }
 
     public string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
@@ -222,6 +255,7 @@ public partial class MainWindowViewModel : ObservableObject
                 UserAvatar = string.IsNullOrWhiteSpace(userInfo.Pic) ? null : userInfo.Pic;
                 _userViewModel.UserName = UserName;
                 _userViewModel.UserAvatar = UserAvatar;
+                _userViewModel.UserId = _sessionManager.Session.UserId;
             }
         }
         catch
@@ -297,11 +331,15 @@ public partial class MainWindowViewModel : ObservableObject
             IsLoggedIn = false;
             UserName = "未登录";
             UserAvatar = null;
+            _userViewModel.UserName = UserName;
+            _userViewModel.UserAvatar = null;
+            _userViewModel.UserId = string.Empty;
+            _userViewModel.VipStatus = "未开通";
             _logger.LogInformation("已退出登录");
 
             // 返回每日推荐页面
             var dailyVm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
-            if (dailyVm != null) ActivePage = dailyVm;
+            if (dailyVm != null) _navigationService.ReplaceRoot(dailyVm);
         });
     }
 
@@ -327,7 +365,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         _ = _userViewModel.LoadUserInfoAsync();
-        ActivePage = _userViewModel;
+        _navigationService.Push(_userViewModel);
     }
 
     [RelayCommand]
@@ -371,7 +409,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(SearchKeyword)) return;
 
-        ActivePage = _searchViewModel;
+        _navigationService.Push(_searchViewModel);
 
         await _searchViewModel.SearchAsync(SearchKeyword);
     }
@@ -386,8 +424,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (item == null || item.Type == PlaylistType.AddButton) return;
 
-        _previousPage = ActivePage;
-        ActivePage = PlaylistsViewModel;
+        _navigationService.Push(PlaylistsViewModel);
         await PlaylistsViewModel.OpenPlaylistCommand.ExecuteAsync(item);
     }
 
@@ -446,16 +483,11 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     public void NavigateBack()
     {
-        if (_previousPage != null)
-        {
-            ActivePage = _previousPage;
-            _previousPage = null;
-        }
-        else
-        {
-            var dailyVm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
-            if (dailyVm != null) ActivePage = dailyVm;
-        }
+        if (_navigationService.TryGoBack())
+            return;
+
+        var dailyVm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
+        if (dailyVm != null) _navigationService.ReplaceRoot(dailyVm);
     }
 
 

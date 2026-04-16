@@ -323,6 +323,14 @@ public partial class DiscoverViewModel : PageViewModelBase
         try
         {
             var data = await _playlistClient.GetSongsAsync(SelectedPlaylist.GlobalId, _songPage, 100);
+            if (data == null)
+            {
+                _logger.LogWarning("LoadMoreSongs returned null response. playlist={Playlist} page={Page}",
+                    SelectedPlaylist.GlobalId, _songPage);
+                _songPage--;
+                return;
+            }
+
             if (data.Status != 1)
             {
                 _logger.LogError($"Error : {data.ErrorCode}");

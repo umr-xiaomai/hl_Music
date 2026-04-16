@@ -45,6 +45,7 @@ public partial class App : Application
         collection.AddSingleton<IExternalPlaylistParseStrategy, QqMusicPlaylistParseStrategy>();
         collection.AddSingleton<IExternalPlaylistImportService, ExternalPlaylistImportService>();
         collection.AddSingleton<ILoginDialogService, LoginDialogService>();
+        collection.AddSingleton<INavigationService, NavigationService>();
         collection.AddSingleton<IDesktopLyricMousePassthroughService, DesktopLyricMousePassthroughService>();
         collection.AddSingleton<IDesktopLyricWindowService, DesktopLyricWindowService>();
         collection.AddSingleton<IFolderPickerService, FolderPickerService>();

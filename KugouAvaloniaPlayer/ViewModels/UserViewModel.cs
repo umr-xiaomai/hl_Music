@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using KuGou.Net.Clients;
+using KuGou.Net.Protocol.Session;
 using KugouAvaloniaPlayer.Controls;
 using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.Services;
@@ -18,6 +19,11 @@ namespace KugouAvaloniaPlayer.ViewModels;
 
 public partial class UserViewModel : PageViewModelBase
 {
+    private const string SettingsSectionGeneral = "常规";
+    private const string SettingsSectionPlayback = "播放与音效";
+    private const string SettingsSectionLyrics = "歌词悬浮窗";
+    private const string SettingsSectionUpdate = "更新与关于";
+    private const string SettingsSectionAccount = "账户";
     private const string LyricTargetMain = "歌词";
     private const string LyricTargetTranslation = "歌词翻译";
     private const string LyricColorModeDefault = "默认";
@@ -26,6 +32,7 @@ public partial class UserViewModel : PageViewModelBase
     private readonly AuthClient _authClient;
     private readonly ISukiDialogManager _dialogManager;
     private readonly EqSettingsViewModel _eqSettingsViewModel;
+    private readonly KgSessionManager _sessionManager;
     private readonly UserClient _userClient;
     private bool _isInitializingLyricColorEditor;
     private bool _isInitializingLyricFontEditor;
@@ -44,6 +51,7 @@ public partial class UserViewModel : PageViewModelBase
 
     [ObservableProperty] private CloseBehavior _selectedCloseBehavior;
     [ObservableProperty] private string _selectedEQPreset;
+    [ObservableProperty] private string _selectedSettingsSection = SettingsSectionGeneral;
     [ObservableProperty] private string _selectedQuality;
     [ObservableProperty] private string? _userAvatar;
     [ObservableProperty] private string _userId = "";
@@ -51,12 +59,13 @@ public partial class UserViewModel : PageViewModelBase
     [ObservableProperty] private string _vipStatus = "未开通";
 
     public UserViewModel(PlayerViewModel player, UserClient userClient, AuthClient authClient,
-        ISukiDialogManager dialogManager, EqSettingsViewModel eqSettingsViewModel)
+        ISukiDialogManager dialogManager, EqSettingsViewModel eqSettingsViewModel, KgSessionManager sessionManager)
     {
         _userClient = userClient;
         _authClient = authClient;
         _dialogManager = dialogManager;
         _eqSettingsViewModel = eqSettingsViewModel;
+        _sessionManager = sessionManager;
 
         Player = player;
         SelectedCloseBehavior = SettingsManager.Settings.CloseBehavior;
@@ -70,11 +79,17 @@ public partial class UserViewModel : PageViewModelBase
         EnableSurround = SettingsManager.Settings.EnableSurround;
         LyricFontFamilyOptions = LoadSystemFontFamilies();
         _availableLyricFonts = new HashSet<string>(LyricFontFamilyOptions, StringComparer.OrdinalIgnoreCase);
+        UserId = _sessionManager.Session.UserId;
         LoadLyricColorEditorFromSettings();
         LoadLyricFontEditorFromSettings();
     }
 
     public string[] EQPresetOptions { get; }
+    public string[] SettingsSections { get; } =
+    [
+        SettingsSectionGeneral, SettingsSectionPlayback, SettingsSectionLyrics, SettingsSectionUpdate,
+        SettingsSectionAccount
+    ];
 
     public string[] LyricColorTargetOptions { get; } = [LyricTargetMain, LyricTargetTranslation];
 
@@ -100,8 +115,8 @@ public partial class UserViewModel : PageViewModelBase
 
     private PlayerViewModel Player { get; }
 
-    public override string DisplayName => "用户中心";
-    public override string Icon => "avares://KugouAvaloniaPlayer/Assets/default_singer.png";
+    public override string DisplayName => "设置";
+    public override string Icon => "/Assets/gear-svgrepo-com.svg";
 
     public CloseBehavior[] AvailableCloseBehaviors { get; } = Enum.GetValues<CloseBehavior>();
 
@@ -109,6 +124,11 @@ public partial class UserViewModel : PageViewModelBase
 
     public bool IsLyricColorCustomMode => SelectedLyricColorMode == LyricColorModeCustom;
     public bool IsLyricFontCustomMode => SelectedLyricFontMode == LyricColorModeCustom;
+    public bool IsGeneralSection => SelectedSettingsSection == SettingsSectionGeneral;
+    public bool IsPlaybackSection => SelectedSettingsSection == SettingsSectionPlayback;
+    public bool IsLyricsSection => SelectedSettingsSection == SettingsSectionLyrics;
+    public bool IsUpdateSection => SelectedSettingsSection == SettingsSectionUpdate;
+    public bool IsAccountSection => SelectedSettingsSection == SettingsSectionAccount;
 
     public IBrush LyricColorPreviewBrush => new SolidColorBrush(ParseColorOrDefault(LyricColorHexInput, Colors.Transparent));
 
@@ -132,6 +152,7 @@ public partial class UserViewModel : PageViewModelBase
             {
                 UserName = userInfo.Name;
                 UserAvatar = string.IsNullOrWhiteSpace(userInfo.Pic) ? null : userInfo.Pic;
+                UserId = _sessionManager.Session.UserId;
             }
 
             var vipInfo = await _userClient.GetVipInfoAsync();
@@ -196,6 +217,13 @@ public partial class UserViewModel : PageViewModelBase
     }
 
     public event Action? CheckForUpdateRequested;
+
+    [RelayCommand]
+    private void SwitchSettingsSection(string? section)
+    {
+        if (string.IsNullOrWhiteSpace(section)) return;
+        if (SettingsSections.Contains(section)) SelectedSettingsSection = section;
+    }
 
     partial void OnSelectedCloseBehaviorChanged(CloseBehavior value)
     {
@@ -403,5 +431,14 @@ public partial class UserViewModel : PageViewModelBase
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
+    }
+
+    partial void OnSelectedSettingsSectionChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsGeneralSection));
+        OnPropertyChanged(nameof(IsPlaybackSection));
+        OnPropertyChanged(nameof(IsLyricsSection));
+        OnPropertyChanged(nameof(IsUpdateSection));
+        OnPropertyChanged(nameof(IsAccountSection));
     }
 }

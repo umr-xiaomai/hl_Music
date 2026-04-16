@@ -49,8 +49,10 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isDraggingProgress;
     [ObservableProperty] private bool _isLiked;
     [ObservableProperty] private bool _isPlayingAudio;
+    [ObservableProperty] private bool _isSwitchingQuality;
     private CancellationTokenSource? _loadCancellation;
     [ObservableProperty] private string _musicQuality = "128";
+    [ObservableProperty] private string _qualitySelection = "128";
     [ObservableProperty] private float _musicVolume = 0.8f;
     private int _playRequestVersion;
     [ObservableProperty] private double _totalDurationSeconds;
@@ -70,6 +72,8 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         _player = new SimpleAudioPlayer();
         _player.PlaybackEnded += OnPlaybackEnded;
+        MusicQuality = SettingsManager.Settings.MusicQuality;
+        QualitySelection = MusicQuality;
         UpdateAudioEffects(SettingsManager.Settings.EQPreset, SettingsManager.Settings.EnableSurround);
 
         _playbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
@@ -95,6 +99,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     public AvaloniaList<SongItem> PlaybackQueue => _queueManager.PlaybackQueue;
     public AvaloniaList<LyricLineViewModel> LyricLines => _lyricsService.LyricLines;
+    public string[] QualityOptions { get; } = ["128", "320", "flac", "high"];
 
     public bool IsShuffleMode => _queueManager.IsShuffleMode;
 
@@ -379,6 +384,26 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _player.SetVolume(value);
     }
 
+    partial void OnMusicQualityChanged(string value)
+    {
+        SettingsManager.Settings.MusicQuality = value;
+        SettingsManager.Save();
+
+        if (!string.Equals(QualitySelection, value, StringComparison.OrdinalIgnoreCase))
+            QualitySelection = value;
+    }
+
+    partial void OnQualitySelectionChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        if (string.Equals(value, MusicQuality, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _ = SwitchQualityAsync(value);
+    }
+
     // 暴露给 MainWindow 初始化时调用
     public async Task LoadLikeListAsync()
     {
@@ -401,7 +426,130 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _player.SetSurround(surround);
     }
 
-    public float[] GetEqPreset(string preset)
+    public async Task<bool> SwitchQualityAsync(string? quality)
+    {
+        if (string.IsNullOrWhiteSpace(quality) || !QualityOptions.Contains(quality, StringComparer.OrdinalIgnoreCase))
+            return false;
+
+        if (string.Equals(MusicQuality, quality, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var currentSong = CurrentPlayingSong;
+        if (currentSong == null)
+        {
+            MusicQuality = quality;
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(currentSong.LocalFilePath) && File.Exists(currentSong.LocalFilePath))
+        {
+            MusicQuality = quality;
+            return true;
+        }
+
+        await _playSongLock.WaitAsync();
+        IsSwitchingQuality = true;
+        try
+        {
+            currentSong = CurrentPlayingSong;
+            if (currentSong == null)
+            {
+                MusicQuality = quality;
+                return true;
+            }
+
+            var playData = await _musicClient.GetPlayInfoAsync(currentSong.Hash, quality);
+            if (playData == null || playData.Status != 1)
+            {
+                _toastManager.CreateToast()
+                    .OfType(NotificationType.Warning)
+                    .WithTitle("切换音质失败")
+                    .WithContent("当前音质暂不可用，已保持原音质。")
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Queue();
+                return false;
+            }
+
+            var url = playData.Urls?.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                _toastManager.CreateToast()
+                    .OfType(NotificationType.Warning)
+                    .WithTitle("切换音质失败")
+                    .WithContent("没有获取到新的播放地址。")
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Queue();
+                return false;
+            }
+
+            var wasPlaying = _player.IsPlaying;
+            var resumePosition = CurrentPositionSeconds;
+
+            CancelAndDisposeLoadCancellation();
+            var currentLoadCts = new CancellationTokenSource();
+            _loadCancellation = currentLoadCts;
+
+            _playbackTimer.Stop();
+            _player.Stop();
+
+            var loadSuccess = await TryLoadStreamAsync(url, currentSong.Name, AudioLoadTimeout, currentLoadCts.Token);
+            if (!loadSuccess)
+            {
+                _toastManager.CreateToast()
+                    .OfType(NotificationType.Warning)
+                    .WithTitle("切换音质失败")
+                    .WithContent("新的音频流加载失败。")
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Queue();
+                return false;
+            }
+
+            MusicQuality = quality;
+            _player.SetVolume(MusicVolume);
+            TotalDurationSeconds =
+                currentSong.DurationSeconds > 0 ? currentSong.DurationSeconds : _player.GetDuration().TotalSeconds;
+
+            var safePosition = Math.Clamp(resumePosition, 0, Math.Max(TotalDurationSeconds - 0.25, 0));
+            _player.SetPosition(TimeSpan.FromSeconds(safePosition));
+            CurrentPositionSeconds = safePosition;
+
+            var activeLine = _lyricsService.SyncLyrics(safePosition * 1000);
+            CurrentLyricLine = activeLine;
+            CurrentLyricText = activeLine?.Content ?? CurrentLyricText;
+            CurrentLyricTrans = activeLine?.Translation ?? CurrentLyricTrans;
+
+            if (wasPlaying)
+            {
+                _player.Play();
+                _playbackTimer.Start();
+                IsPlayingAudio = true;
+            }
+            else
+            {
+                IsPlayingAudio = false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "切换音质失败");
+            _toastManager.CreateToast()
+                .OfType(NotificationType.Error)
+                .WithTitle("切换音质失败")
+                .WithContent(ex.Message)
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Queue();
+            return false;
+        }
+        finally
+        {
+            IsSwitchingQuality = false;
+            _playSongLock.Release();
+        }
+    }
+
+    private float[] GetEqPreset(string preset)
     {
         return preset switch
         {
