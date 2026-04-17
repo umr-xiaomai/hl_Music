@@ -5,13 +5,13 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-brightgreen.svg)](https://github.com/Linsxyx/KugouMusic.NET/releases)
 [![Release](https://img.shields.io/github/v/release/Linsxyx/KugouMusic.NET)](https://github.com/Linsxyx/KugouMusic.NET/releases)
 
-最好用、最轻量的酷狗音乐概念版播放器。
+最好用、最轻量的酷狗音乐概念版播放器，登录自动领取VIP。
 
-基于 **.NET 10 + Avalonia** 打造的跨平台桌面播放器，专注把酷狗音乐这件事做得更轻、更快、更像一个真正适合日常常驻的桌面应用。它不是浏览器壳，支持 Windows、Linux、macOS，也把本地播放、桌面歌词、托盘、热切音质、均衡器这些桌面用户真正会用到的体验补齐了。
+基于 **.NET 10 + Avalonia** 打造的跨平台桌面播放器，彻底告别浏览器套壳。由于作者是Arch和Windows双系统，而Linux上又没有一款好用的酷狗音乐播放器，所以就有了这个项目，尽可能的实现了全平台体验一致。
 
-> 注：“最好用、最轻量”为产品目标与设计方向。
+> 注：“最好用、最轻量”为目标与设计方向。
 
-## 快速入口
+## 快速开始
 
 - 下载地址：<https://github.com/Linsxyx/KugouMusic.NET/releases>
 - 问题反馈：<https://github.com/Linsxyx/KugouMusic.NET/issues>
@@ -20,14 +20,15 @@
 
 ## 为什么值得用
 
-- 更轻：基于 Avalonia 原生桌面栈，不走 Electron 路线
+- 更轻：基于 Avalonia 原生桌面栈，不走 Electron 路线，安装包体积小
 - 更像桌面播放器：托盘、桌面歌词、关闭行为、自动更新这些桌面交互是完整的
-- 对 Linux 更友好，在linux也能拥有和其他平台一样的歌词悬浮窗体验
+- 对 Linux 更友好，在Linux也能拥有和其他平台一样的托盘和歌词悬浮窗体验
 - 酷狗生态能力完整：登录、推荐、榜单、歌单、搜索、歌词、VIP 状态都已接入
 - 在线和本地都能打：支持在线播放，也支持本地文件夹导入、本地歌词和本地播放
+- 搬家无压力：支持解析并导入网易云音乐、QQ 音乐歌单，轻松迁移歌单
 - 播放控制更到位：播放队列、随机模式、热切音质、10 段均衡器都可用
 
-## 产品展示
+## 页面展示
 
 ### 主界面
 
@@ -35,7 +36,7 @@
 
 ![主界面](docs/images/main.gif)
 
-### 搜索与发现
+### 搜索
 
 搜索歌曲、歌单、专辑。
 
@@ -123,11 +124,11 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 - Windows、Linux、macOS 三端可运行
 - Linux 提供 `AppImage`
 - 桌面歌词鼠标穿透支持跨平台实现
-- `SimpleAudio + ManagedBass` 提供统一播放能力
+- `SimpleAudio + ManagedBass`提供统一播放能力
 
 ## 为什么它在 Linux 上更值得用
 
-很多音乐播放器对于Linux的支持很差，无法拥有和其他平台一样的体验。`KA Music` 的目标不是停留在能运行，而是尽量把 Linux 桌面用户真正会在意的体验补齐：发布产物、托盘、桌面歌词、本地播放、基础设置和日常交互都要可用。
+很多音乐播放器对于Linux的支持很差，无法拥有和其他平台一样的体验。`KA Music` 的目标不是停留在能运行，而是尽量把 Linux 桌面用户真正会在意的体验补齐，托盘、桌面歌词、本地播放、基础设置和日常交互都要可用，歌词悬浮窗能像Windows平台一样鼠标穿透、置顶、透明。
 
 ## 常见问题
 
@@ -146,6 +147,10 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 ### 4. 支持哪些歌词格式？
 
 当前支持在线 KRC，以及本地 `KRC`、`LRC`、`VTT` 歌词。
+
+### 5.有没有Linux arm64版本或者osx x64版本？
+
+目前没有，偷懒没做打包，但可以自己编译，需把SimpleAudio的依赖换成对应的架构，可以去[Un4seen Bass audio library](https://www.un4seen.com) 下载对应的架构的文件。
 
 ## 开发者入口
 
@@ -205,7 +210,17 @@ KugouMusic.NET
 - 新增解析 QQ 音乐歌单导入
 - 新增桌面歌词悬浮窗字体自定义能力
 
-## 免责声明与致谢
+## 👍 灵感来源
 
-- 本项目仅用于技术学习与交流，请勿用于任何侵犯版权或违反服务条款的用途。
-- 灵感来源：[MakcRe/KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
+- [KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)
+
+## ⚠️ 免责声明
+
+本项目是基于公开 API 接口开发的第三方音乐客户端，仅供个人学习和技术研究使用。
+- **数据来源**：所有音乐数据通过公开接口获取，本项目不存储、不传播任何音频文件
+- **版权声明**：音乐内容版权归原平台及版权方所有，请尊重知识产权，支持正版音乐
+- **使用限制**：禁止将本项目用于任何商业用途或违法行为
+- **责任声明**：因使用本项目产生的任何法律纠纷或损失，均由使用者自行承担
+- **争议处理**：如果官方音乐平台觉得本项目不妥，请通过 Issues 联系
+
+
