@@ -140,8 +140,8 @@
                                 </StackPanel>
                                 <ComboBox Grid.Column="1"
                                           MinWidth="220"
-                                          ItemsSource="{Binding QualityOptions}"
-                                          SelectedItem="{Binding SelectedQuality}">
+                                          ItemsSource="{Binding Player.QualityOptions}"
+                                          SelectedItem="{Binding Player.QualitySelection}">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate DataType="x:String">
                                             <TextBlock Text="{Binding ., Converter={StaticResource PlaybackQualityDisplayConverter}}" />

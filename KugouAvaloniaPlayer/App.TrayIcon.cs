@@ -15,7 +15,7 @@ partial class App
     private NativeMenuItem? _playPauseItem;
     private TrayIcon? _trayIcon;
 
-    private void InitializeTrayIcon(PlayerViewModel player, IClassicDesktopStyleApplicationLifetime desktop)
+    private void InitializeTrayIcon(PlayerViewModel player, IClassicDesktopStyleApplicationLifetime desktop, MainWindowViewModel mainWindowViewModel)
     {
         _playerViewModel = player;
 
@@ -24,7 +24,15 @@ partial class App
         var icon = new WindowIcon(iconStream);
 
         var showItem = new NativeMenuItem("显示主界面");
+        
         showItem.Click += (s, e) => ShowMainWindow(desktop);
+
+        var showLyric = new NativeMenuItem("桌面歌词");
+        showLyric.Click += (s, e) =>
+        {
+            if (mainWindowViewModel.ToggleDesktopLyricCommand.CanExecute(null))
+                mainWindowViewModel.ToggleDesktopLyricCommand.Execute(null);
+        };
 
         var sep1 = new NativeMenuItemSeparator();
 
@@ -42,7 +50,7 @@ partial class App
         var exitItem = new NativeMenuItem("退出");
         exitItem.Click += (s, e) =>
         {
-            if (desktop.MainWindow is MainWindow mainWindow) mainWindow.CanClose = true;
+            if (desktop.MainWindow is MainWindow mainWindowInstance) mainWindowInstance.CanClose = true;
             _trayIcon?.Dispose();
             desktop.Shutdown();
         };
@@ -50,6 +58,7 @@ partial class App
         var menu = new NativeMenu
         {
             showItem,
+            showLyric,
             sep1,
             prevItem,
             _playPauseItem,

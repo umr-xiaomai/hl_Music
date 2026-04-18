@@ -84,7 +84,7 @@ public partial class App : Application
                 DataContext = vm
             };
 
-            InitializeTrayIcon(playerVm, desktop);
+            InitializeTrayIcon(playerVm, desktop, vm);
             desktop.Exit += (s, e) =>
             {
                 ShutdownTrayIcon();

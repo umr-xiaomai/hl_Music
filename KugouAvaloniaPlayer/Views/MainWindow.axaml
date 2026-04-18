@@ -52,6 +52,10 @@
             <Setter Property="RenderTransform" Value="translateY(0)" />
         </Style>
     </suki:SukiWindow.Styles>
+    
+    <!--<suki:SukiWindow.LogoContent>
+        <Image Source="../Assets/Test.ico" Width="15" Height="15" />
+    </suki:SukiWindow.LogoContent>-->
 
     <Grid Name="MainGrid">
 

@@ -15,10 +15,13 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
-            name: windows
+            name: windows-x64
           - os: ubuntu-latest
             rid: linux-x64
-            name: linux
+            name: linux-x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+            name: linux-arm64
 
     runs-on: ${{ matrix.os }}
 
@@ -71,12 +74,20 @@ jobs:
           path: ./releases/*
 
   build-macos:
+    strategy:
+      matrix:
+        include:
+          - rid: osx-arm64
+            name: macos-arm64
+          - rid: osx-x64
+            name: macos-x64
+
     runs-on: macos-latest
 
     env:
       APP_NAME: KugouAvaloniaPlayer
       BUNDLE_ID: com.KugouAvaloniaPlayer.KugouAvaloniaPlayer
-      RID: osx-arm64
+      RID: ${{ matrix.rid }}
 
     steps:
       - name: Checkout Code
@@ -201,7 +212,7 @@ jobs:
           mkdir -p ./releases
           ditto -c -k --sequesterRsrc --keepParent \
             "./dist/${APP_NAME}.app" \
-            "./releases/${APP_NAME}-mac.app.zip"
+            "./releases/${APP_NAME}-${RID}.app.zip"
 
       - name: Build unsigned pkg
         shell: bash
@@ -214,13 +225,13 @@ jobs:
             --identifier "${BUNDLE_ID}" \
             --version "${VERSION}" \
             --install-location / \
-            "./releases/${APP_NAME}-mac-unsigned.pkg"
+            "./releases/${APP_NAME}-${RID}-unsigned.pkg"
 
       - name: Inspect pkg signature status
         shell: bash
         run: |
-          spctl -a -vv -t install "./releases/${APP_NAME}-mac-unsigned.pkg" || true
-          pkgutil --check-signature "./releases/${APP_NAME}-mac-unsigned.pkg" || true
+          spctl -a -vv -t install "./releases/${APP_NAME}-${RID}-unsigned.pkg" || true
+          pkgutil --check-signature "./releases/${APP_NAME}-${RID}-unsigned.pkg" || true
 
       - name: Pack with Velopack (macOS)
         shell: bash
@@ -236,7 +247,7 @@ jobs:
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: releases-macos
+          name: releases-${{ matrix.name }}
           path: ./releases/*
 
   release:
@@ -259,18 +270,46 @@ jobs:
         run: |
           mkdir -p ./release_files
 
-          cp ./all_artifacts/*.exe ./release_files/KugouAvaloniaPlayer-win.exe 2>/dev/null || true
-          cp ./all_artifacts/*.AppImage ./release_files/KugouAvaloniaPlayer-linux.AppImage 2>/dev/null || true
-          cp ./all_artifacts/*-mac.app.zip ./release_files/KugouAvaloniaPlayer-mac.app.zip 2>/dev/null || true
-          cp ./all_artifacts/*-osx-Setup.pkg ./release_files/KugouAvaloniaPlayer-mac-Setup.pkg 2>/dev/null || true
+          cp ./all_artifacts/*.exe ./release_files/KugouAvaloniaPlayer-win-x64.exe 2>/dev/null || true
+          cp ./all_artifacts/*linux-x64*.AppImage ./release_files/KugouAvaloniaPlayer-linux-x64.AppImage 2>/dev/null || true
+          cp ./all_artifacts/*linux-arm64*.AppImage ./release_files/KugouAvaloniaPlayer-linux-arm64.AppImage 2>/dev/null || true
+
+          cp ./all_artifacts/*osx-arm64.app.zip ./release_files/KugouAvaloniaPlayer-mac-arm64.app.zip 2>/dev/null || true
+          cp ./all_artifacts/*osx-x64.app.zip ./release_files/KugouAvaloniaPlayer-mac-x64.app.zip 2>/dev/null || true
+          cp ./all_artifacts/*osx-arm64*Setup.pkg ./release_files/KugouAvaloniaPlayer-mac-arm64-Setup.pkg 2>/dev/null || true
+          cp ./all_artifacts/*osx-x64*Setup.pkg ./release_files/KugouAvaloniaPlayer-mac-x64-Setup.pkg 2>/dev/null || true
+
           cp ./all_artifacts/*.nupkg ./release_files/ 2>/dev/null || true
           cp ./all_artifacts/RELEASES* ./release_files/ 2>/dev/null || true
           cp ./all_artifacts/releases.*.json ./release_files/ 2>/dev/null || true
 
           ls -lah ./release_files
 
+      - name: Extract latest changelog from README
+        shell: bash
+        run: |
+          awk '
+            /^## 更新日志/ { inlog=1; next }
+            inlog && /^### v/ && !found { found=1; print; next }
+            found && /^### v/ { exit }
+            found { print }
+          ' README.md > RELEASE_NOTES.md
+
+          if [[ ! -s RELEASE_NOTES.md ]]; then
+            echo "未从 README.md 提取到更新日志，回退到默认文案。"
+            {
+              echo "### ${GITHUB_REF_NAME}"
+              echo
+              echo "- 请查看提交记录与附件了解本次更新内容。"
+            } > RELEASE_NOTES.md
+          fi
+
+          echo "==== RELEASE_NOTES.md ===="
+          cat RELEASE_NOTES.md
+
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           files: ./release_files/*
+          body_path: RELEASE_NOTES.md
           token: ${{ secrets.GITHUB_TOKEN }}

@@ -18,15 +18,28 @@
         </Content>
     </ItemGroup>
 
-    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64' or
+                          ('$(RuntimeIdentifier)' == '' and
+                           $([MSBuild]::IsOSPlatform('Linux')) and
+                           '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)' == 'X64')">
         <Content Include="runtimes\linux-x64\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <TargetPath>%(Filename)%(Extension)</TargetPath>
         </Content>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64' or
+                          ('$(RuntimeIdentifier)' == '' and
+                           $([MSBuild]::IsOSPlatform('Linux')) and
+                           '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)' == 'Arm64')">
+        <Content Include="runtimes\linux-arm64\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <TargetPath>%(Filename)%(Extension)</TargetPath>
+        </Content>
+    </ItemGroup>
+
     <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-        <Content Include="runtimes\osx-arm64\**">
+        <Content Include="runtimes\osx-universal\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <TargetPath>%(Filename)%(Extension)</TargetPath>
         </Content>

@@ -1,4 +1,4 @@
-#if KUGOU_NON_WINDOWS
+#if KUGOU_LINUX
 using System;
 using System.Runtime.InteropServices;
 using Avalonia.Controls;

@@ -13,8 +13,8 @@
 
 ## 快速开始
 
-- 下载地址：<https://github.com/Linsxyx/KugouMusic.NET/releases>
-- 问题反馈：<https://github.com/Linsxyx/KugouMusic.NET/issues>
+- 下载地址：[Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)
+- 问题反馈：[Issues](https://github.com/Linsxyx/KugouMusic.NET/issues)
 - 桌面客户端：`KugouAvaloniaPlayer`
 - 开发者入口：`KuGou.Net` / `KgWebApi.Net` / `SimpleAudio`
 
@@ -58,10 +58,13 @@ Apple Music风格的滚动歌词，支持在线歌词和本地歌词，歌词浮
 
 请前往 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases) 下载最新版本。
 
-- Windows：`KugouAvaloniaPlayer-win.exe`
-- Linux：`KugouAvaloniaPlayer-linux.AppImage`
-- macOS 安装包：`KugouAvaloniaPlayer-mac-Setup.pkg`
-- macOS 便携包：`KugouAvaloniaPlayer-mac.app.zip`
+- Windows x64：`KugouAvaloniaPlayer-win-x64.exe`
+- Linux x64：`KugouAvaloniaPlayer-linux-x64.AppImage`
+- Linux arm64：`KugouAvaloniaPlayer-linux-arm64.AppImage`
+- macOS arm64 安装包：`KugouAvaloniaPlayer-mac-arm64-Setup.pkg`
+- macOS arm64 便携包：`KugouAvaloniaPlayer-mac-arm64.app.zip`
+- macOS x64 安装包：`KugouAvaloniaPlayer-mac-x64-Setup.pkg`
+- macOS x64 便携包：`KugouAvaloniaPlayer-mac-x64.app.zip`
 
 ### 自动更新
 
@@ -79,7 +82,7 @@ Apple Music风格的滚动歌词，支持在线歌词和本地歌词，歌词浮
 xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 ```
 
-如果 `KugouAvaloniaPlayer-mac-Setup.pkg` 无法安装，也可以使用 `KugouAvaloniaPlayer-mac.app.zip` 解压直接运行，但这种方式不支持自动更新。
+如果 `KugouAvaloniaPlayer-mac-arm64-Setup.pkg` 或 `KugouAvaloniaPlayer-mac-x64-Setup.pkg` 无法安装，也可以使用对应架构的 `.app.zip` 解压直接运行，但这种方式不支持自动更新。
 
 ## 核心功能
 
@@ -148,9 +151,6 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 
 当前支持在线 KRC，以及本地 `KRC`、`LRC`、`VTT` 歌词。
 
-### 5.有没有Linux arm64版本或者osx x64版本？
-
-目前没有，偷懒没做打包，但可以自己编译，需把SimpleAudio的依赖换成对应的架构，可以去[Un4seen Bass audio library](https://www.un4seen.com) 下载对应的架构的文件。
 
 ## 开发者入口
 
@@ -198,6 +198,12 @@ KugouMusic.NET
 
 完整版本历史请查看 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)。
 
+### v1.0.1
+
+- 为托盘菜单新增“显示/隐藏歌词悬浮窗”菜单项
+- 修复底部控制台和设置页面切换音质时不同步
+- 添加Linux-arm64和MacOS-x64的自动构建和发布
+
 ### v1.0.0
 
 - 正式发布 `KA Music` 1.0 版本
@@ -222,5 +228,3 @@ KugouMusic.NET
 - **使用限制**：禁止将本项目用于任何商业用途或违法行为
 - **责任声明**：因使用本项目产生的任何法律纠纷或损失，均由使用者自行承担
 - **争议处理**：如果官方音乐平台觉得本项目不妥，请通过 Issues 联系
-
-

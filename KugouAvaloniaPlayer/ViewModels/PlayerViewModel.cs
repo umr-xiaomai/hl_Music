@@ -56,6 +56,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private float _musicVolume = 0.8f;
     private int _playRequestVersion;
     [ObservableProperty] private double _totalDurationSeconds;
+    private bool _isSyncingQualitySelection;
 
     public PlayerViewModel(
         MusicClient musicClient, ISukiToastManager toastManager, ILogger<PlayerViewModel> logger,
@@ -394,11 +395,14 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         SettingsManager.Save();
 
         if (!string.Equals(QualitySelection, value, StringComparison.OrdinalIgnoreCase))
-            QualitySelection = value;
+            SetQualitySelectionSilently(value);
     }
 
     partial void OnQualitySelectionChanged(string value)
     {
+        if (_isSyncingQualitySelection)
+            return;
+
         if (string.IsNullOrWhiteSpace(value))
             return;
 
@@ -406,6 +410,27 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             return;
 
         _ = SwitchQualityAsync(value);
+    }
+
+    private void SetQualitySelectionSilently(string value)
+    {
+        if (string.Equals(QualitySelection, value, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _isSyncingQualitySelection = true;
+        try
+        {
+            QualitySelection = value;
+        }
+        finally
+        {
+            _isSyncingQualitySelection = false;
+        }
+    }
+
+    private void RevertQualitySelectionToCurrentQuality()
+    {
+        SetQualitySelectionSilently(MusicQuality);
     }
 
     // 暴露给 MainWindow 初始化时调用
@@ -433,7 +458,10 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     public async Task<bool> SwitchQualityAsync(string? quality)
     {
         if (string.IsNullOrWhiteSpace(quality) || !QualityOptions.Contains(quality, StringComparer.OrdinalIgnoreCase))
+        {
+            RevertQualitySelectionToCurrentQuality();
             return false;
+        }
 
         if (string.Equals(MusicQuality, quality, StringComparison.OrdinalIgnoreCase))
             return true;
@@ -465,6 +493,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             var playData = await _musicClient.GetPlayInfoAsync(currentSong.Hash, quality);
             if (playData == null || playData.Status != 1)
             {
+                RevertQualitySelectionToCurrentQuality();
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Warning)
                     .WithTitle("切换音质失败")
@@ -477,6 +506,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             var url = playData.Urls?.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
             if (string.IsNullOrWhiteSpace(url))
             {
+                RevertQualitySelectionToCurrentQuality();
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Warning)
                     .WithTitle("切换音质失败")
@@ -499,6 +529,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             var loadSuccess = await TryLoadStreamAsync(url, currentSong.Name, AudioLoadTimeout, currentLoadCts.Token);
             if (!loadSuccess)
             {
+                RevertQualitySelectionToCurrentQuality();
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Warning)
                     .WithTitle("切换音质失败")
@@ -537,6 +568,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
+            RevertQualitySelectionToCurrentQuality();
             _logger.LogError(ex, "切换音质失败");
             _toastManager.CreateToast()
                 .OfType(NotificationType.Error)

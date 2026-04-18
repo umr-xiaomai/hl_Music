@@ -52,7 +52,6 @@ public partial class UserViewModel : PageViewModelBase
     [ObservableProperty] private CloseBehavior _selectedCloseBehavior;
     [ObservableProperty] private string _selectedEQPreset;
     [ObservableProperty] private string _selectedSettingsSection = SettingsSectionGeneral;
-    [ObservableProperty] private string _selectedQuality;
     [ObservableProperty] private string? _userAvatar;
     [ObservableProperty] private string _userId = "";
     [ObservableProperty] private string _userName = "加载中...";
@@ -69,7 +68,6 @@ public partial class UserViewModel : PageViewModelBase
 
         Player = player;
         SelectedCloseBehavior = SettingsManager.Settings.CloseBehavior;
-        SelectedQuality = SettingsManager.Settings.MusicQuality;
         AutoCheckUpdate = SettingsManager.Settings.AutoCheckUpdate;
         EQPresetOptions = ["原声", "流行", "摇滚", "爵士", "古典", "嘻哈", "布鲁斯", "电子音乐", "金属", "自定义"];
 
@@ -113,14 +111,12 @@ public partial class UserViewModel : PageViewModelBase
     ];
     public string[] LyricFontFamilyOptions { get; }
 
-    private PlayerViewModel Player { get; }
+    public PlayerViewModel Player { get; }
 
     public override string DisplayName => "设置";
     public override string Icon => "/Assets/gear-svgrepo-com.svg";
 
     public CloseBehavior[] AvailableCloseBehaviors { get; } = Enum.GetValues<CloseBehavior>();
-
-    public string[] QualityOptions { get; } = { "128", "320", "flac", "high" };
 
     public bool IsLyricColorCustomMode => SelectedLyricColorMode == LyricColorModeCustom;
     public bool IsLyricFontCustomMode => SelectedLyricFontMode == LyricColorModeCustom;
@@ -228,13 +224,6 @@ public partial class UserViewModel : PageViewModelBase
     partial void OnSelectedCloseBehaviorChanged(CloseBehavior value)
     {
         SettingsManager.Settings.CloseBehavior = value;
-        SettingsManager.Save();
-    }
-
-    partial void OnSelectedQualityChanged(string value)
-    {
-        SettingsManager.Settings.MusicQuality = value;
-        Player.MusicQuality = value;
         SettingsManager.Save();
     }
 
