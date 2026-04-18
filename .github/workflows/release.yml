@@ -289,7 +289,7 @@ jobs:
 
           cp ./all_artifacts/releases-macos-arm64/*osx-arm64.app.zip ./release_files/KugouAvaloniaPlayer-mac-arm64.app.zip 2>/dev/null || true
           cp ./all_artifacts/releases-macos-x64/*osx-x64.app.zip ./release_files/KugouAvaloniaPlayer-mac-x64.app.zip 2>/dev/null || true
-          cp ./all_artifacts/releases-macos-arm64/*osx-arm64*Setup.pkg ./release_files/KugouAvaloniaPlayer-mac-arm64-Setup.pkg 2>/dev/null || true
+          cp ./all_artifacts/releases-macos-arm64/*-osx-Setup.pkg ./release_files/KugouAvaloniaPlayer-mac-arm64-Setup.pkg 2>/dev/null || true
 
           cp ./all_artifacts/releases-windows-x64/*.nupkg ./release_files/ 2>/dev/null || true
           cp ./all_artifacts/releases-linux-x64/*.nupkg ./release_files/ 2>/dev/null || true
