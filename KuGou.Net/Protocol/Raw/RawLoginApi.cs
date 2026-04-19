@@ -255,7 +255,7 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
     }
 
 
-    private JsonElement TryDecryptResponse(JsonElement response, string aesKey)
+    private JsonElement TryDecryptResponse(JsonElement response, string? aesKey)
     {
         try
         {
@@ -265,20 +265,23 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
                 if (dataElem.TryGetProperty("secu_params", out var secuElem))
                 {
                     // 解密
-                    var decryptedJson = KgCrypto.AesDecrypt(secuElem.GetString()!, aesKey);
-
-                    // 这里我们需要把解密出来的字段合并回 data 节点
-                    // 因为 System.Text.Json 的 JsonElement 是只读的，所以需要重建 JsonObject
-                    var rootNode = JsonNode.Parse(response.GetRawText());
-                    var dataNode = rootNode?["data"] as JsonObject;
-                    var decryptedNode = JsonNode.Parse(decryptedJson) as JsonObject;
-
-                    if (dataNode != null && decryptedNode != null)
+                    if (aesKey != null)
                     {
-                        foreach (var kv in decryptedNode)
-                            // 覆盖或添加字段 (token, t1, userid 等)
-                            dataNode[kv.Key] = kv.Value?.DeepClone();
-                        return JsonSerializer.Deserialize(rootNode!.ToJsonString(), AppJsonContext.Default.JsonElement);
+                        var decryptedJson = KgCrypto.AesDecrypt(secuElem.GetString()!, aesKey);
+
+                        // 这里我们需要把解密出来的字段合并回 data 节点
+                        // 因为 System.Text.Json 的 JsonElement 是只读的，所以需要重建 JsonObject
+                        var rootNode = JsonNode.Parse(response.GetRawText());
+                        var dataNode = rootNode?["data"] as JsonObject;
+                        var decryptedNode = JsonNode.Parse(decryptedJson) as JsonObject;
+
+                        if (dataNode != null && decryptedNode != null)
+                        {
+                            foreach (var kv in decryptedNode)
+                                // 覆盖或添加字段 (token, t1, userid 等)
+                                dataNode[kv.Key] = kv.Value?.DeepClone();
+                            return JsonSerializer.Deserialize(rootNode!.ToJsonString(), AppJsonContext.Default.JsonElement);
+                        }
                     }
                 }
         }

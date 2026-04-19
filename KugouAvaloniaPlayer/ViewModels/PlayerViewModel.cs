@@ -23,10 +23,10 @@ namespace KugouAvaloniaPlayer.ViewModels;
 public partial class PlayerViewModel : ViewModelBase, IDisposable
 {
     private const int MaxConsecutiveFailures = 5;
-    private const double AnalysisWindowSec = 10.0;
+    private const double AnalysisWindowSec = 15.0;
     private const double FallbackMixDurationSec = 9.6;
     private const double FallbackMixEntrySec = 4.6;
-    private const double PreloadWindowSec = 12.0;
+    private const double PreloadWindowSec = 18.0;
     private const int TailTelemetryCapacity = 320;
     private static readonly TimeSpan AudioLoadTimeout = TimeSpan.FromSeconds(12);
     private readonly FavoritePlaylistService _favoriteService;
@@ -58,6 +58,8 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private SongItem? _preparedNextSong;
     private string? _preparedNextSource;
     private bool _preparedNextIsLocal;
+    private TransitionProfile? _activeTransitionProfile;
+    private bool _incomingSteadyStateLogged;
 
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
     [ObservableProperty] private string _currentLyricText = "---";
@@ -411,6 +413,44 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             CurrentLyricTrans = activeLine?.Translation ?? "";
         }
 
+        // 1->2 的交叉完成后，需要为新激活的歌曲重新打开下一轮预加载/分析管线。
+        if (_autoTransitionStarted &&
+            !_player.IsCrossfading &&
+            _pendingTransitionProfile == null &&
+            _pendingTransitionSong == null &&
+            _preparedNextTrack == null &&
+            _preparedNextSong == null)
+        {
+#if DEBUG
+            if (CurrentPlayingSong != null)
+            {
+                _logger.LogInformation(
+                    "智能过渡结束：当前歌曲《{SongName}》交叉阶段已完全结束，当前播放位置 {CurrentPositionSec:F2}s",
+                    CurrentPlayingSong.Name,
+                    pos.TotalSeconds);
+            }
+#endif
+            ResetTransitionPipeline(cancelPreparedTrack: false);
+        }
+
+#if DEBUG
+        if (_autoTransitionStarted &&
+            _player.IsCrossfading &&
+            !_incomingSteadyStateLogged &&
+            _activeTransitionProfile != null &&
+            CurrentPlayingSong != null &&
+            pos.TotalSeconds >= _activeTransitionProfile.IncomingSettleSec)
+        {
+            _incomingSteadyStateLogged = true;
+            _logger.LogInformation(
+                "智能过渡稳态：当前歌曲《{SongName}》已在 {CurrentPositionSec:F2}s 左右进入正常播放参数区（预测 {PredictedSettleSec:F2}s，交叉总时长 {MixDurationSec:F2}s）",
+                CurrentPlayingSong.Name,
+                pos.TotalSeconds,
+                _activeTransitionProfile.IncomingSettleSec,
+                _activeTransitionProfile.MixDurationSec);
+        }
+#endif
+
         if (!IsSeamlessTransitionEnabled || _player.IsCrossfading || IsSwitchingQuality)
         {
             return;
@@ -726,6 +766,8 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _preparedNextSong = null;
         _preparedNextSource = null;
         _preparedNextIsLocal = false;
+        _activeTransitionProfile = null;
+        _incomingSteadyStateLogged = false;
         _analysisFailureSongKey = null;
         _prepareFailureSongKey = null;
         if (cancelPreparedTrack)
@@ -959,8 +1001,25 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         {
             return;
         }
-
+#if DEBUG
+        var nextSong = _preparedNextSong;
+        var transitionProfile = _pendingTransitionProfile;
+        var outgoingSong = CurrentPlayingSong;
+        if (nextSong != null)
+        {
+            _logger.LogInformation(
+                "智能过渡启动：上一首《{OutgoingSong}》剩余 {RemainingSec:F2}s 开始淡出，下一首《{IncomingSong}》预计在 {IncomingSettleSec:F2}s 左右进入正常播放参数区，交叉将在 {MixDurationSec:F2}s 左右完全结束（起混点 {MixEntrySec:F2}s）",
+                outgoingSong?.Name ?? "未知歌曲",
+                remainingSec,
+                nextSong.Name,
+                transitionProfile.IncomingSettleSec,
+                transitionProfile.MixDurationSec,
+                transitionProfile.MixEntrySec);
+        }
+#endif
         _autoTransitionStarted = true;
+        _activeTransitionProfile = _pendingTransitionProfile;
+        _incomingSteadyStateLogged = false;
         var oldSong = CurrentPlayingSong;
         if (oldSong != null)
         {

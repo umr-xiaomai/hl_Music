@@ -401,6 +401,10 @@ public sealed class DualTrackAudioPlayer : IDisposable
             incomingGain = Math.Max(0f, combinedCap - outgoingGain);
         }
 
+        var settleStartRatio = Math.Clamp(profile.IncomingSettleSec / Math.Max(0.1, profile.MixDurationSec), breathRatio + 0.08, 0.96);
+        var settleRatio = EaseOutSine(Math.Clamp((safeRatio - settleStartRatio) / Math.Max(0.001, 1.0 - settleStartRatio), 0.0, 1.0));
+        incomingGain = Lerp(incomingGain, 1f, (float)settleRatio);
+
         outgoingDeck.SetTransitionGain(outgoingGain);
         incomingDeck.SetTransitionGain(incomingGain);
 
@@ -408,13 +412,16 @@ public sealed class DualTrackAudioPlayer : IDisposable
         var outgoingTone = profile.OutgoingToneDepth * (0.82 + entryEnhance * 0.18);
         var incomingTone = profile.IncomingToneDepth * (0.84 - incomingRatio * 0.72);
         outgoingDeck.SetTransitionTone((float)Math.Clamp(outgoingTone * entryEnhance, 0.0, 1.0));
-        incomingDeck.SetTransitionTone((float)Math.Clamp(incomingTone * (0.88 + entryEnhance * 0.12), 0.0, 1.0));
+        var incomingToneDepth = (float)Math.Clamp(incomingTone * (0.88 + entryEnhance * 0.12), 0.0, 1.0);
+        incomingDeck.SetTransitionTone(Lerp(incomingToneDepth, 0f, (float)settleRatio));
 
         outgoingDeck.SetReverbAmount((float)Math.Clamp(profile.OutgoingReverbAmount * (0.55 + entryEnhance * 0.45), 0.0, 1.0));
-        incomingDeck.SetReverbAmount((float)Math.Clamp(profile.IncomingReverbAmount * (0.95 - incomingRatio * 0.45), 0.0, 1.0));
+        var incomingReverb = (float)Math.Clamp(profile.IncomingReverbAmount * (0.95 - incomingRatio * 0.45), 0.0, 1.0);
+        incomingDeck.SetReverbAmount(Lerp(incomingReverb, _currentReverbAmount, (float)settleRatio));
 
         outgoingDeck.SetStereoWidth((float)Math.Clamp(profile.StereoWidth * (0.65 + entryEnhance * 0.35), 0.0, 1.0));
-        incomingDeck.SetStereoWidth((float)Math.Clamp(profile.StereoWidth * (0.70 + incomingRatio * 0.20), 0.0, 1.0));
+        var incomingStereoWidth = (float)Math.Clamp(profile.StereoWidth * (0.70 + incomingRatio * 0.20), 0.0, 1.0);
+        incomingDeck.SetStereoWidth(Lerp(incomingStereoWidth, _currentStereoWidth, (float)settleRatio));
     }
 
     private static double EaseOutSine(double value)
@@ -429,5 +436,11 @@ public sealed class DualTrackAudioPlayer : IDisposable
         return safe < 0.5
             ? 4 * safe * safe * safe
             : 1 - Math.Pow(-2 * safe + 2, 3) / 2;
+    }
+
+    private static float Lerp(float from, float to, float amount)
+    {
+        var safe = Math.Clamp(amount, 0f, 1f);
+        return from + (to - from) * safe;
     }
 }

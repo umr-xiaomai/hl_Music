@@ -10,6 +10,8 @@ public sealed record TransitionProfile
 
     public double MixBreathSec { get; init; } = 2.1;
 
+    public double IncomingSettleSec { get; init; } = 7.4;
+
     public float OutgoingDuckStrength { get; init; } = 0.58f;
 
     public float IncomingGainCap { get; init; } = 0.92f;

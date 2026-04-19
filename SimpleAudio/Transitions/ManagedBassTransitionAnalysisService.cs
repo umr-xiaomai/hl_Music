@@ -44,9 +44,30 @@ public sealed class ManagedBassTransitionAnalysisService : ITransitionAnalysisSe
             bpmDifficulty = Math.Clamp(Math.Abs(currentAnalysis.Bpm - nextAnalysis.Bpm) / 42.0, 0.0, 1.0);
         }
 
-        var mixDurationSec = Clamp(9.15 + bpmDifficulty * 0.7 + loudnessDifficulty * 0.45 + tailWeakness * 0.35, 9.0, 10.2);
+        var mixDurationSec = Clamp(
+            8.15
+            + bpmDifficulty * 1.20
+            + loudnessDifficulty * 0.85
+            + tailWeakness * 0.70
+            + introBlankness * 0.65
+            - introStrength * 0.75
+            - introActivityProtect * 0.45,
+            6.8,
+            12.8);
         var mixEntrySec = Clamp(4.0 + invalidTailSec * 0.92 + tailSilenceSec * 0.35 + introSilenceSec * 0.92 + tailWeakness * 1.1 + bpmDifficulty * 0.35 - introStrength * 0.95 - introBrightness * 0.45 - introActivityProtect * 0.35, 2.9, 14.0);
         var mixBreathSec = Clamp(1.65 + introStrength * 0.75 + introBrightness * 0.45 + loudnessDifficulty * 0.25 + introBlankness * 0.35, 1.4, 3.4);
+        var settleFloor = Math.Max(mixBreathSec + 1.15, 3.1);
+        var settleCeiling = Math.Max(settleFloor + 0.75, mixDurationSec - 0.55);
+        var incomingSettleSec = Clamp(
+            mixDurationSec * (
+                0.66
+                + introBlankness * 0.16
+                + loudnessDifficulty * 0.06
+                - introStrength * 0.15
+                - introActivityProtect * 0.10
+                - introBrightness * 0.08),
+            settleFloor,
+            settleCeiling);
 
         var outgoingDuck = (float)Clamp(0.44 + loudnessDifficulty * 0.38 + introStrength * 0.10, 0.40, 0.92);
         var incomingGainCap = (float)Clamp(0.99 - introStrength * 0.08 - introBrightness * 0.06 - introBlankness * 0.07 - Math.Max(0, loudnessDiffDb) / 28.0, 0.74, 0.98);
@@ -66,6 +87,7 @@ public sealed class ManagedBassTransitionAnalysisService : ITransitionAnalysisSe
             MixEntrySec = mixEntrySec,
             MixDurationSec = mixDurationSec,
             MixBreathSec = mixBreathSec,
+            IncomingSettleSec = incomingSettleSec,
             OutgoingDuckStrength = outgoingDuck,
             IncomingGainCap = incomingGainCap,
             OutgoingToneDepth = outgoingToneDepth,
