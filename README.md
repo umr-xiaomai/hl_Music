@@ -201,6 +201,14 @@ KugouMusic.NET
 └─ docs/images           # README 截图资源
 ```
 
+## 计划更新
+
+下一次更新计划：
+
+- 新增无感过渡
+- 优化滚动歌词动效和错峰延迟
+- 升级到 Avalonia 12
+
 ## 更新日志
 
 完整版本历史请查看 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)。

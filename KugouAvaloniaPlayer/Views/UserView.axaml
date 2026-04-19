@@ -181,6 +181,17 @@
 
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
                                 <StackPanel>
+                                    <TextBlock Text="无感过渡" FontWeight="DemiBold" />
+                                    <TextBlock Text="自动预加载并在尾段平滑切到下一首"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource SukiLowText}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsChecked="{Binding EnableSeamlessTransition, Mode=TwoWay}" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                <StackPanel>
                                     <TextBlock Text="空间音效" FontWeight="DemiBold" />
                                     <TextBlock Text="3D音效，不保证好用"
                                                FontSize="12"

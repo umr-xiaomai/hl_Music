@@ -39,6 +39,7 @@ public partial class UserViewModel : PageViewModelBase
     private readonly HashSet<string> _availableLyricFonts;
 
     [ObservableProperty] private bool _autoCheckUpdate;
+    [ObservableProperty] private bool _enableSeamlessTransition;
     [ObservableProperty] private bool _enableSurround;
     [ObservableProperty] private bool _isCheckingUpdate;
     [ObservableProperty] private bool _isLoading = true;
@@ -75,6 +76,7 @@ public partial class UserViewModel : PageViewModelBase
         SelectedEQPreset = Array.Exists(EQPresetOptions, x => x == preset) ? preset : "原声";
 
         EnableSurround = SettingsManager.Settings.EnableSurround;
+        EnableSeamlessTransition = SettingsManager.Settings.EnableSeamlessTransition;
         LyricFontFamilyOptions = LoadSystemFontFamilies();
         _availableLyricFonts = new HashSet<string>(LyricFontFamilyOptions, StringComparer.OrdinalIgnoreCase);
         UserId = _sessionManager.Session.UserId;
@@ -245,6 +247,13 @@ public partial class UserViewModel : PageViewModelBase
         SettingsManager.Settings.EnableSurround = value;
         SettingsManager.Save();
         Player.UpdateAudioEffects(SelectedEQPreset, value);
+    }
+
+    partial void OnEnableSeamlessTransitionChanged(bool value)
+    {
+        SettingsManager.Settings.EnableSeamlessTransition = value;
+        SettingsManager.Save();
+        Player.SetSeamlessTransitionEnabled(value);
     }
 
     partial void OnSelectedLyricColorTargetChanged(string value)
