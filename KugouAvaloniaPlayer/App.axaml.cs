@@ -5,6 +5,8 @@ using Avalonia.Markup.Xaml;
 using KuGou.Net.Infrastructure;
 using KuGou.Net.Protocol.Session;
 using KugouAvaloniaPlayer.Services;
+using KugouAvaloniaPlayer.Services.DesktopLyric;
+using KugouAvaloniaPlayer.Services.GlobalShortcutService;
 using KugouAvaloniaPlayer.ViewModels;
 using KugouAvaloniaPlayer.Views;
 using Microsoft.Extensions.DependencyInjection;

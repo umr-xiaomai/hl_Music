@@ -6,6 +6,7 @@
              xmlns:localControls="using:KugouAvaloniaPlayer.Controls"
              xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
+             xmlns:models1="clr-namespace:KugouAvaloniaPlayer.Models"
              x:Class="KugouAvaloniaPlayer.Views.SearchView"
              x:Name="SearchRoot"
              x:DataType="vm:SearchViewModel"
@@ -86,7 +87,7 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="vm:SearchHotTagGroup">
+                                    <DataTemplate DataType="models1:SearchHotTagGroup">
                                         <RadioButton Classes="Segmented"
                                                      GroupName="SearchHotMainTags"
                                                      IsChecked="{Binding #SearchRoot.((vm:SearchViewModel)DataContext).SelectedHotMainIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={Binding Index}}"
@@ -109,7 +110,7 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="vm:SearchHotTagItem">
+                                    <DataTemplate DataType="models1:SearchHotTagItem">
                                         <Button Classes="Segmented"
                                                 Command="{Binding #SearchRoot.((vm:SearchViewModel)DataContext).QuickSearchHotKeywordCommand}"
                                                 CommandParameter="{Binding .}">
@@ -128,13 +129,13 @@
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="5">
                             <RadioButton Content="单曲" Classes="Segmented"
-                                         IsChecked="{Binding CurrentSearchType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static vm:SearchType.Song}}"
+                                         IsChecked="{Binding CurrentSearchType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models1:SearchType.Song}}"
                                          Command="{Binding SwitchSearchTypeCommand}" CommandParameter="Song" />
                             <RadioButton Content="歌单" Classes="Segmented"
-                                         IsChecked="{Binding CurrentSearchType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static vm:SearchType.Playlist}}"
+                                         IsChecked="{Binding CurrentSearchType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models1:SearchType.Playlist}}"
                                          Command="{Binding SwitchSearchTypeCommand}" CommandParameter="Playlist" />
                             <RadioButton Content="专辑" Classes="Segmented"
-                                         IsChecked="{Binding CurrentSearchType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static vm:SearchType.Album}}"
+                                         IsChecked="{Binding CurrentSearchType, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models1:SearchType.Album}}"
                                          Command="{Binding SwitchSearchTypeCommand}" CommandParameter="Album" />
                         </StackPanel>
                         <Button Grid.Column="1"
@@ -178,7 +179,7 @@
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                 <Binding Path="!IsSearching" />
                                 <Binding Path="CurrentSearchType" Converter="{x:Static ObjectConverters.Equal}"
-                                         ConverterParameter="{x:Static vm:SearchType.Song}" />
+                                         ConverterParameter="{x:Static models1:SearchType.Song}" />
                                 <Binding Path="!IsShowingDetail" />
                             </MultiBinding>
                         </ListBox.IsVisible>
@@ -194,7 +195,7 @@
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                 <Binding Path="!IsSearching" />
                                 <Binding Path="CurrentSearchType" Converter="{x:Static ObjectConverters.Equal}"
-                                         ConverterParameter="{x:Static vm:SearchType.Playlist}" />
+                                         ConverterParameter="{x:Static models1:SearchType.Playlist}" />
                                 <Binding Path="!IsShowingDetail" />
                             </MultiBinding>
                         </ScrollViewer.IsVisible>
@@ -221,7 +222,7 @@
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                 <Binding Path="!IsSearching" />
                                 <Binding Path="CurrentSearchType" Converter="{x:Static ObjectConverters.Equal}"
-                                         ConverterParameter="{x:Static vm:SearchType.Album}" />
+                                         ConverterParameter="{x:Static models1:SearchType.Album}" />
                                 <Binding Path="!IsShowingDetail" />
                             </MultiBinding>
                         </ScrollViewer.IsVisible>

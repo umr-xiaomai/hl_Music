@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
-using KugouAvaloniaPlayer.Services;
+using KugouAvaloniaPlayer.Models;
 
 namespace KugouAvaloniaPlayer.Converters;
 

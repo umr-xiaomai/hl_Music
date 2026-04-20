@@ -13,6 +13,7 @@ using KuGou.Net.Protocol.Session;
 using KugouAvaloniaPlayer.Controls;
 using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.Services;
+using KugouAvaloniaPlayer.Services.GlobalShortcutService;
 using SukiUI;
 using SukiUI.Dialogs;
 

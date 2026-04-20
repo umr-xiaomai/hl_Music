@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace KugouAvaloniaPlayer.Services;
+namespace KugouAvaloniaPlayer.Services.DesktopLyric;
 
 public interface IDesktopLyricMousePassthroughService
 {

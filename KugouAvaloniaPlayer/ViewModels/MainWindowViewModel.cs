@@ -63,6 +63,11 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private TextAlignment _nowPlayingLyricTextAlignment = TextAlignment.Center;
     [ObservableProperty] private double _nowPlayingLyricFontSize = 26;
     [ObservableProperty] private double _nowPlayingTranslationFontSize = 16;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNowPlayingPrimaryLyricVisible))]
+    [NotifyPropertyChangedFor(nameof(IsNowPlayingTranslationVisible))]
+    [NotifyPropertyChangedFor(nameof(IsNowPlayingRomanizationVisible))]
+    private NowPlayingLyricDisplayMode _nowPlayingLyricDisplayMode = NowPlayingLyricDisplayMode.LyricsWithTranslation;
     private bool _isUpdatingActivePageFromNavigation;
 
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
@@ -133,6 +138,7 @@ public partial class MainWindowViewModel : ObservableObject
             SettingsManager.Settings.PlayPageLyricCustomFontFamily,
             SettingsManager.Settings.PlayPageLyricAlignment,
             SettingsManager.Settings.PlayPageLyricFontSize);
+        NowPlayingLyricDisplayMode = SettingsManager.Settings.PlayPageLyricDisplayMode;
 
         PlaylistsViewModel.Items.CollectionChanged += OnPlaylistItemsChanged;
         RefreshSidebarPlaylists();
@@ -238,12 +244,18 @@ public partial class MainWindowViewModel : ObservableObject
 
     public AvaloniaList<PlaylistItem> SidebarOnlinePlaylists { get; } = new();
     public AvaloniaList<PlaylistItem> SidebarLocalPlaylists { get; } = new();
+    public bool IsNowPlayingPrimaryLyricVisible => true;
+    public bool IsNowPlayingTranslationVisible =>
+        NowPlayingLyricDisplayMode == NowPlayingLyricDisplayMode.LyricsWithTranslation;
+    public bool IsNowPlayingRomanizationVisible =>
+        NowPlayingLyricDisplayMode == NowPlayingLyricDisplayMode.LyricsWithRomanization;
+    
 
-    public PlaylistItem SidebarAddPlaylistItem { get; } = new()
+    /*public PlaylistItem SidebarAddPlaylistItem { get; } = new()
     {
         Name = "新建/添加",
         Type = PlaylistType.AddButton
-    };
+    };*/
 
     // --- 登录相关 ---
     private async Task LoadLocalSessionOrLogin()
@@ -506,6 +518,17 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ToggleNowPlayingLyricDisplayMode()
+    {
+        NowPlayingLyricDisplayMode = NowPlayingLyricDisplayMode switch
+        {
+            NowPlayingLyricDisplayMode.LyricsWithTranslation => NowPlayingLyricDisplayMode.LyricsOnly,
+            NowPlayingLyricDisplayMode.LyricsOnly => NowPlayingLyricDisplayMode.LyricsWithRomanization,
+            _ => NowPlayingLyricDisplayMode.LyricsWithTranslation
+        };
+    }
+
+    [RelayCommand]
     private void CloseQueuePane()
     {
         IsQueuePaneOpen = false;
@@ -617,6 +640,12 @@ public partial class MainWindowViewModel : ObservableObject
     private static Color ParseColorOrDefault(string? colorText, Color fallback)
     {
         return Color.TryParse(colorText, out var parsed) ? parsed : fallback;
+    }
+
+    partial void OnNowPlayingLyricDisplayModeChanged(NowPlayingLyricDisplayMode value)
+    {
+        SettingsManager.Settings.PlayPageLyricDisplayMode = value;
+        SettingsManager.Save();
     }
 
     private async Task HandlePlaySongMessageAsync(SongItem song)

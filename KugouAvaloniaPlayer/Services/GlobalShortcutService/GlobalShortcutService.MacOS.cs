@@ -3,9 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Avalonia.Controls;
+using KugouAvaloniaPlayer.Models;
 using Microsoft.Extensions.Logging;
 
-namespace KugouAvaloniaPlayer.Services;
+namespace KugouAvaloniaPlayer.Services.GlobalShortcutService;
 
 public sealed partial class GlobalShortcutService
 {

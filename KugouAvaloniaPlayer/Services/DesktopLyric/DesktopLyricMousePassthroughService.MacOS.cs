@@ -3,7 +3,7 @@ using System;
 using System.Runtime.InteropServices;
 using Avalonia.Controls;
 
-namespace KugouAvaloniaPlayer.Services;
+namespace KugouAvaloniaPlayer.Services.DesktopLyric;
 
 public sealed class DesktopLyricMousePassthroughService : IDesktopLyricMousePassthroughService
 {

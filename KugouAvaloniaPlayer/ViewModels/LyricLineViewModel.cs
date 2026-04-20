@@ -13,6 +13,7 @@ public partial class LyricLineViewModel : ObservableObject
     [ObservableProperty] private bool _isKrcWordLevel;
     [ObservableProperty] private double _startTime;
     [ObservableProperty] private string _translation = "";
+    [ObservableProperty] private string _romanization = "";
 
     public AvaloniaList<LyricWordViewModel> Words { get; } = new();
     public AvaloniaList<LyricWordViewModel> TranslationWords { get; } = new();

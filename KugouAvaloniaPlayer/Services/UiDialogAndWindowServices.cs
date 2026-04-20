@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Threading;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using KugouAvaloniaPlayer.Services.DesktopLyric;
 using KugouAvaloniaPlayer.ViewModels;
 using KugouAvaloniaPlayer.Views;
 using SukiUI.Dialogs;

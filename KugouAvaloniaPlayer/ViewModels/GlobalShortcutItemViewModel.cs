@@ -1,15 +1,16 @@
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using KugouAvaloniaPlayer.Models;
 
 namespace KugouAvaloniaPlayer.ViewModels;
 
-public partial class GlobalShortcutItemViewModel(Services.GlobalShortcutAction action, string displayName)
+public partial class GlobalShortcutItemViewModel(GlobalShortcutAction action, string displayName)
     : ObservableObject
 {
     private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.Parse("#D92D20"));
     private static readonly IBrush InfoBrush = new SolidColorBrush(Color.Parse("#667085"));
 
-    public Services.GlobalShortcutAction Action { get; } = action;
+    public GlobalShortcutAction Action { get; } = action;
     public string DisplayName { get; } = displayName;
 
     [ObservableProperty] private string _shortcutText = "未设置";

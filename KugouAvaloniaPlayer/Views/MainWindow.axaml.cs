@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.Services;
 using KugouAvaloniaPlayer.ViewModels;
 using SukiUI.Controls;

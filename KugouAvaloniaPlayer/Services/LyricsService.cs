@@ -92,6 +92,7 @@ public class LyricsService(LyricClient lyricClient, ILogger<LyricsService> logge
                         {
                             Content = line.Content,
                             Translation = line.Translation,
+                            Romanization = line.Romanization,
                             StartTime = line.StartTime,
                             Duration = line.Duration,
                             IsActive = false
@@ -179,6 +180,7 @@ public class LyricsService(LyricClient lyricClient, ILogger<LyricsService> logge
                 {
                     Content = line.Content,
                     Translation = line.Translation,
+                    Romanization = line.Romanization,
                     StartTime = line.StartTime,
                     Duration = line.Duration,
                     IsActive = false

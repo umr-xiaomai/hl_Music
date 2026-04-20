@@ -7,6 +7,7 @@
              xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              xmlns:services="using:KugouAvaloniaPlayer.Services"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:models="clr-namespace:KugouAvaloniaPlayer.Models"
              mc:Ignorable="d"
              d:DesignWidth="900"
              d:DesignHeight="620"
@@ -123,7 +124,7 @@
                                           ItemsSource="{Binding AvailableCloseBehaviors}"
                                           SelectedItem="{Binding SelectedCloseBehavior}">
                                     <ComboBox.ItemTemplate>
-                                        <DataTemplate DataType="services:CloseBehavior">
+                                        <DataTemplate DataType="models:CloseBehavior">
                                             <TextBlock Text="{Binding Converter={StaticResource CloseBehaviorConverter}}" />
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>

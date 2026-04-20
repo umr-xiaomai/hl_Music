@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 
-namespace KugouAvaloniaPlayer.Services;
+namespace KugouAvaloniaPlayer.Services.DesktopLyric;
 
 public sealed class DesktopLyricMousePassthroughService(ILogger<DesktopLyricMousePassthroughService> logger)
     : IDesktopLyricMousePassthroughService

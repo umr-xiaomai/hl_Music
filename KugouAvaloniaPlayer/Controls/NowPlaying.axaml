@@ -102,13 +102,33 @@
             </Border>
         </Panel>
         <Grid RowDefinitions="Auto, *" Margin="40">
-            <Button Grid.Row="0" Cursor="Hand"
-                    Command="{Binding CloseNowPlayingCommand}"
-                    Classes="Basic" HorizontalAlignment="Left" Margin="0,10,0,0">
-                <Border Background="#30FFFFFF" CornerRadius="20" Padding="15,8">
-                    <PathIcon Data="{x:Static suki:Icons.ChevronDown}" Foreground="White" Width="15" Height="15" />
-                </Border>
-            </Button>
+            <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        HorizontalAlignment="Left"
+                        Margin="0,10,0,0">
+                <Button Cursor="Hand"
+                        Command="{Binding CloseNowPlayingCommand}"
+                        Classes="Basic">
+                    <Border Background="#30FFFFFF" CornerRadius="20" Padding="15,8">
+                        <PathIcon Data="{x:Static suki:Icons.ChevronDown}" Foreground="White" Width="15" Height="15" />
+                    </Border>
+                </Button>
+
+                <Button Cursor="Hand"
+                        Command="{Binding ToggleNowPlayingLyricDisplayModeCommand}"
+                        Classes="Basic">
+                    <Border Background="#30FFFFFF" CornerRadius="20" Padding="12,8">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Svg Path="/Assets/translation-svgrepo-com.svg"
+                                 Css="path { fill: white; }"
+                                 Width="15"
+                                 Height="15"
+                                 Opacity="0.9" />
+                        </StackPanel>
+                    </Border>
+                </Button>
+            </StackPanel>
 
             <Grid Grid.Row="1" ColumnDefinitions="4*, 6*" Margin="0,30,0,50">
 
@@ -238,14 +258,26 @@
                                     <TextBlock Text="{Binding Content}"
                                                Classes="KaraokeLine NowPlayingLine"
                                                Classes.active="{Binding IsActive}"
-                                               IsVisible="{Binding IsKrcWordLevel, Converter={x:Static BoolConverters.Not}}"
                                                Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
                                                TextWrapping="Wrap"
                                                HorizontalAlignment="Stretch"
-                                               TextAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricTextAlignment}" />
+                                               TextAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricTextAlignment}">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="IsKrcWordLevel"
+                                                         Converter="{x:Static BoolConverters.Not}" />
+                                                <Binding Path="$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsNowPlayingPrimaryLyricVisible" />
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
 
-                                    <Grid Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
-                                          IsVisible="{Binding IsKrcWordLevel}">
+                                    <Grid Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}">
+                                        <Grid.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="IsKrcWordLevel" />
+                                                <Binding Path="$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsNowPlayingPrimaryLyricVisible" />
+                                            </MultiBinding>
+                                        </Grid.IsVisible>
                                         <ItemsControl ItemsSource="{Binding Words}"
                                                       HorizontalAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricHorizontalAlignment}">
                                             <ItemsControl.ItemsPanel>
@@ -278,12 +310,18 @@
                                                          Converter="{x:Static StringConverters.IsNotNullOrEmpty}" />
                                                 <Binding Path="HasWordLevelTranslation"
                                                          Converter="{x:Static BoolConverters.Not}" />
+                                                <Binding Path="$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsNowPlayingTranslationVisible" />
                                             </MultiBinding>
                                         </TextBlock.IsVisible>
                                     </TextBlock>
 
-                                    <Grid Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
-                                          IsVisible="{Binding HasWordLevelTranslation}">
+                                    <Grid Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}">
+                                        <Grid.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="HasWordLevelTranslation" />
+                                                <Binding Path="$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsNowPlayingTranslationVisible" />
+                                            </MultiBinding>
+                                        </Grid.IsVisible>
                                         <ItemsControl ItemsSource="{Binding TranslationWords}"
                                                       HorizontalAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricHorizontalAlignment}">
                                             <ItemsControl.ItemsPanel>
@@ -303,6 +341,22 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </Grid>
+
+                                    <TextBlock Text="{Binding Romanization}"
+                                               Classes="KaraokeTrans NowPlayingTrans"
+                                               Classes.active="{Binding IsActive}"
+                                               Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
+                                               TextWrapping="Wrap"
+                                               HorizontalAlignment="Stretch"
+                                               TextAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricTextAlignment}">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="Romanization"
+                                                         Converter="{x:Static StringConverters.IsNotNullOrEmpty}" />
+                                                <Binding Path="$parent[UserControl].((vm:MainWindowViewModel)DataContext).IsNowPlayingRomanizationVisible" />
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
                                 </StackPanel>
                             </Grid>
                         </DataTemplate>
