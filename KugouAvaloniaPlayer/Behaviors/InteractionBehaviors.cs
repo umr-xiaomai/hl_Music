@@ -12,9 +12,12 @@ namespace KugouAvaloniaPlayer.Behaviors;
 
 public sealed class InteractionBehaviors
 {
+    public sealed record KeyDownCommandContext(object? Parameter, KeyEventArgs EventArgs);
+
     private static readonly Dictionary<Control, EventHandler<VisualTreeAttachmentEventArgs>> AttachedHandlers = new();
     private static readonly Dictionary<Control, EventHandler<VisualTreeAttachmentEventArgs>> DetachedHandlers = new();
     private static readonly Dictionary<InputElement, EventHandler<KeyEventArgs>> EnterKeyHandlers = new();
+    private static readonly Dictionary<InputElement, EventHandler<KeyEventArgs>> KeyDownHandlers = new();
     private static readonly Dictionary<InputElement, EventHandler<PointerPressedEventArgs>> PointerPressedHandlers = new();
     private static readonly Dictionary<InputElement, EventHandler<TappedEventArgs>> DoubleTappedHandlers = new();
     private static readonly Dictionary<Control, EventHandler<ScrollChangedEventArgs>> NearBottomScrollHandlers = new();
@@ -43,6 +46,12 @@ public sealed class InteractionBehaviors
     public static readonly AttachedProperty<object?> EnterKeyCommandParameterProperty =
         AvaloniaProperty.RegisterAttached<InteractionBehaviors, InputElement, object?>("EnterKeyCommandParameter");
 
+    public static readonly AttachedProperty<ICommand?> KeyDownCommandProperty =
+        AvaloniaProperty.RegisterAttached<InteractionBehaviors, InputElement, ICommand?>("KeyDownCommand");
+
+    public static readonly AttachedProperty<object?> KeyDownCommandParameterProperty =
+        AvaloniaProperty.RegisterAttached<InteractionBehaviors, InputElement, object?>("KeyDownCommandParameter");
+
     public static readonly AttachedProperty<ICommand?> PointerPressedCommandProperty =
         AvaloniaProperty.RegisterAttached<InteractionBehaviors, InputElement, ICommand?>("PointerPressedCommand");
 
@@ -69,6 +78,7 @@ public sealed class InteractionBehaviors
         AttachedToVisualTreeCommandProperty.Changed.AddClassHandler<Control>(OnAttachedToVisualTreeCommandChanged);
         DetachedFromVisualTreeCommandProperty.Changed.AddClassHandler<Control>(OnDetachedFromVisualTreeCommandChanged);
         EnterKeyCommandProperty.Changed.AddClassHandler<InputElement>(OnEnterKeyCommandChanged);
+        KeyDownCommandProperty.Changed.AddClassHandler<InputElement>(OnKeyDownCommandChanged);
         PointerPressedCommandProperty.Changed.AddClassHandler<InputElement>(OnPointerPressedCommandChanged);
         DoubleTappedCommandProperty.Changed.AddClassHandler<InputElement>(OnDoubleTappedCommandChanged);
         ScrollNearBottomCommandProperty.Changed.AddClassHandler<Control>(OnScrollNearBottomCommandChanged);
@@ -119,6 +129,18 @@ public sealed class InteractionBehaviors
 
     public static object? GetEnterKeyCommandParameter(AvaloniaObject element)
         => element.GetValue(EnterKeyCommandParameterProperty);
+
+    public static void SetKeyDownCommand(AvaloniaObject element, ICommand? value)
+        => element.SetValue(KeyDownCommandProperty, value);
+
+    public static ICommand? GetKeyDownCommand(AvaloniaObject element)
+        => element.GetValue(KeyDownCommandProperty);
+
+    public static void SetKeyDownCommandParameter(AvaloniaObject element, object? value)
+        => element.SetValue(KeyDownCommandParameterProperty, value);
+
+    public static object? GetKeyDownCommandParameter(AvaloniaObject element)
+        => element.GetValue(KeyDownCommandParameterProperty);
 
     public static void SetPointerPressedCommand(AvaloniaObject element, ICommand? value)
         => element.SetValue(PointerPressedCommandProperty, value);
@@ -222,6 +244,29 @@ public sealed class InteractionBehaviors
         };
 
         EnterKeyHandlers[element] = handler;
+        element.KeyDown += handler;
+    }
+
+    private static void OnKeyDownCommandChanged(InputElement element, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (KeyDownHandlers.Remove(element, out var oldHandler))
+            element.KeyDown -= oldHandler;
+
+        if (e.NewValue is not ICommand)
+            return;
+
+        EventHandler<KeyEventArgs> handler = (_, args) =>
+        {
+            var command = GetKeyDownCommand(element);
+            if (command == null)
+                return;
+
+            var parameter = new KeyDownCommandContext(GetKeyDownCommandParameter(element), args);
+            if (command.CanExecute(parameter))
+                command.Execute(parameter);
+        };
+
+        KeyDownHandlers[element] = handler;
         element.KeyDown += handler;
     }
 

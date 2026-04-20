@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -46,8 +47,10 @@ public partial class App : Application
         collection.AddSingleton<IExternalPlaylistImportService, ExternalPlaylistImportService>();
         collection.AddSingleton<ILoginDialogService, LoginDialogService>();
         collection.AddSingleton<INavigationService, NavigationService>();
+        collection.AddSingleton<IMainWindowService, MainWindowService>();
         collection.AddSingleton<IDesktopLyricMousePassthroughService, DesktopLyricMousePassthroughService>();
         collection.AddSingleton<IDesktopLyricWindowService, DesktopLyricWindowService>();
+        collection.AddSingleton<IGlobalShortcutService, GlobalShortcutService>();
         collection.AddSingleton<IFolderPickerService, FolderPickerService>();
 
         SettingsManager.Load();
@@ -80,14 +83,26 @@ public partial class App : Application
         var playerVm = services.GetRequiredService<PlayerViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
+            var mainWindow = new MainWindow
             {
                 DataContext = vm
             };
+            desktop.MainWindow = mainWindow;
+
+            var globalShortcutService = services.GetRequiredService<IGlobalShortcutService>();
+            void InitializeGlobalShortcuts(object? _, EventArgs __)
+            {
+                mainWindow.Opened -= InitializeGlobalShortcuts;
+                globalShortcutService.Initialize(mainWindow);
+                globalShortcutService.LoadFromSettings(SettingsManager.Settings.GlobalShortcuts);
+            }
+
+            mainWindow.Opened += InitializeGlobalShortcuts;
 
             InitializeTrayIcon(playerVm, desktop, vm);
             desktop.Exit += (s, e) =>
             {
+                globalShortcutService.UnregisterAll();
                 ShutdownTrayIcon();
                 SimpleAudioPlayer.Free();
                 _serviceProvider?.Dispose();

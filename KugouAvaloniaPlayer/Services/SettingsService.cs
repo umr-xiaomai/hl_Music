@@ -13,6 +13,73 @@ public enum CloseBehavior
     MinimizeToTray
 }
 
+public enum GlobalShortcutAction
+{
+    PlayPause,
+    PreviousTrack,
+    NextTrack,
+    ShowMainWindow,
+    ToggleDesktopLyric
+}
+
+public class GlobalShortcutSettings
+{
+    public bool EnableGlobalShortcuts { get; set; } = true;
+    public string? PlayPause { get; set; } = "Ctrl+Alt+Space";
+    public string? PreviousTrack { get; set; } = "Ctrl+Alt+Left";
+    public string? NextTrack { get; set; } = "Ctrl+Alt+Right";
+    public string? ShowMainWindow { get; set; } = "Ctrl+Alt+Up";
+    public string? ToggleDesktopLyric { get; set; } = "Ctrl+Alt+L";
+
+    public GlobalShortcutSettings Clone()
+    {
+        return new GlobalShortcutSettings
+        {
+            EnableGlobalShortcuts = EnableGlobalShortcuts,
+            PlayPause = PlayPause,
+            PreviousTrack = PreviousTrack,
+            NextTrack = NextTrack,
+            ShowMainWindow = ShowMainWindow,
+            ToggleDesktopLyric = ToggleDesktopLyric
+        };
+    }
+
+    public string? GetShortcut(GlobalShortcutAction action)
+    {
+        return action switch
+        {
+            GlobalShortcutAction.PlayPause => PlayPause,
+            GlobalShortcutAction.PreviousTrack => PreviousTrack,
+            GlobalShortcutAction.NextTrack => NextTrack,
+            GlobalShortcutAction.ShowMainWindow => ShowMainWindow,
+            GlobalShortcutAction.ToggleDesktopLyric => ToggleDesktopLyric,
+            _ => null
+        };
+    }
+
+    public void SetShortcut(GlobalShortcutAction action, string? shortcut)
+    {
+        switch (action)
+        {
+            case GlobalShortcutAction.PlayPause:
+                PlayPause = shortcut;
+                break;
+            case GlobalShortcutAction.PreviousTrack:
+                PreviousTrack = shortcut;
+                break;
+            case GlobalShortcutAction.NextTrack:
+                NextTrack = shortcut;
+                break;
+            case GlobalShortcutAction.ShowMainWindow:
+                ShowMainWindow = shortcut;
+                break;
+            case GlobalShortcutAction.ToggleDesktopLyric:
+                ToggleDesktopLyric = shortcut;
+                break;
+        }
+    }
+}
+
 // 设置数据模型
 public class AppSettings
 {
@@ -36,8 +103,10 @@ public class AppSettings
     public bool DesktopLyricUseCustomFont { get; set; }
     public string DesktopLyricCustomFontFamily { get; set; } = string.Empty;
     public double DesktopLyricFontSize { get; set; } = 30;
+    public GlobalShortcutSettings GlobalShortcuts { get; set; } = new();
 }
 
+[JsonSerializable(typeof(GlobalShortcutSettings))]
 [JsonSerializable(typeof(AppSettings))]
 internal partial class AppSettingsJsonContext : JsonSerializerContext
 {

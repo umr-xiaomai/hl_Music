@@ -1,6 +1,9 @@
 using System;
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Threading;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using KugouAvaloniaPlayer.ViewModels;
 using KugouAvaloniaPlayer.Views;
 using SukiUI.Dialogs;
@@ -18,6 +21,12 @@ public interface IDesktopLyricWindowService
     event Action<bool>? IsOpenChanged;
     void Toggle();
     void Close();
+}
+
+public interface IMainWindowService
+{
+    Window? MainWindow { get; }
+    void ShowMainWindow();
 }
 
 public sealed class LoginDialogService(ISukiDialogManager dialogManager) : ILoginDialogService
@@ -114,5 +123,26 @@ public sealed class DesktopLyricWindowService(
 
         desktopLyricMousePassthroughService.Apply(_lyricWindow, false);
         _lyricWindow.Close();
+    }
+}
+
+public sealed class MainWindowService : IMainWindowService
+{
+    public Window? MainWindow =>
+        (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+
+    public void ShowMainWindow()
+    {
+        var window = MainWindow;
+        if (window == null)
+            return;
+
+        if (window.WindowState == WindowState.Minimized)
+            window.WindowState = WindowState.Normal;
+
+        if (!window.IsVisible)
+            window.Show();
+
+        window.Activate();
     }
 }

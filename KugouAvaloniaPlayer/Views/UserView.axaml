@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
+             xmlns:behaviors="using:KugouAvaloniaPlayer.Behaviors"
              xmlns:services="using:KugouAvaloniaPlayer.Services"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              mc:Ignorable="d"
@@ -55,6 +56,12 @@
                             Command="{Binding SwitchSettingsSectionCommand}"
                             CommandParameter="播放与音效">
                         <TextBlock Text="播放与音效" Foreground="{DynamicResource SukiText}" />
+                    </Button>
+
+                    <Button Classes="SettingsNav"
+                            Command="{Binding SwitchSettingsSectionCommand}"
+                            CommandParameter="快捷键">
+                        <TextBlock Text="快捷键" Foreground="{DynamicResource SukiText}" />
                     </Button>
 
                     <Button Classes="SettingsNav"
@@ -200,6 +207,73 @@
                                 <ToggleSwitch Grid.Column="1"
                                               IsChecked="{Binding EnableSurround, Mode=TwoWay}" />
                             </Grid>
+                        </StackPanel>
+                    </suki:GlassCard>
+
+                    <suki:GlassCard IsOpaque="True" Padding="14" IsVisible="{Binding IsShortcutsSection}">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="快捷键"
+                                       FontWeight="SemiBold"
+                                       FontSize="16" />
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                <StackPanel>
+                                    <TextBlock Text="启用全局快捷键" FontWeight="DemiBold" />
+                                    <TextBlock Text="应用隐藏到托盘后也可触发播放控制与显示窗口"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource SukiLowText}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsChecked="{Binding EnableGlobalShortcuts, Mode=TwoWay}" />
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding ShortcutItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:GlobalShortcutItemViewModel">
+                                        <Border BorderThickness="1"
+                                                BorderBrush="{DynamicResource SukiBorder}"
+                                                CornerRadius="10"
+                                                Padding="12"
+                                                Margin="0,4,0,0">
+                                            <StackPanel Spacing="8">
+                                                <Grid ColumnDefinitions="*,Auto,Auto"
+                                                      ColumnSpacing="10">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding DisplayName}"
+                                                                   FontWeight="DemiBold" />
+                                                        <TextBlock Text="{Binding ShortcutText}"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource SukiLowText}" />
+                                                    </StackPanel>
+
+                                                    <Button Grid.Column="1"
+                                                            Classes="Basic"
+                                                            MinWidth="148"
+                                                            Command="{Binding #UserRoot.((vm:UserViewModel)DataContext).BeginShortcutRecordingCommand}"
+                                                            CommandParameter="{Binding .}"
+                                                            behaviors:InteractionBehaviors.KeyDownCommand="{Binding #UserRoot.((vm:UserViewModel)DataContext).CaptureShortcutKeyCommand}"
+                                                            behaviors:InteractionBehaviors.KeyDownCommandParameter="{Binding .}">
+                                                        <TextBlock Text="{Binding ShortcutText}" />
+                                                    </Button>
+
+                                                    <Button Grid.Column="2"
+                                                            Classes="Basic"
+                                                            MinWidth="72"
+                                                            Command="{Binding #UserRoot.((vm:UserViewModel)DataContext).ClearShortcutCommand}"
+                                                            CommandParameter="{Binding .}">
+                                                        <TextBlock Text="清空" />
+                                                    </Button>
+                                                </Grid>
+
+                                                <TextBlock Text="{Binding StatusMessage}"
+                                                           IsVisible="{Binding HasStatusMessage}"
+                                                           FontSize="12"
+                                                           Foreground="{Binding StatusForeground}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </suki:GlassCard>
 

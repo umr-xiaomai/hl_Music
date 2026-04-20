@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Styling;
+using KugouAvaloniaPlayer.Behaviors;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -21,6 +22,7 @@ public partial class UserViewModel : PageViewModelBase
 {
     private const string SettingsSectionGeneral = "常规";
     private const string SettingsSectionPlayback = "播放与音效";
+    private const string SettingsSectionShortcuts = "快捷键";
     private const string SettingsSectionLyrics = "歌词悬浮窗";
     private const string SettingsSectionUpdate = "更新与关于";
     private const string SettingsSectionAccount = "账户";
@@ -32,6 +34,7 @@ public partial class UserViewModel : PageViewModelBase
     private readonly AuthClient _authClient;
     private readonly ISukiDialogManager _dialogManager;
     private readonly EqSettingsViewModel _eqSettingsViewModel;
+    private readonly IGlobalShortcutService _globalShortcutService;
     private readonly KgSessionManager _sessionManager;
     private readonly UserClient _userClient;
     private bool _isInitializingLyricColorEditor;
@@ -49,6 +52,7 @@ public partial class UserViewModel : PageViewModelBase
     [ObservableProperty] private string _selectedLyricColorTarget = LyricTargetMain;
     [ObservableProperty] private string _selectedLyricFontMode = LyricColorModeDefault;
     [ObservableProperty] private string? _selectedLyricFontFamily;
+    [ObservableProperty] private bool _enableGlobalShortcuts;
 
     [ObservableProperty] private CloseBehavior _selectedCloseBehavior;
     [ObservableProperty] private string _selectedEQPreset;
@@ -59,17 +63,20 @@ public partial class UserViewModel : PageViewModelBase
     [ObservableProperty] private string _vipStatus = "未开通";
 
     public UserViewModel(PlayerViewModel player, UserClient userClient, AuthClient authClient,
-        ISukiDialogManager dialogManager, EqSettingsViewModel eqSettingsViewModel, KgSessionManager sessionManager)
+        ISukiDialogManager dialogManager, EqSettingsViewModel eqSettingsViewModel, KgSessionManager sessionManager,
+        IGlobalShortcutService globalShortcutService)
     {
         _userClient = userClient;
         _authClient = authClient;
         _dialogManager = dialogManager;
         _eqSettingsViewModel = eqSettingsViewModel;
         _sessionManager = sessionManager;
+        _globalShortcutService = globalShortcutService;
 
         Player = player;
         SelectedCloseBehavior = SettingsManager.Settings.CloseBehavior;
         AutoCheckUpdate = SettingsManager.Settings.AutoCheckUpdate;
+        EnableGlobalShortcuts = SettingsManager.Settings.GlobalShortcuts.EnableGlobalShortcuts;
         EQPresetOptions = ["原声", "流行", "摇滚", "爵士", "古典", "嘻哈", "布鲁斯", "电子音乐", "金属", "自定义"];
 
         var preset = SettingsManager.Settings.EQPreset;
@@ -82,12 +89,23 @@ public partial class UserViewModel : PageViewModelBase
         UserId = _sessionManager.Session.UserId;
         LoadLyricColorEditorFromSettings();
         LoadLyricFontEditorFromSettings();
+        ShortcutItems =
+        [
+            new GlobalShortcutItemViewModel(GlobalShortcutAction.PlayPause, "播放/暂停"),
+            new GlobalShortcutItemViewModel(GlobalShortcutAction.PreviousTrack, "上一首"),
+            new GlobalShortcutItemViewModel(GlobalShortcutAction.NextTrack, "下一首"),
+            new GlobalShortcutItemViewModel(GlobalShortcutAction.ShowMainWindow, "显示窗口"),
+            new GlobalShortcutItemViewModel(GlobalShortcutAction.ToggleDesktopLyric, "显示桌面歌词")
+        ];
+        RefreshShortcutTexts();
+        ApplyRegistrationResults(_globalShortcutService.CurrentResults);
+        _globalShortcutService.RegistrationChanged += ApplyRegistrationResults;
     }
 
     public string[] EQPresetOptions { get; }
     public string[] SettingsSections { get; } =
     [
-        SettingsSectionGeneral, SettingsSectionPlayback, SettingsSectionLyrics, SettingsSectionUpdate,
+        SettingsSectionGeneral, SettingsSectionPlayback, SettingsSectionShortcuts, SettingsSectionLyrics, SettingsSectionUpdate,
         SettingsSectionAccount
     ];
 
@@ -112,6 +130,7 @@ public partial class UserViewModel : PageViewModelBase
         "#FFFFCDD2"
     ];
     public string[] LyricFontFamilyOptions { get; }
+    public GlobalShortcutItemViewModel[] ShortcutItems { get; }
 
     public PlayerViewModel Player { get; }
 
@@ -124,6 +143,7 @@ public partial class UserViewModel : PageViewModelBase
     public bool IsLyricFontCustomMode => SelectedLyricFontMode == LyricColorModeCustom;
     public bool IsGeneralSection => SelectedSettingsSection == SettingsSectionGeneral;
     public bool IsPlaybackSection => SelectedSettingsSection == SettingsSectionPlayback;
+    public bool IsShortcutsSection => SelectedSettingsSection == SettingsSectionShortcuts;
     public bool IsLyricsSection => SelectedSettingsSection == SettingsSectionLyrics;
     public bool IsUpdateSection => SelectedSettingsSection == SettingsSectionUpdate;
     public bool IsAccountSection => SelectedSettingsSection == SettingsSectionAccount;
@@ -233,6 +253,25 @@ public partial class UserViewModel : PageViewModelBase
     {
         SettingsManager.Settings.AutoCheckUpdate = value;
         SettingsManager.Save();
+    }
+
+    partial void OnEnableGlobalShortcutsChanged(bool value)
+    {
+        if (ShortcutItems == null)
+            return;
+
+        var candidate = BuildShortcutSettingsSnapshot();
+        candidate.EnableGlobalShortcuts = value;
+        var applyResult = _globalShortcutService.TryApplySettings(candidate);
+        if (!applyResult.Success)
+        {
+            EnableGlobalShortcuts = !value;
+            return;
+        }
+
+        SettingsManager.Settings.GlobalShortcuts = candidate;
+        SettingsManager.Save();
+        ApplyRegistrationResults(applyResult.Results);
     }
 
     partial void OnSelectedEQPresetChanged(string value)
@@ -435,8 +474,164 @@ public partial class UserViewModel : PageViewModelBase
     {
         OnPropertyChanged(nameof(IsGeneralSection));
         OnPropertyChanged(nameof(IsPlaybackSection));
+        OnPropertyChanged(nameof(IsShortcutsSection));
         OnPropertyChanged(nameof(IsLyricsSection));
         OnPropertyChanged(nameof(IsUpdateSection));
         OnPropertyChanged(nameof(IsAccountSection));
+    }
+
+    [RelayCommand]
+    private void BeginShortcutRecording(GlobalShortcutItemViewModel? item)
+    {
+        if (item == null)
+            return;
+
+        StopRecording(clearStatus: false);
+        item.IsRecording = true;
+        item.SetInfo("按下新的快捷键，Esc 取消。");
+    }
+
+    [RelayCommand]
+    private void CaptureShortcutKey(InteractionBehaviors.KeyDownCommandContext? context)
+    {
+        if (context?.Parameter is not GlobalShortcutItemViewModel item || !item.IsRecording)
+            return;
+
+        var args = context.EventArgs;
+        args.Handled = true;
+        if (args.Key == Avalonia.Input.Key.Escape)
+        {
+            item.IsRecording = false;
+            item.ClearStatus();
+            RefreshShortcutTexts();
+            return;
+        }
+
+        if (GlobalShortcutParser.IsModifierOnlyKey(args.Key))
+        {
+            var modifierText = GlobalShortcutParser.FormatModifiers(args.KeyModifiers);
+            item.SetInfo(string.IsNullOrWhiteSpace(modifierText)
+                ? "按下修饰键后继续输入主键。"
+                : $"继续按下主键... 当前: {modifierText}");
+            item.ShortcutText = string.IsNullOrWhiteSpace(modifierText)
+                ? "按下快捷键..."
+                : $"{modifierText}+...";
+            return;
+        }
+
+        if (!GlobalShortcutParser.TryCreateFromKeyEvent(args, out var gesture, out var error))
+        {
+            item.IsRecording = false;
+            item.SetError(error);
+            RefreshShortcutTexts();
+            return;
+        }
+
+        var gestureText = GlobalShortcutParser.Format(gesture);
+        var conflict = ShortcutItems.FirstOrDefault(x =>
+            x != item &&
+            string.Equals(GlobalShortcutParser.NormalizeText(SettingsManager.Settings.GlobalShortcuts.GetShortcut(x.Action)),
+                gestureText, StringComparison.Ordinal));
+        if (conflict != null)
+        {
+            item.IsRecording = false;
+            item.SetError($"与“{conflict.DisplayName}”冲突。");
+            RefreshShortcutTexts();
+            return;
+        }
+
+        var candidate = BuildShortcutSettingsSnapshot();
+        candidate.SetShortcut(item.Action, gestureText);
+        var applyResult = _globalShortcutService.TryApplySettings(candidate);
+        item.IsRecording = false;
+        if (!applyResult.Success)
+        {
+            item.SetError(applyResult.Results.TryGetValue(item.Action, out var result)
+                ? result.ErrorMessage
+                : "保存失败。");
+            RefreshShortcutTexts();
+            ApplyRegistrationResults(_globalShortcutService.CurrentResults);
+            return;
+        }
+
+        SettingsManager.Settings.GlobalShortcuts = candidate;
+        SettingsManager.Save();
+        RefreshShortcutTexts();
+        ApplyRegistrationResults(applyResult.Results);
+    }
+
+    [RelayCommand]
+    private void ClearShortcut(GlobalShortcutItemViewModel? item)
+    {
+        if (item == null)
+            return;
+
+        var candidate = BuildShortcutSettingsSnapshot();
+        candidate.SetShortcut(item.Action, null);
+        var applyResult = _globalShortcutService.TryApplySettings(candidate);
+        if (!applyResult.Success)
+        {
+            item.SetError(applyResult.Results.TryGetValue(item.Action, out var result)
+                ? result.ErrorMessage
+                : "清空失败。");
+            return;
+        }
+
+        SettingsManager.Settings.GlobalShortcuts = candidate;
+        SettingsManager.Save();
+        RefreshShortcutTexts();
+        ApplyRegistrationResults(applyResult.Results);
+    }
+
+    private void RefreshShortcutTexts()
+    {
+        foreach (var item in ShortcutItems)
+        {
+            if (item.IsRecording)
+                continue;
+
+            item.ApplyShortcutText(GlobalShortcutParser.NormalizeText(
+                SettingsManager.Settings.GlobalShortcuts.GetShortcut(item.Action)));
+        }
+    }
+
+    private void ApplyRegistrationResults(IReadOnlyDictionary<GlobalShortcutAction, GlobalShortcutRegistrationResult> results)
+    {
+        foreach (var item in ShortcutItems)
+        {
+            if (item.IsRecording)
+                continue;
+
+            if (!results.TryGetValue(item.Action, out var result))
+            {
+                item.ClearStatus();
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+            {
+                item.SetError(result.ErrorMessage);
+                continue;
+            }
+
+            item.ClearStatus();
+        }
+    }
+
+    private void StopRecording(bool clearStatus)
+    {
+        foreach (var shortcutItem in ShortcutItems)
+        {
+            shortcutItem.IsRecording = false;
+            if (clearStatus)
+                shortcutItem.ClearStatus();
+        }
+    }
+
+    private GlobalShortcutSettings BuildShortcutSettingsSnapshot()
+    {
+        var snapshot = SettingsManager.Settings.GlobalShortcuts.Clone();
+        snapshot.EnableGlobalShortcuts = EnableGlobalShortcuts;
+        return snapshot;
     }
 }

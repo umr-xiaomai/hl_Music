@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
@@ -602,10 +603,46 @@ public partial class MainWindowViewModel : ObservableObject
     private async Task ShowUpdatingToastAndDownloadAsync(UpdateManager updateManager, UpdateInfo newVersion)
     {
         var progress = new ProgressBar { Value = 0, ShowProgressText = true, Minimum = 0, Maximum = 100 };
+        ISukiToast? toast = null;
 
-        var toast = ToastManager.CreateToast()
+        var hideButton = new Button
+        {
+            Content = "x",
+            Width = 24,
+            Height = 24,
+            Padding = new Thickness(0),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top
+        };
+        ToolTip.SetTip(hideButton, "后台继续下载");
+
+        hideButton.Click += (_, _) =>
+        {
+            if (toast is not null)
+                ToastManager.Dismiss(toast);
+        };
+
+        var progressContent = new Grid
+        {
+            RowDefinitions = new RowDefinitions("Auto,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            RowSpacing = 8
+        };
+        progressContent.Children.Add(new TextBlock
+        {
+            Text = "下载会在后台继续进行。",
+            Opacity = 0.72,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        });
+        progressContent.Children.Add(hideButton);
+        Grid.SetColumn(hideButton, 1);
+        progressContent.Children.Add(progress);
+        Grid.SetRow(progress, 1);
+        Grid.SetColumnSpan(progress, 2);
+
+        toast = ToastManager.CreateToast()
             .WithTitle("正在下载更新...")
-            .WithContent(progress)
+            .WithContent(progressContent)
             .Queue();
 
         try
