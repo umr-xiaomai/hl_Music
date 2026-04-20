@@ -105,8 +105,7 @@
                        Foreground="{Binding TranslationLineForeground}"
                        HorizontalAlignment="Center"
                        TextWrapping="Wrap"
-                       TextAlignment="Center"
-                       >
+                       TextAlignment="Center">
                 <TextBlock.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                         <Binding Path="Player.CurrentLyricTrans"

@@ -31,8 +31,11 @@ public partial class DesktopLyricViewModel : ViewModelBase
             SettingsManager.Settings.DesktopLyricUseCustomFont,
             SettingsManager.Settings.DesktopLyricCustomFontFamily);
 
-        WeakReferenceMessenger.Default.Register<DesktopLyricColorSettingsChangedMessage>(this, (_, message) =>
+        WeakReferenceMessenger.Default.Register<LyricStyleSettingsChangedMessage>(this, (_, message) =>
         {
+            if (message.Scope != LyricSettingsScope.Desktop)
+                return;
+
             ApplyLyricStyleSettings(
                 message.UseCustomMainColor,
                 message.MainColorHex,

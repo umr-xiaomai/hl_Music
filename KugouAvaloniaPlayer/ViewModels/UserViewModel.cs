@@ -23,11 +23,16 @@ public partial class UserViewModel : PageViewModelBase
     private const string SettingsSectionGeneral = "常规";
     private const string SettingsSectionPlayback = "播放与音效";
     private const string SettingsSectionShortcuts = "快捷键";
-    private const string SettingsSectionLyrics = "歌词悬浮窗";
+    private const string SettingsSectionLyrics = "歌词设置";
     private const string SettingsSectionUpdate = "更新与关于";
     private const string SettingsSectionAccount = "账户";
+    private const string LyricScopeDesktop = "桌面歌词";
+    private const string LyricScopePlayPage = "播放页面歌词";
     private const string LyricTargetMain = "歌词";
     private const string LyricTargetTranslation = "歌词翻译";
+    private const string LyricAlignmentCenter = "居中";
+    private const string LyricAlignmentLeft = "居左";
+    private const string LyricAlignmentRight = "居右";
     private const string LyricColorModeDefault = "默认";
     private const string LyricColorModeCustom = "自定义";
 
@@ -47,11 +52,18 @@ public partial class UserViewModel : PageViewModelBase
     [ObservableProperty] private bool _isCheckingUpdate;
     [ObservableProperty] private bool _isLoading = true;
 
-    [ObservableProperty] private string _lyricColorHexInput = "#FFFFFFFF";
-    [ObservableProperty] private string _selectedLyricColorMode = LyricColorModeDefault;
-    [ObservableProperty] private string _selectedLyricColorTarget = LyricTargetMain;
-    [ObservableProperty] private string _selectedLyricFontMode = LyricColorModeDefault;
-    [ObservableProperty] private string? _selectedLyricFontFamily;
+    [ObservableProperty] private string _desktopLyricColorHexInput = "#FFFFFFFF";
+    [ObservableProperty] private string _desktopSelectedLyricColorMode = LyricColorModeDefault;
+    [ObservableProperty] private string _desktopSelectedLyricColorTarget = LyricTargetMain;
+    [ObservableProperty] private string _desktopSelectedLyricFontMode = LyricColorModeDefault;
+    [ObservableProperty] private string? _desktopSelectedLyricFontFamily;
+    [ObservableProperty] private string _playPageLyricColorHexInput = "#FFFFFFFF";
+    [ObservableProperty] private string _playPageSelectedLyricColorMode = LyricColorModeDefault;
+    [ObservableProperty] private string _playPageSelectedLyricColorTarget = LyricTargetMain;
+    [ObservableProperty] private string _playPageSelectedLyricAlignment = LyricAlignmentCenter;
+    [ObservableProperty] private string _playPageSelectedLyricFontMode = LyricColorModeDefault;
+    [ObservableProperty] private string? _playPageSelectedLyricFontFamily;
+    [ObservableProperty] private double _playPageLyricFontSize = 26;
     [ObservableProperty] private bool _enableGlobalShortcuts;
 
     [ObservableProperty] private CloseBehavior _selectedCloseBehavior;
@@ -87,8 +99,11 @@ public partial class UserViewModel : PageViewModelBase
         LyricFontFamilyOptions = LoadSystemFontFamilies();
         _availableLyricFonts = new HashSet<string>(LyricFontFamilyOptions, StringComparer.OrdinalIgnoreCase);
         UserId = _sessionManager.Session.UserId;
-        LoadLyricColorEditorFromSettings();
-        LoadLyricFontEditorFromSettings();
+        LoadDesktopLyricColorEditorFromSettings();
+        LoadDesktopLyricFontEditorFromSettings();
+        LoadPlayPageLyricColorEditorFromSettings();
+        LoadPlayPageLyricFontEditorFromSettings();
+        LoadPlayPageLyricAlignmentFromSettings();
         ShortcutItems =
         [
             new GlobalShortcutItemViewModel(GlobalShortcutAction.PlayPause, "播放/暂停"),
@@ -110,6 +125,8 @@ public partial class UserViewModel : PageViewModelBase
     ];
 
     public string[] LyricColorTargetOptions { get; } = [LyricTargetMain, LyricTargetTranslation];
+    public string[] LyricSettingsScopeOptions { get; } = [LyricScopeDesktop, LyricScopePlayPage];
+    public string[] LyricAlignmentOptions { get; } = [LyricAlignmentCenter, LyricAlignmentLeft, LyricAlignmentRight];
 
     public string[] LyricColorModeOptions { get; } = [LyricColorModeDefault, LyricColorModeCustom];
     public string[] LyricFontModeOptions { get; } = [LyricColorModeDefault, LyricColorModeCustom];
@@ -139,16 +156,19 @@ public partial class UserViewModel : PageViewModelBase
 
     public CloseBehavior[] AvailableCloseBehaviors { get; } = Enum.GetValues<CloseBehavior>();
 
-    public bool IsLyricColorCustomMode => SelectedLyricColorMode == LyricColorModeCustom;
-    public bool IsLyricFontCustomMode => SelectedLyricFontMode == LyricColorModeCustom;
+    public bool IsDesktopLyricColorCustomMode => DesktopSelectedLyricColorMode == LyricColorModeCustom;
+    public bool IsDesktopLyricFontCustomMode => DesktopSelectedLyricFontMode == LyricColorModeCustom;
+    public bool IsPlayPageLyricColorCustomMode => PlayPageSelectedLyricColorMode == LyricColorModeCustom;
+    public bool IsPlayPageLyricFontCustomMode => PlayPageSelectedLyricFontMode == LyricColorModeCustom;
     public bool IsGeneralSection => SelectedSettingsSection == SettingsSectionGeneral;
     public bool IsPlaybackSection => SelectedSettingsSection == SettingsSectionPlayback;
     public bool IsShortcutsSection => SelectedSettingsSection == SettingsSectionShortcuts;
     public bool IsLyricsSection => SelectedSettingsSection == SettingsSectionLyrics;
     public bool IsUpdateSection => SelectedSettingsSection == SettingsSectionUpdate;
     public bool IsAccountSection => SelectedSettingsSection == SettingsSectionAccount;
-
-    public IBrush LyricColorPreviewBrush => new SolidColorBrush(ParseColorOrDefault(LyricColorHexInput, Colors.Transparent));
+    public IBrush DesktopLyricColorPreviewBrush => new SolidColorBrush(ParseColorOrDefault(DesktopLyricColorHexInput, Colors.Transparent));
+    public IBrush PlayPageLyricColorPreviewBrush => new SolidColorBrush(ParseColorOrDefault(PlayPageLyricColorHexInput, Colors.Transparent));
+    public string PlayPageLyricFontSizeDisplay => $"{Math.Round(PlayPageLyricFontSize):0}pt";
 
     public bool IsDarkMode
     {
@@ -204,34 +224,63 @@ public partial class UserViewModel : PageViewModelBase
     }
 
     [RelayCommand]
-    private void PickLyricPaletteColor(string? hex)
+    private void PickDesktopLyricPaletteColor(string? hex)
     {
         if (string.IsNullOrWhiteSpace(hex)) return;
-        LyricColorHexInput = hex;
-        ApplyLyricColorHex();
+        DesktopLyricColorHexInput = hex;
+        ApplyDesktopLyricColorHex();
     }
 
     [RelayCommand]
-    private void ApplyLyricColorHex()
+    private void ApplyDesktopLyricColorHex()
     {
-        var normalized = NormalizeColorHex(LyricColorHexInput);
+        var normalized = NormalizeColorHex(DesktopLyricColorHexInput);
         if (normalized == null) return;
 
-        // 输入颜色时自动进入自定义模式
-        if (!IsLyricColorCustomMode)
+        if (!IsDesktopLyricColorCustomMode)
         {
             _isInitializingLyricColorEditor = true;
-            SelectedLyricColorMode = LyricColorModeCustom;
+            DesktopSelectedLyricColorMode = LyricColorModeCustom;
             _isInitializingLyricColorEditor = false;
-            SetCurrentTargetCustomEnabled(true);
-            OnPropertyChanged(nameof(IsLyricColorCustomMode));
+            SetDesktopTargetCustomEnabled(true);
+            OnPropertyChanged(nameof(IsDesktopLyricColorCustomMode));
         }
 
-        SetCurrentTargetCustomColor(normalized);
-        LyricColorHexInput = normalized;
-        OnPropertyChanged(nameof(LyricColorPreviewBrush));
+        SetDesktopTargetCustomColor(normalized);
+        DesktopLyricColorHexInput = normalized;
+        OnPropertyChanged(nameof(DesktopLyricColorPreviewBrush));
         SettingsManager.Save();
-        NotifyDesktopLyricStyleChanged();
+        NotifyLyricStyleChanged(LyricSettingsScope.Desktop);
+    }
+
+    [RelayCommand]
+    private void PickPlayPageLyricPaletteColor(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+        PlayPageLyricColorHexInput = hex;
+        ApplyPlayPageLyricColorHex();
+    }
+
+    [RelayCommand]
+    private void ApplyPlayPageLyricColorHex()
+    {
+        var normalized = NormalizeColorHex(PlayPageLyricColorHexInput);
+        if (normalized == null) return;
+
+        if (!IsPlayPageLyricColorCustomMode)
+        {
+            _isInitializingLyricColorEditor = true;
+            PlayPageSelectedLyricColorMode = LyricColorModeCustom;
+            _isInitializingLyricColorEditor = false;
+            SetPlayPageTargetCustomEnabled(true);
+            OnPropertyChanged(nameof(IsPlayPageLyricColorCustomMode));
+        }
+
+        SetPlayPageTargetCustomColor(normalized);
+        PlayPageLyricColorHexInput = normalized;
+        OnPropertyChanged(nameof(PlayPageLyricColorPreviewBrush));
+        SettingsManager.Save();
+        NotifyLyricStyleChanged(LyricSettingsScope.PlayPage);
     }
 
     public event Action? CheckForUpdateRequested;
@@ -295,39 +344,71 @@ public partial class UserViewModel : PageViewModelBase
         Player.SetSeamlessTransitionEnabled(value);
     }
 
-    partial void OnSelectedLyricColorTargetChanged(string value)
+    partial void OnDesktopSelectedLyricColorTargetChanged(string value)
     {
-        LoadLyricColorEditorFromSettings();
+        LoadDesktopLyricColorEditorFromSettings();
     }
 
-    partial void OnSelectedLyricColorModeChanged(string value)
+    partial void OnPlayPageSelectedLyricColorTargetChanged(string value)
     {
-        OnPropertyChanged(nameof(IsLyricColorCustomMode));
+        LoadPlayPageLyricColorEditorFromSettings();
+    }
+
+    partial void OnDesktopSelectedLyricColorModeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsDesktopLyricColorCustomMode));
         if (_isInitializingLyricColorEditor) return;
 
-        SetCurrentTargetCustomEnabled(value == LyricColorModeCustom);
+        SetDesktopTargetCustomEnabled(value == LyricColorModeCustom);
         SettingsManager.Save();
-        NotifyDesktopLyricStyleChanged();
+        NotifyLyricStyleChanged(LyricSettingsScope.Desktop);
     }
 
-    partial void OnLyricColorHexInputChanged(string value)
+    partial void OnPlayPageSelectedLyricColorModeChanged(string value)
     {
-        OnPropertyChanged(nameof(LyricColorPreviewBrush));
+        OnPropertyChanged(nameof(IsPlayPageLyricColorCustomMode));
+        if (_isInitializingLyricColorEditor) return;
+
+        SetPlayPageTargetCustomEnabled(value == LyricColorModeCustom);
+        SettingsManager.Save();
+        NotifyLyricStyleChanged(LyricSettingsScope.PlayPage);
     }
 
-    partial void OnSelectedLyricFontModeChanged(string value)
+    partial void OnDesktopLyricColorHexInputChanged(string value)
     {
-        OnPropertyChanged(nameof(IsLyricFontCustomMode));
+        OnPropertyChanged(nameof(DesktopLyricColorPreviewBrush));
+    }
+
+    partial void OnPlayPageLyricColorHexInputChanged(string value)
+    {
+        OnPropertyChanged(nameof(PlayPageLyricColorPreviewBrush));
+    }
+
+    partial void OnDesktopSelectedLyricFontModeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsDesktopLyricFontCustomMode));
         if (_isInitializingLyricFontEditor) return;
 
         SettingsManager.Settings.DesktopLyricUseCustomFont = value == LyricColorModeCustom;
-        if (SettingsManager.Settings.DesktopLyricUseCustomFont && !string.IsNullOrWhiteSpace(SelectedLyricFontFamily))
-            SettingsManager.Settings.DesktopLyricCustomFontFamily = SelectedLyricFontFamily;
+        if (SettingsManager.Settings.DesktopLyricUseCustomFont && !string.IsNullOrWhiteSpace(DesktopSelectedLyricFontFamily))
+            SettingsManager.Settings.DesktopLyricCustomFontFamily = DesktopSelectedLyricFontFamily;
         SettingsManager.Save();
-        NotifyDesktopLyricStyleChanged();
+        NotifyLyricStyleChanged(LyricSettingsScope.Desktop);
     }
 
-    partial void OnSelectedLyricFontFamilyChanged(string? value)
+    partial void OnPlayPageSelectedLyricFontModeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsPlayPageLyricFontCustomMode));
+        if (_isInitializingLyricFontEditor) return;
+
+        SettingsManager.Settings.PlayPageLyricUseCustomFont = value == LyricColorModeCustom;
+        if (SettingsManager.Settings.PlayPageLyricUseCustomFont && !string.IsNullOrWhiteSpace(PlayPageSelectedLyricFontFamily))
+            SettingsManager.Settings.PlayPageLyricCustomFontFamily = PlayPageSelectedLyricFontFamily;
+        SettingsManager.Save();
+        NotifyLyricStyleChanged(LyricSettingsScope.PlayPage);
+    }
+
+    partial void OnDesktopSelectedLyricFontFamilyChanged(string? value)
     {
         if (_isInitializingLyricFontEditor) return;
 
@@ -338,14 +419,57 @@ public partial class UserViewModel : PageViewModelBase
         if (!string.Equals(value, normalized, StringComparison.Ordinal))
         {
             _isInitializingLyricFontEditor = true;
-            SelectedLyricFontFamily = normalized;
+            DesktopSelectedLyricFontFamily = normalized;
             _isInitializingLyricFontEditor = false;
         }
 
         SettingsManager.Settings.DesktopLyricCustomFontFamily = normalized;
-        SettingsManager.Settings.DesktopLyricUseCustomFont = SelectedLyricFontMode == LyricColorModeCustom;
+        SettingsManager.Settings.DesktopLyricUseCustomFont = DesktopSelectedLyricFontMode == LyricColorModeCustom;
         SettingsManager.Save();
-        NotifyDesktopLyricStyleChanged();
+        NotifyLyricStyleChanged(LyricSettingsScope.Desktop);
+    }
+
+    partial void OnPlayPageSelectedLyricFontFamilyChanged(string? value)
+    {
+        if (_isInitializingLyricFontEditor) return;
+
+        var normalized = NormalizeFontName(value);
+        if (normalized == null)
+            return;
+
+        if (!string.Equals(value, normalized, StringComparison.Ordinal))
+        {
+            _isInitializingLyricFontEditor = true;
+            PlayPageSelectedLyricFontFamily = normalized;
+            _isInitializingLyricFontEditor = false;
+        }
+
+        SettingsManager.Settings.PlayPageLyricCustomFontFamily = normalized;
+        SettingsManager.Settings.PlayPageLyricUseCustomFont = PlayPageSelectedLyricFontMode == LyricColorModeCustom;
+        SettingsManager.Save();
+        NotifyLyricStyleChanged(LyricSettingsScope.PlayPage);
+    }
+
+    partial void OnPlayPageSelectedLyricAlignmentChanged(string value)
+    {
+        SettingsManager.Settings.PlayPageLyricAlignment = ParseAlignment(value);
+        SettingsManager.Save();
+        NotifyLyricStyleChanged(LyricSettingsScope.PlayPage);
+    }
+
+    partial void OnPlayPageLyricFontSizeChanged(double value)
+    {
+        var clamped = Math.Clamp(value, 18, 42);
+        if (Math.Abs(clamped - value) > double.Epsilon)
+        {
+            PlayPageLyricFontSize = clamped;
+            return;
+        }
+
+        SettingsManager.Settings.PlayPageLyricFontSize = clamped;
+        SettingsManager.Save();
+        OnPropertyChanged(nameof(PlayPageLyricFontSizeDisplay));
+        NotifyLyricStyleChanged(LyricSettingsScope.PlayPage);
     }
 
     public void SetCheckingUpdateState(bool isChecking)
@@ -367,63 +491,128 @@ public partial class UserViewModel : PageViewModelBase
             .TryShow();
     }
 
-    private void LoadLyricColorEditorFromSettings()
+    private void LoadDesktopLyricColorEditorFromSettings()
     {
         _isInitializingLyricColorEditor = true;
 
-        if (IsEditingMainLyricColor())
+        if (IsEditingDesktopMainLyricColor())
         {
-            SelectedLyricColorMode = SettingsManager.Settings.DesktopLyricUseCustomMainColor
+            DesktopSelectedLyricColorMode = SettingsManager.Settings.DesktopLyricUseCustomMainColor
                 ? LyricColorModeCustom
                 : LyricColorModeDefault;
-            LyricColorHexInput = SettingsManager.Settings.DesktopLyricCustomMainColor;
+            DesktopLyricColorHexInput = SettingsManager.Settings.DesktopLyricCustomMainColor;
         }
         else
         {
-            SelectedLyricColorMode = SettingsManager.Settings.DesktopLyricUseCustomTranslationColor
+            DesktopSelectedLyricColorMode = SettingsManager.Settings.DesktopLyricUseCustomTranslationColor
                 ? LyricColorModeCustom
                 : LyricColorModeDefault;
-            LyricColorHexInput = SettingsManager.Settings.DesktopLyricCustomTranslationColor;
+            DesktopLyricColorHexInput = SettingsManager.Settings.DesktopLyricCustomTranslationColor;
         }
 
         _isInitializingLyricColorEditor = false;
-        OnPropertyChanged(nameof(IsLyricColorCustomMode));
-        OnPropertyChanged(nameof(LyricColorPreviewBrush));
+        OnPropertyChanged(nameof(IsDesktopLyricColorCustomMode));
+        OnPropertyChanged(nameof(DesktopLyricColorPreviewBrush));
     }
 
-    private void LoadLyricFontEditorFromSettings()
+    private void LoadPlayPageLyricColorEditorFromSettings()
+    {
+        _isInitializingLyricColorEditor = true;
+
+        if (IsEditingPlayPageMainLyricColor())
+        {
+            PlayPageSelectedLyricColorMode = SettingsManager.Settings.PlayPageLyricUseCustomMainColor
+                ? LyricColorModeCustom
+                : LyricColorModeDefault;
+            PlayPageLyricColorHexInput = SettingsManager.Settings.PlayPageLyricCustomMainColor;
+        }
+        else
+        {
+            PlayPageSelectedLyricColorMode = SettingsManager.Settings.PlayPageLyricUseCustomTranslationColor
+                ? LyricColorModeCustom
+                : LyricColorModeDefault;
+            PlayPageLyricColorHexInput = SettingsManager.Settings.PlayPageLyricCustomTranslationColor;
+        }
+
+        _isInitializingLyricColorEditor = false;
+        OnPropertyChanged(nameof(IsPlayPageLyricColorCustomMode));
+        OnPropertyChanged(nameof(PlayPageLyricColorPreviewBrush));
+    }
+
+    private void LoadDesktopLyricFontEditorFromSettings()
     {
         _isInitializingLyricFontEditor = true;
 
-        SelectedLyricFontMode = SettingsManager.Settings.DesktopLyricUseCustomFont
+        DesktopSelectedLyricFontMode = SettingsManager.Settings.DesktopLyricUseCustomFont
             ? LyricColorModeCustom
             : LyricColorModeDefault;
-        SelectedLyricFontFamily = NormalizeFontName(SettingsManager.Settings.DesktopLyricCustomFontFamily)
-                                  ?? LyricFontFamilyOptions.FirstOrDefault();
+        DesktopSelectedLyricFontFamily = NormalizeFontName(SettingsManager.Settings.DesktopLyricCustomFontFamily)
+                                         ?? LyricFontFamilyOptions.FirstOrDefault();
 
         _isInitializingLyricFontEditor = false;
-        OnPropertyChanged(nameof(IsLyricFontCustomMode));
+        OnPropertyChanged(nameof(IsDesktopLyricFontCustomMode));
     }
 
-    private bool IsEditingMainLyricColor()
+    private void LoadPlayPageLyricFontEditorFromSettings()
     {
-        return SelectedLyricColorTarget == LyricTargetMain;
+        _isInitializingLyricFontEditor = true;
+
+        PlayPageSelectedLyricFontMode = SettingsManager.Settings.PlayPageLyricUseCustomFont
+            ? LyricColorModeCustom
+            : LyricColorModeDefault;
+        PlayPageSelectedLyricFontFamily = NormalizeFontName(SettingsManager.Settings.PlayPageLyricCustomFontFamily)
+                                          ?? LyricFontFamilyOptions.FirstOrDefault();
+
+        _isInitializingLyricFontEditor = false;
+        OnPropertyChanged(nameof(IsPlayPageLyricFontCustomMode));
     }
 
-    private void SetCurrentTargetCustomEnabled(bool enabled)
+    private void LoadPlayPageLyricAlignmentFromSettings()
     {
-        if (IsEditingMainLyricColor())
+        PlayPageSelectedLyricAlignment = FormatAlignment(SettingsManager.Settings.PlayPageLyricAlignment);
+        PlayPageLyricFontSize = Math.Clamp(SettingsManager.Settings.PlayPageLyricFontSize, 18, 42);
+    }
+
+    private bool IsEditingDesktopMainLyricColor()
+    {
+        return DesktopSelectedLyricColorTarget == LyricTargetMain;
+    }
+
+    private bool IsEditingPlayPageMainLyricColor()
+    {
+        return PlayPageSelectedLyricColorTarget == LyricTargetMain;
+    }
+
+    private void SetDesktopTargetCustomEnabled(bool enabled)
+    {
+        if (IsEditingDesktopMainLyricColor())
             SettingsManager.Settings.DesktopLyricUseCustomMainColor = enabled;
         else
             SettingsManager.Settings.DesktopLyricUseCustomTranslationColor = enabled;
     }
 
-    private void SetCurrentTargetCustomColor(string normalizedHex)
+    private void SetPlayPageTargetCustomEnabled(bool enabled)
     {
-        if (IsEditingMainLyricColor())
+        if (IsEditingPlayPageMainLyricColor())
+            SettingsManager.Settings.PlayPageLyricUseCustomMainColor = enabled;
+        else
+            SettingsManager.Settings.PlayPageLyricUseCustomTranslationColor = enabled;
+    }
+
+    private void SetDesktopTargetCustomColor(string normalizedHex)
+    {
+        if (IsEditingDesktopMainLyricColor())
             SettingsManager.Settings.DesktopLyricCustomMainColor = normalizedHex;
         else
             SettingsManager.Settings.DesktopLyricCustomTranslationColor = normalizedHex;
+    }
+
+    private void SetPlayPageTargetCustomColor(string normalizedHex)
+    {
+        if (IsEditingPlayPageMainLyricColor())
+            SettingsManager.Settings.PlayPageLyricCustomMainColor = normalizedHex;
+        else
+            SettingsManager.Settings.PlayPageLyricCustomTranslationColor = normalizedHex;
     }
 
     private static string? NormalizeColorHex(string? colorText)
@@ -449,15 +638,55 @@ public partial class UserViewModel : PageViewModelBase
         return Color.TryParse(colorText, out var parsed) ? parsed : fallback;
     }
 
-    private static void NotifyDesktopLyricStyleChanged()
+    private static void NotifyLyricStyleChanged(LyricSettingsScope scope)
     {
-        WeakReferenceMessenger.Default.Send(new DesktopLyricColorSettingsChangedMessage(
-            SettingsManager.Settings.DesktopLyricUseCustomMainColor,
-            SettingsManager.Settings.DesktopLyricCustomMainColor,
-            SettingsManager.Settings.DesktopLyricUseCustomTranslationColor,
-            SettingsManager.Settings.DesktopLyricCustomTranslationColor,
-            SettingsManager.Settings.DesktopLyricUseCustomFont,
-            SettingsManager.Settings.DesktopLyricCustomFontFamily));
+        var isDesktop = scope == LyricSettingsScope.Desktop;
+        WeakReferenceMessenger.Default.Send(new LyricStyleSettingsChangedMessage(
+            scope,
+            isDesktop
+                ? SettingsManager.Settings.DesktopLyricUseCustomMainColor
+                : SettingsManager.Settings.PlayPageLyricUseCustomMainColor,
+            isDesktop
+                ? SettingsManager.Settings.DesktopLyricCustomMainColor
+                : SettingsManager.Settings.PlayPageLyricCustomMainColor,
+            isDesktop
+                ? SettingsManager.Settings.DesktopLyricUseCustomTranslationColor
+                : SettingsManager.Settings.PlayPageLyricUseCustomTranslationColor,
+            isDesktop
+                ? SettingsManager.Settings.DesktopLyricCustomTranslationColor
+                : SettingsManager.Settings.PlayPageLyricCustomTranslationColor,
+            isDesktop
+                ? SettingsManager.Settings.DesktopLyricUseCustomFont
+                : SettingsManager.Settings.PlayPageLyricUseCustomFont,
+            isDesktop
+                ? SettingsManager.Settings.DesktopLyricCustomFontFamily
+                : SettingsManager.Settings.PlayPageLyricCustomFontFamily,
+            isDesktop
+                ? LyricAlignmentOption.Center
+                : SettingsManager.Settings.PlayPageLyricAlignment,
+            isDesktop
+                ? SettingsManager.Settings.DesktopLyricFontSize
+                : SettingsManager.Settings.PlayPageLyricFontSize));
+    }
+
+    private static LyricAlignmentOption ParseAlignment(string? alignment)
+    {
+        return alignment switch
+        {
+            LyricAlignmentLeft => LyricAlignmentOption.Left,
+            LyricAlignmentRight => LyricAlignmentOption.Right,
+            _ => LyricAlignmentOption.Center
+        };
+    }
+
+    private static string FormatAlignment(LyricAlignmentOption alignment)
+    {
+        return alignment switch
+        {
+            LyricAlignmentOption.Left => LyricAlignmentLeft,
+            LyricAlignmentOption.Right => LyricAlignmentRight,
+            _ => LyricAlignmentCenter
+        };
     }
 
     private static string[] LoadSystemFontFamilies()

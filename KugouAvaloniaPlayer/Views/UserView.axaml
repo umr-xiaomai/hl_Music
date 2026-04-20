@@ -66,8 +66,8 @@
 
                     <Button Classes="SettingsNav"
                             Command="{Binding SwitchSettingsSectionCommand}"
-                            CommandParameter="歌词悬浮窗">
-                        <TextBlock Text="歌词悬浮窗" Foreground="{DynamicResource SukiText}" />
+                            CommandParameter="歌词设置">
+                        <TextBlock Text="歌词设置" Foreground="{DynamicResource SukiText}" />
                     </Button>
 
                     <Button Classes="SettingsNav"
@@ -279,114 +279,267 @@
 
                     <suki:GlassCard IsOpaque="True" Padding="14" IsVisible="{Binding IsLyricsSection}">
                         <StackPanel Spacing="10">
-                            <TextBlock Text="歌词悬浮窗"
+                            <TextBlock Text="歌词设置"
                                        FontWeight="SemiBold"
                                        FontSize="16" />
 
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
-                                <StackPanel>
-                                    <TextBlock Text="颜色应用目标" FontWeight="DemiBold" />
-                                    <TextBlock Text="为歌词或翻译单独配置颜色"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource SukiLowText}" />
-                                </StackPanel>
-                                <ComboBox Grid.Column="1"
-                                          MinWidth="220"
-                                          ItemsSource="{Binding LyricColorTargetOptions}"
-                                          SelectedItem="{Binding SelectedLyricColorTarget}" />
-                            </Grid>
+                            <suki:GlassCard IsOpaque="True" Padding="14">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="桌面歌词"
+                                               FontWeight="DemiBold"
+                                               FontSize="15" />
 
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
-                                <StackPanel>
-                                    <TextBlock Text="颜色模式" FontWeight="DemiBold" />
-                                    <TextBlock Text="支持默认与自定义颜色"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource SukiLowText}" />
-                                </StackPanel>
-                                <ComboBox Grid.Column="1"
-                                          MinWidth="220"
-                                          ItemsSource="{Binding LyricColorModeOptions}"
-                                          SelectedItem="{Binding SelectedLyricColorMode}" />
-                            </Grid>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="颜色应用目标" FontWeight="DemiBold" />
+                                            <TextBlock Text="为歌词或翻译单独配置颜色"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="220"
+                                                  ItemsSource="{Binding LyricColorTargetOptions}"
+                                                  SelectedItem="{Binding DesktopSelectedLyricColorTarget}" />
+                                    </Grid>
 
-                            <StackPanel IsVisible="{Binding IsLyricColorCustomMode}" Spacing="8" Margin="0,4,0,0">
-                                <Grid ColumnDefinitions="Auto,*,Auto"
-                                      ColumnSpacing="8">
-                                    <Border Grid.Column="0"
-                                            Width="28"
-                                            Height="28"
-                                            CornerRadius="14"
-                                            BorderThickness="1"
-                                            BorderBrush="{DynamicResource SukiBorder}"
-                                            Background="{Binding LyricColorPreviewBrush}" />
-                                    <TextBox Grid.Column="1"
-                                             Watermark="#FFFFFFFF"
-                                             Text="{Binding LyricColorHexInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <Button Grid.Column="2"
-                                            Command="{Binding ApplyLyricColorHexCommand}"
-                                            Content="应用"
-                                            MinWidth="72" />
-                                </Grid>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="颜色模式" FontWeight="DemiBold" />
+                                            <TextBlock Text="支持默认与自定义颜色"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="220"
+                                                  ItemsSource="{Binding LyricColorModeOptions}"
+                                                  SelectedItem="{Binding DesktopSelectedLyricColorMode}" />
+                                    </Grid>
 
-                                <ItemsControl ItemsSource="{Binding LyricColorPalette}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <UniformGrid Columns="8" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="x:String">
-                                            <Button Width="24"
-                                                    Height="24"
-                                                    Margin="3"
-                                                    Padding="0"
-                                                    CornerRadius="12"
-                                                    Background="{Binding .}"
+                                    <StackPanel IsVisible="{Binding IsDesktopLyricColorCustomMode}" Spacing="8" Margin="0,4,0,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                            <Border Grid.Column="0"
+                                                    Width="28"
+                                                    Height="28"
+                                                    CornerRadius="14"
                                                     BorderThickness="1"
                                                     BorderBrush="{DynamicResource SukiBorder}"
-                                                    Command="{Binding #UserRoot.((vm:UserViewModel)DataContext).PickLyricPaletteColorCommand}"
-                                                    CommandParameter="{Binding .}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
+                                                    Background="{Binding DesktopLyricColorPreviewBrush}" />
+                                            <TextBox Grid.Column="1"
+                                                     Watermark="#FFFFFFFF"
+                                                     Text="{Binding DesktopLyricColorHexInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <Button Grid.Column="2"
+                                                    Command="{Binding ApplyDesktopLyricColorHexCommand}"
+                                                    Content="应用"
+                                                    MinWidth="72" />
+                                        </Grid>
 
-                            <Border Height="1" Background="{DynamicResource SukiBorder}" Margin="0,6" />
+                                        <ItemsControl ItemsSource="{Binding LyricColorPalette}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Columns="8" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="x:String">
+                                                    <Button Width="24"
+                                                            Height="24"
+                                                            Margin="3"
+                                                            Padding="0"
+                                                            CornerRadius="12"
+                                                            Background="{Binding .}"
+                                                            BorderThickness="1"
+                                                            BorderBrush="{DynamicResource SukiBorder}"
+                                                            Command="{Binding #UserRoot.((vm:UserViewModel)DataContext).PickDesktopLyricPaletteColorCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
 
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
-                                <StackPanel>
-                                    <TextBlock Text="字体模式" FontWeight="DemiBold" />
-                                    <TextBlock Text="统一应用到歌词与翻译"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource SukiLowText}" />
+                                    <Border Height="1" Background="{DynamicResource SukiBorder}" Margin="0,6" />
+
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="字体模式" FontWeight="DemiBold" />
+                                            <TextBlock Text="统一应用到歌词与翻译"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="220"
+                                                  ItemsSource="{Binding LyricFontModeOptions}"
+                                                  SelectedItem="{Binding DesktopSelectedLyricFontMode}" />
+                                    </Grid>
+
+                                    <StackPanel IsVisible="{Binding IsDesktopLyricFontCustomMode}" Spacing="8" Margin="0,4,0,0">
+                                        <TextBlock Text="字体选择" FontWeight="DemiBold" />
+                                        <ComboBox ItemsSource="{Binding LyricFontFamilyOptions}"
+                                                  SelectedItem="{Binding DesktopSelectedLyricFontFamily}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate DataType="x:String">
+                                                    <TextBlock Text="{Binding .}" FontFamily="{Binding .}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+
+                                        <Border BorderThickness="1"
+                                                BorderBrush="{DynamicResource SukiBorder}"
+                                                CornerRadius="8"
+                                                Padding="10">
+                                            <TextBlock Text="桌面歌词字体预览 Preview 123"
+                                                       TextWrapping="Wrap"
+                                                       FontFamily="{Binding DesktopSelectedLyricFontFamily}" />
+                                        </Border>
+                                    </StackPanel>
                                 </StackPanel>
-                                <ComboBox Grid.Column="1"
-                                          MinWidth="220"
-                                          ItemsSource="{Binding LyricFontModeOptions}"
-                                          SelectedItem="{Binding SelectedLyricFontMode}" />
-                            </Grid>
+                            </suki:GlassCard>
 
-                            <StackPanel IsVisible="{Binding IsLyricFontCustomMode}" Spacing="8" Margin="0,4,0,0">
-                                <TextBlock Text="字体选择"
-                                           FontWeight="DemiBold" />
-                                <ComboBox ItemsSource="{Binding LyricFontFamilyOptions}"
-                                          SelectedItem="{Binding SelectedLyricFontFamily}">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate DataType="x:String">
-                                            <TextBlock Text="{Binding .}" FontFamily="{Binding .}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                            <suki:GlassCard IsOpaque="True" Padding="14">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="播放页面歌词"
+                                               FontWeight="DemiBold"
+                                               FontSize="15" />
 
-                                <Border BorderThickness="1"
-                                        BorderBrush="{DynamicResource SukiBorder}"
-                                        CornerRadius="8"
-                                        Padding="10">
-                                    <TextBlock Text="歌词字体预览 Preview 123"
-                                               TextWrapping="Wrap"
-                                               FontFamily="{Binding SelectedLyricFontFamily}" />
-                                </Border>
-                            </StackPanel>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="颜色应用目标" FontWeight="DemiBold" />
+                                            <TextBlock Text="为歌词或翻译单独配置颜色"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="220"
+                                                  ItemsSource="{Binding LyricColorTargetOptions}"
+                                                  SelectedItem="{Binding PlayPageSelectedLyricColorTarget}" />
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="颜色模式" FontWeight="DemiBold" />
+                                            <TextBlock Text="支持默认与自定义颜色"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="220"
+                                                  ItemsSource="{Binding LyricColorModeOptions}"
+                                                  SelectedItem="{Binding PlayPageSelectedLyricColorMode}" />
+                                    </Grid>
+
+                                    <StackPanel IsVisible="{Binding IsPlayPageLyricColorCustomMode}" Spacing="8" Margin="0,4,0,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                            <Border Grid.Column="0"
+                                                    Width="28"
+                                                    Height="28"
+                                                    CornerRadius="14"
+                                                    BorderThickness="1"
+                                                    BorderBrush="{DynamicResource SukiBorder}"
+                                                    Background="{Binding PlayPageLyricColorPreviewBrush}" />
+                                            <TextBox Grid.Column="1"
+                                                     Watermark="#FFFFFFFF"
+                                                     Text="{Binding PlayPageLyricColorHexInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                            <Button Grid.Column="2"
+                                                    Command="{Binding ApplyPlayPageLyricColorHexCommand}"
+                                                    Content="应用"
+                                                    MinWidth="72" />
+                                        </Grid>
+
+                                        <ItemsControl ItemsSource="{Binding LyricColorPalette}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Columns="8" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="x:String">
+                                                    <Button Width="24"
+                                                            Height="24"
+                                                            Margin="3"
+                                                            Padding="0"
+                                                            CornerRadius="12"
+                                                            Background="{Binding .}"
+                                                            BorderThickness="1"
+                                                            BorderBrush="{DynamicResource SukiBorder}"
+                                                            Command="{Binding #UserRoot.((vm:UserViewModel)DataContext).PickPlayPageLyricPaletteColorCommand}"
+                                                            CommandParameter="{Binding .}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="{DynamicResource SukiBorder}" Margin="0,6" />
+
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="字体模式" FontWeight="DemiBold" />
+                                            <TextBlock Text="统一应用到歌词与翻译"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="220"
+                                                  ItemsSource="{Binding LyricFontModeOptions}"
+                                                  SelectedItem="{Binding PlayPageSelectedLyricFontMode}" />
+                                    </Grid>
+
+                                    <StackPanel IsVisible="{Binding IsPlayPageLyricFontCustomMode}" Spacing="8" Margin="0,4,0,0">
+                                        <TextBlock Text="字体选择" FontWeight="DemiBold" />
+                                        <ComboBox ItemsSource="{Binding LyricFontFamilyOptions}"
+                                                  SelectedItem="{Binding PlayPageSelectedLyricFontFamily}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate DataType="x:String">
+                                                    <TextBlock Text="{Binding .}" FontFamily="{Binding .}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+
+                                        <Border BorderThickness="1"
+                                                BorderBrush="{DynamicResource SukiBorder}"
+                                                CornerRadius="8"
+                                                Padding="10">
+                                            <TextBlock Text="播放页面歌词字体预览 Preview 123"
+                                                       TextWrapping="Wrap"
+                                                       FontFamily="{Binding PlayPageSelectedLyricFontFamily}" />
+                                        </Border>
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="{DynamicResource SukiBorder}" Margin="0,6" />
+
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="歌词大小" FontWeight="DemiBold" />
+                                            <TextBlock Text="调整播放页面歌词大小"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding PlayPageLyricFontSizeDisplay}"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <Slider Minimum="18"
+                                            Maximum="42"
+                                            Value="{Binding PlayPageLyricFontSize, Mode=TwoWay}"
+                                            TickFrequency="1"
+                                            IsSnapToTickEnabled="True"
+                                            Margin="0,0,0,4" Classes="Player"/>
+
+                                    <Border Height="1" Background="{DynamicResource SukiBorder}" Margin="0,6" />
+
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                                        <StackPanel>
+                                            <TextBlock Text="歌词对齐" FontWeight="DemiBold" />
+                                            <TextBlock Text="作用于播放页面滚动歌词"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource SukiLowText}" />
+                                        </StackPanel>
+                                        <ComboBox Grid.Column="1"
+                                                  MinWidth="220"
+                                                  ItemsSource="{Binding LyricAlignmentOptions}"
+                                                  SelectedItem="{Binding PlayPageSelectedLyricAlignment}" />
+                                    </Grid>
+                                </StackPanel>
+                            </suki:GlassCard>
                         </StackPanel>
                     </suki:GlassCard>
 

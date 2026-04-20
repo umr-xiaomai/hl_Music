@@ -46,16 +46,22 @@
         </Style>
 
         <Style Selector="TextBlock.NowPlayingLine">
-            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontSize" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricFontSize}" />
+            <Setter Property="FontFamily" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricFontFamily}" />
+            <Setter Property="Foreground" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricForeground}" />
         </Style>
 
         <Style Selector="TextBlock.NowPlayingWord">
-            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontSize" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricFontSize}" />
+            <Setter Property="FontFamily" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricFontFamily}" />
+            <Setter Property="Foreground" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricForeground}" />
         </Style>
 
         <Style Selector="TextBlock.NowPlayingTrans">
-            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontSize" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingTranslationFontSize}" />
             <Setter Property="Margin" Value="0,5,0,0" />
+            <Setter Property="FontFamily" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricFontFamily}" />
+            <Setter Property="Foreground" Value="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingTranslationLineForeground}" />
         </Style>
 
         <Style Selector="Slider.NowPlayingVolume">
@@ -220,69 +226,85 @@
                                                    Grid.Column="1"
                                                    ItemsSource="{Binding Player.LyricLines}"
                                                    ActiveItem="{Binding Player.CurrentLyricLine}"
+                                                   ActiveAnchorRatio="0.34"
                                                    ScrollDuration="0:0:0.37"
                                                    LineSpacing="22"
                                                    Margin="60,0,0,0">
                     <controls1:MeasuredLyricScrollView.ItemTemplate>
                         <DataTemplate DataType="vm:LyricLineViewModel">
-                            <StackPanel Margin="0,15">
-                                <TextBlock Text="{Binding Content}"
-                                           Classes="KaraokeLine NowPlayingLine"
-                                           Classes.active="{Binding IsActive}"
-                                           IsVisible="{Binding IsKrcWordLevel, Converter={x:Static BoolConverters.Not}}"
-                                           TextWrapping="Wrap"
-                                           HorizontalAlignment="Center" TextAlignment="Center" />
-                                <ItemsControl ItemsSource="{Binding Words}"
-                                              IsVisible="{Binding IsKrcWordLevel}"
-                                              HorizontalAlignment="Center">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:LyricWordViewModel">
-                                            <TextBlock Text="{Binding Text}"
-                                                       Classes="KaraokeWord NowPlayingWord"
-                                                       Classes.played="{Binding IsPlayed}"
-                                                       Classes.current="{Binding IsCurrent}"
-                                                       RenderTransform="{Binding LiftOffset, Converter={StaticResource WordLiftTransformConverter}}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock Text="{Binding Translation}"
-                                           Classes="KaraokeTrans NowPlayingTrans"
-                                           Classes.active="{Binding IsActive}"
-                                           TextWrapping="Wrap"
-                                           HorizontalAlignment="Center" TextAlignment="Center">
-                                    <TextBlock.IsVisible>
-                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                            <Binding Path="Translation"
-                                                     Converter="{x:Static StringConverters.IsNotNullOrEmpty}" />
-                                            <Binding Path="HasWordLevelTranslation"
-                                                     Converter="{x:Static BoolConverters.Not}" />
-                                        </MultiBinding>
-                                    </TextBlock.IsVisible>
-                                </TextBlock>
-                                <ItemsControl ItemsSource="{Binding TranslationWords}"
-                                              IsVisible="{Binding HasWordLevelTranslation}"
-                                              HorizontalAlignment="Center">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:LyricWordViewModel">
-                                            <TextBlock Text="{Binding Text}"
-                                                       Classes="KaraokeTransWord NowPlayingTrans"
-                                                       Classes.played="{Binding IsPlayed}"
-                                                       Classes.current="{Binding IsCurrent}"
-                                                       RenderTransform="{Binding LiftOffset, Converter={StaticResource WordLiftTransformConverter}}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
+                            <Grid Margin="0,15"
+                                  Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}">
+                                <StackPanel HorizontalAlignment="Stretch">
+                                    <TextBlock Text="{Binding Content}"
+                                               Classes="KaraokeLine NowPlayingLine"
+                                               Classes.active="{Binding IsActive}"
+                                               IsVisible="{Binding IsKrcWordLevel, Converter={x:Static BoolConverters.Not}}"
+                                               Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
+                                               TextWrapping="Wrap"
+                                               HorizontalAlignment="Stretch"
+                                               TextAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricTextAlignment}" />
+
+                                    <Grid Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
+                                          IsVisible="{Binding IsKrcWordLevel}">
+                                        <ItemsControl ItemsSource="{Binding Words}"
+                                                      HorizontalAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricHorizontalAlignment}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="vm:LyricWordViewModel">
+                                                    <TextBlock Text="{Binding Text}"
+                                                               Classes="KaraokeWord NowPlayingWord"
+                                                               Classes.played="{Binding IsPlayed}"
+                                                               Classes.current="{Binding IsCurrent}"
+                                                               RenderTransform="{Binding LiftOffset, Converter={StaticResource WordLiftTransformConverter}}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding Translation}"
+                                               Classes="KaraokeTrans NowPlayingTrans"
+                                               Classes.active="{Binding IsActive}"
+                                               Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
+                                               TextWrapping="Wrap"
+                                               HorizontalAlignment="Stretch"
+                                               TextAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricTextAlignment}">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="Translation"
+                                                         Converter="{x:Static StringConverters.IsNotNullOrEmpty}" />
+                                                <Binding Path="HasWordLevelTranslation"
+                                                         Converter="{x:Static BoolConverters.Not}" />
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
+
+                                    <Grid Width="{Binding $parent[controls1:MeasuredLyricScrollView].Bounds.Width}"
+                                          IsVisible="{Binding HasWordLevelTranslation}">
+                                        <ItemsControl ItemsSource="{Binding TranslationWords}"
+                                                      HorizontalAlignment="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingLyricHorizontalAlignment}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="vm:LyricWordViewModel">
+                                                    <TextBlock Text="{Binding Text}"
+                                                               Classes="KaraokeTransWord NowPlayingTrans"
+                                                               Classes.played="{Binding IsPlayed}"
+                                                               Classes.current="{Binding IsCurrent}"
+                                                               Foreground="{Binding $parent[UserControl].((vm:MainWindowViewModel)DataContext).NowPlayingTranslationWordForeground}"
+                                                               RenderTransform="{Binding LiftOffset, Converter={StaticResource WordLiftTransformConverter}}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
                         </DataTemplate>
                     </controls1:MeasuredLyricScrollView.ItemTemplate>
                 </controls1:MeasuredLyricScrollView>

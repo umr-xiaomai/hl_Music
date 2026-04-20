@@ -9,6 +9,8 @@ using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -39,6 +41,9 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly KgSessionManager _sessionManager;
     private readonly UserClient _userClient;
     private readonly UserViewModel _userViewModel;
+    private static readonly IBrush DefaultLyricBrush = new SolidColorBrush(Colors.White);
+    private static readonly IBrush DefaultTranslationLineBrush = new SolidColorBrush(Color.Parse("#CCFFFFFF"));
+    private static readonly IBrush DefaultTranslationWordBrush = new SolidColorBrush(Colors.White);
 
     [ObservableProperty] private PageViewModelBase _activePage;
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
@@ -50,6 +55,14 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private bool _isNowPlayingOpen;
     [ObservableProperty] private bool _isNowPlayingVolumeVisible;
     [ObservableProperty] private bool _isQueuePaneOpen;
+    [ObservableProperty] private FontFamily? _nowPlayingLyricFontFamily;
+    [ObservableProperty] private IBrush _nowPlayingLyricForeground = DefaultLyricBrush;
+    [ObservableProperty] private IBrush _nowPlayingTranslationLineForeground = DefaultTranslationLineBrush;
+    [ObservableProperty] private IBrush _nowPlayingTranslationWordForeground = DefaultTranslationWordBrush;
+    [ObservableProperty] private HorizontalAlignment _nowPlayingLyricHorizontalAlignment = HorizontalAlignment.Center;
+    [ObservableProperty] private TextAlignment _nowPlayingLyricTextAlignment = TextAlignment.Center;
+    [ObservableProperty] private double _nowPlayingLyricFontSize = 26;
+    [ObservableProperty] private double _nowPlayingTranslationFontSize = 16;
     private bool _isUpdatingActivePageFromNavigation;
 
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
@@ -111,6 +124,15 @@ public partial class MainWindowViewModel : ObservableObject
         _navigationService.ReplaceRoot(dailyRecommendViewModel);
         ActivePage = dailyRecommendViewModel;
         IsDesktopLyricEnabled = _desktopLyricWindowService.IsOpen;
+        ApplyNowPlayingLyricStyleSettings(
+            SettingsManager.Settings.PlayPageLyricUseCustomMainColor,
+            SettingsManager.Settings.PlayPageLyricCustomMainColor,
+            SettingsManager.Settings.PlayPageLyricUseCustomTranslationColor,
+            SettingsManager.Settings.PlayPageLyricCustomTranslationColor,
+            SettingsManager.Settings.PlayPageLyricUseCustomFont,
+            SettingsManager.Settings.PlayPageLyricCustomFontFamily,
+            SettingsManager.Settings.PlayPageLyricAlignment,
+            SettingsManager.Settings.PlayPageLyricFontSize);
 
         PlaylistsViewModel.Items.CollectionChanged += OnPlaylistItemsChanged;
         RefreshSidebarPlaylists();
@@ -138,6 +160,21 @@ public partial class MainWindowViewModel : ObservableObject
         });
 
         WeakReferenceMessenger.Default.Register<RequestNavigateBackMessage>(this, (_, _) => { NavigateBack(); });
+        WeakReferenceMessenger.Default.Register<LyricStyleSettingsChangedMessage>(this, (_, message) =>
+        {
+            if (message.Scope != LyricSettingsScope.PlayPage)
+                return;
+
+            ApplyNowPlayingLyricStyleSettings(
+                message.UseCustomMainColor,
+                message.MainColorHex,
+                message.UseCustomTranslationColor,
+                message.TranslationColorHex,
+                message.UseCustomFont,
+                message.FontFamilyName,
+                message.Alignment,
+                message.FontSize);
+        });
 
         Task.Run(async () =>
         {
@@ -495,6 +532,91 @@ public partial class MainWindowViewModel : ObservableObject
     public void ForceCloseDesktopLyric()
     {
         _desktopLyricWindowService.Close();
+    }
+
+    private void ApplyNowPlayingLyricStyleSettings(
+        bool useCustomMainColor,
+        string mainColorHex,
+        bool useCustomTranslationColor,
+        string translationColorHex,
+        bool useCustomFont,
+        string fontFamilyName,
+        LyricAlignmentOption alignment,
+        double fontSize)
+    {
+        ApplyNowPlayingFontSettings(useCustomFont, fontFamilyName);
+        ApplyNowPlayingAlignmentSettings(alignment);
+        ApplyNowPlayingFontSizeSettings(fontSize);
+
+        NowPlayingLyricForeground = useCustomMainColor
+            ? new SolidColorBrush(ParseColorOrDefault(mainColorHex, Colors.White))
+            : DefaultLyricBrush;
+
+        if (useCustomTranslationColor)
+        {
+            var color = new SolidColorBrush(ParseColorOrDefault(translationColorHex, Color.Parse("#CCFFFFFF")));
+            NowPlayingTranslationLineForeground = color;
+            NowPlayingTranslationWordForeground = color;
+            return;
+        }
+
+        NowPlayingTranslationLineForeground = DefaultTranslationLineBrush;
+        NowPlayingTranslationWordForeground = DefaultTranslationWordBrush;
+    }
+
+    private void ApplyNowPlayingFontSettings(bool useCustomFont, string fontFamilyName)
+    {
+        if (!useCustomFont || string.IsNullOrWhiteSpace(fontFamilyName))
+        {
+            NowPlayingLyricFontFamily = null;
+            return;
+        }
+
+        NowPlayingLyricFontFamily = IsSystemFontInstalled(fontFamilyName)
+            ? new FontFamily(fontFamilyName)
+            : null;
+    }
+
+    private void ApplyNowPlayingAlignmentSettings(LyricAlignmentOption alignment)
+    {
+        switch (alignment)
+        {
+            case LyricAlignmentOption.Left:
+                NowPlayingLyricHorizontalAlignment = HorizontalAlignment.Left;
+                NowPlayingLyricTextAlignment = TextAlignment.Left;
+                break;
+            case LyricAlignmentOption.Right:
+                NowPlayingLyricHorizontalAlignment = HorizontalAlignment.Right;
+                NowPlayingLyricTextAlignment = TextAlignment.Right;
+                break;
+            default:
+                NowPlayingLyricHorizontalAlignment = HorizontalAlignment.Center;
+                NowPlayingLyricTextAlignment = TextAlignment.Center;
+                break;
+        }
+    }
+
+    private void ApplyNowPlayingFontSizeSettings(double fontSize)
+    {
+        var clamped = Math.Clamp(fontSize, 18, 42);
+        NowPlayingLyricFontSize = clamped;
+        NowPlayingTranslationFontSize = Math.Max(14, Math.Round(clamped * 0.62, 1));
+    }
+
+    private static bool IsSystemFontInstalled(string fontFamilyName)
+    {
+        foreach (var systemFont in FontManager.Current.SystemFonts)
+        {
+            if (string.Equals(systemFont.Name, fontFamilyName, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static Color ParseColorOrDefault(string? colorText, Color fallback)
+    {
+        return Color.TryParse(colorText, out var parsed) ? parsed : fallback;
     }
 
     private async Task HandlePlaySongMessageAsync(SongItem song)

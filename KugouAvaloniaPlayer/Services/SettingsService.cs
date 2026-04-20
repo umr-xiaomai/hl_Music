@@ -22,6 +22,13 @@ public enum GlobalShortcutAction
     ToggleDesktopLyric
 }
 
+public enum LyricAlignmentOption
+{
+    Center,
+    Left,
+    Right
+}
+
 public class GlobalShortcutSettings
 {
     public bool EnableGlobalShortcuts { get; set; } = true;
@@ -102,11 +109,23 @@ public class AppSettings
     public string DesktopLyricCustomTranslationColor { get; set; } = "#CCFFFFFF";
     public bool DesktopLyricUseCustomFont { get; set; }
     public string DesktopLyricCustomFontFamily { get; set; } = string.Empty;
+    public LyricAlignmentOption DesktopLyricAlignment { get; set; } = LyricAlignmentOption.Center;
     public double DesktopLyricFontSize { get; set; } = 30;
+
+    public bool PlayPageLyricUseCustomMainColor { get; set; }
+    public string PlayPageLyricCustomMainColor { get; set; } = "#FFFFFFFF";
+    public bool PlayPageLyricUseCustomTranslationColor { get; set; }
+    public string PlayPageLyricCustomTranslationColor { get; set; } = "#CCFFFFFF";
+    public bool PlayPageLyricUseCustomFont { get; set; }
+    public string PlayPageLyricCustomFontFamily { get; set; } = string.Empty;
+    public LyricAlignmentOption PlayPageLyricAlignment { get; set; } = LyricAlignmentOption.Center;
+    public double PlayPageLyricFontSize { get; set; } = 26;
+
     public GlobalShortcutSettings GlobalShortcuts { get; set; } = new();
 }
 
 [JsonSerializable(typeof(GlobalShortcutSettings))]
+[JsonSerializable(typeof(LyricAlignmentOption))]
 [JsonSerializable(typeof(AppSettings))]
 internal partial class AppSettingsJsonContext : JsonSerializerContext
 {

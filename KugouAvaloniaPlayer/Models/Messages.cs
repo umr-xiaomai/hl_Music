@@ -1,4 +1,5 @@
 using KuGou.Net.Abstractions.Models;
+using KugouAvaloniaPlayer.Services;
 using KugouAvaloniaPlayer.ViewModels;
 
 namespace KugouAvaloniaPlayer.Models;
@@ -20,10 +21,19 @@ public record RequestNavigateBackMessage;
 
 public record RefreshPlaylistsMessage;
 
-public record DesktopLyricColorSettingsChangedMessage(
+public record LyricStyleSettingsChangedMessage(
+    LyricSettingsScope Scope,
     bool UseCustomMainColor,
     string MainColorHex,
     bool UseCustomTranslationColor,
     string TranslationColorHex,
     bool UseCustomFont,
-    string FontFamilyName);
+    string FontFamilyName,
+    LyricAlignmentOption Alignment,
+    double FontSize);
+
+public enum LyricSettingsScope
+{
+    Desktop,
+    PlayPage
+}

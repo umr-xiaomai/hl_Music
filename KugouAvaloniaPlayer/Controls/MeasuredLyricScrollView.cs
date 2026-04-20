@@ -32,6 +32,9 @@ public class MeasuredLyricScrollView : ItemsControl
     public static readonly StyledProperty<double> WheelStepProperty =
         AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(WheelStep), 80);
 
+    public static readonly StyledProperty<double> ActiveAnchorRatioProperty =
+        AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(ActiveAnchorRatio), 0.5);
+
     private readonly DispatcherTimer _userScrollResetTimer;
     private INotifyCollectionChanged? _collectionChangedSource;
     private bool _deferredActiveItemUpdate;
@@ -76,6 +79,12 @@ public class MeasuredLyricScrollView : ItemsControl
         set => SetValue(WheelStepProperty, value);
     }
 
+    public double ActiveAnchorRatio
+    {
+        get => GetValue(ActiveAnchorRatioProperty);
+        set => SetValue(ActiveAnchorRatioProperty, value);
+    }
+
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
@@ -100,7 +109,8 @@ public class MeasuredLyricScrollView : ItemsControl
 
         if (change.Property == BoundsProperty ||
             change.Property == LineSpacingProperty ||
-            change.Property == ScrollDurationProperty)
+            change.Property == ScrollDurationProperty ||
+            change.Property == ActiveAnchorRatioProperty)
         {
             QueueLayoutUpdate();
             return;
@@ -216,7 +226,8 @@ public class MeasuredLyricScrollView : ItemsControl
             heights[i] = height;
         }
 
-        var centerY = Bounds.Height / 2 + _manualOffset;
+        // Keep the active lyric line on a configurable visual anchor rather than always hard-centering it.
+        var centerY = Bounds.Height * Math.Clamp(ActiveAnchorRatio, 0.0, 1.0) + _manualOffset;
 
         for (var i = 0; i < ItemCount; i++)
         {
