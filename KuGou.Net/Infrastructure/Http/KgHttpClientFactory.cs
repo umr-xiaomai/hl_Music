@@ -39,7 +39,7 @@ public static class KgHttpClientFactory
         var primaryHandler = new HttpClientHandler
         {
             UseCookies = false,
-            // CookieContainer = cookieContainer, // 不需要绑定容器了
+            // CookieContainer = cookieContainer, 
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
             ServerCertificateCustomValidationCallback = delegate { return true; }
         };

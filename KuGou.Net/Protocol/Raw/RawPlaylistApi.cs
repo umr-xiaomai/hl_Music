@@ -40,7 +40,7 @@ public class RawPlaylistApi(IKgTransport transport, ILogger<RawPlaylistApi> logg
     }
 
     /// <summary>
-    ///     获取歌单详情信息 (对应 /v3/get_list_info)
+    ///     获取歌单详情信息
     /// </summary>
     public async Task<JsonElement> GetPlaylistInfoAsync(string playlistId, string userid, string token)
     {
@@ -283,7 +283,7 @@ public class RawPlaylistApi(IKgTransport transport, ILogger<RawPlaylistApi> logg
     }
 
     /// <summary>
-    ///     从歌单删除歌曲 (对应 /v4/delete_songs)
+    ///     从歌单删除歌曲 
     /// </summary>
     /// <param name="fileIds">要删除的 FileId 列表 (注意不是 Hash，是歌单内的 fileid)</param>
     public async Task<JsonElement> RemoveSongsFromPlaylistAsync(

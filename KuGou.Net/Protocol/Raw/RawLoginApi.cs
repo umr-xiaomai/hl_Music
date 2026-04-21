@@ -15,8 +15,7 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
 
     private const string LiteT2Key = "fd14b35e3f81af3817a20ae7adae7020";
     private const string LiteT2Iv = "17a20ae7adae7020";
-
-    // T2 加密中间的一个固定 Hash，来自 JS 源码
+    
     private const string T2FixedHash = "0f607264fc6318a92b9e13c65db7cd3c";
 
     // 3116 专用的 LiteKey (用于 Token 刷新时的 P3 加密)
@@ -217,7 +216,7 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
         var pkPayload = new JsonObject
         {
             ["clienttime_ms"] = dateNow,
-            ["key"] = randomAesKey // 告诉服务器用这个 Key 加密返回数据
+            ["key"] = randomAesKey 
         };
         var pkJson = JsonSerializer.Serialize(pkPayload, AppJsonContext.Default.JsonObject);
         var pk = KgCrypto.RsaEncryptNoPadding(pkJson).ToUpper();
@@ -230,12 +229,12 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
             ["plat"] = 1,
             ["t1"] = t1Enc,
             ["t2"] = t2Enc,
-            ["t3"] = "MCwwLDAsMCwwLDAsMCwwLDA=", // 固定值
+            ["t3"] = "MCwwLDAsMCwwLDAsMCwwLDA=", 
             ["pk"] = pk,
             ["params"] = paramsEncrypted,
             ["userid"] = userid,
             ["clienttime_ms"] = dateNow,
-            ["dev"] = session.InstallDev // JS 新增字段
+            ["dev"] = session.InstallDev 
         };
 
         var request = new KgRequest
@@ -268,9 +267,7 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
                     if (aesKey != null)
                     {
                         var decryptedJson = KgCrypto.AesDecrypt(secuElem.GetString()!, aesKey);
-
-                        // 这里我们需要把解密出来的字段合并回 data 节点
-                        // 因为 System.Text.Json 的 JsonElement 是只读的，所以需要重建 JsonObject
+                        
                         var rootNode = JsonNode.Parse(response.GetRawText());
                         var dataNode = rootNode?["data"] as JsonObject;
                         var decryptedNode = JsonNode.Parse(decryptedJson) as JsonObject;
@@ -278,7 +275,6 @@ public class RawLoginApi(IKgTransport transport, KgSessionManager sessionManager
                         if (dataNode != null && decryptedNode != null)
                         {
                             foreach (var kv in decryptedNode)
-                                // 覆盖或添加字段 (token, t1, userid 等)
                                 dataNode[kv.Key] = kv.Value?.DeepClone();
                             return JsonSerializer.Deserialize(rootNode!.ToJsonString(), AppJsonContext.Default.JsonElement);
                         }

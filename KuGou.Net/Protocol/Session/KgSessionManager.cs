@@ -1,8 +1,6 @@
 using System.Net;
 using KuGou.Net.util;
 
-// 引用你原来的工具类
-
 namespace KuGou.Net.Protocol.Session;
 
 public class KgSessionManager
@@ -24,7 +22,7 @@ public class KgSessionManager
 
         if (string.IsNullOrEmpty(Session.InstallGuid)) Session.InstallGuid = Guid.NewGuid().ToString("N");
 
-        if (string.IsNullOrEmpty(Session.Mid) || Session.Mid == "-" || Session.Mid.Length < 30) // 简单的长度校验，防止旧算法生成的短MID
+        if (string.IsNullOrEmpty(Session.Mid) || Session.Mid == "-" || Session.Mid.Length < 30) 
             Session.Mid = KgUtils.CalcNewMid(Session.InstallGuid);
 
 

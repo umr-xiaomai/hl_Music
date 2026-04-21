@@ -69,4 +69,41 @@ public class DiscoveryClient(RawDiscoveryApi rawApi, KgSessionManager sessionMan
     {
         return await rawApi.GetRecommendStyleSongAsync();
     }
+    
+    /// <summary>
+    /// 获取私人推荐音乐 (私人电台) / 听歌行为上报
+    /// </summary>
+    /// <param name="hash">音乐 hash (建议)</param>
+    /// <param name="songid">音乐 songid (建议)</param>
+    /// <param name="playtime">已播放时间秒数 (建议)</param>
+    /// <param name="action">行为：'play'(正常), 'garbage'(不喜欢/垃圾桶)</param>
+    /// <param name="mode">模式：'normal'(红心 Radio), 'small'(小众 Radio), 'peak'(巅峰 Radio)</param>
+    /// <param name="songPoolId">推荐策略：0(根据口味), 1(根据风格), 2(特殊推荐池)</param>
+    /// <param name="isOverplay">是否已播放完成</param>
+    /// <param name="remainSongCount">剩余未播歌曲数</param>
+    public async Task<PersonalFmResponse?> GetPersonalRecommendFMAsync(
+        string? hash = null, 
+        string? songid = null, 
+        int? playtime = null,
+        string action = "play",
+        string mode = "normal",
+        int songPoolId = 0,
+        bool isOverplay = false,
+        int remainSongCount = 0)
+    {
+        var session = sessionManager.Session;
+
+        var json = await rawApi.GetPersonalRecommendAsync(
+            session.UserId, 
+            session.Token, 
+            session.VipType, 
+            session.Mid, 
+            hash, songid, playtime, action, songPoolId, remainSongCount, isOverplay, mode
+        );
+        
+        return KgApiResponseParser.Parse<PersonalFmResponse>(
+            json, 
+            AppJsonContext.Default.PersonalFmResponse
+        );
+    }
 }

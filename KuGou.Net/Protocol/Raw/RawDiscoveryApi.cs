@@ -146,4 +146,68 @@ public class RawDiscoveryApi(IKgTransport transport)
         };
         return await transport.SendAsync(request);
     }
+    
+    /// <summary>
+    /// 获取私人推荐 (私人FM / 电台) 及 行为上报
+    /// </summary>
+    public async Task<JsonElement> GetPersonalRecommendAsync(
+        string userid, 
+        string token, 
+        string vipType, 
+        string mid,
+        string? hash = null, 
+        string? songid = null, 
+        int? playtime = null,
+        string action = "play",
+        int songPoolId = 0,
+        int remainSongCount = 0,
+        bool isOverplay = false,
+        string mode = "normal")
+    {
+        var clientTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(); 
+        var key = KgSigner.CalcLoginKey(clientTimeMs);
+
+        var body = new JsonObject
+        {
+            ["appid"] = KuGouConfig.AppId,
+            ["clienttime"] = clientTimeMs,
+            ["mid"] = string.IsNullOrEmpty(mid) ? "-" : mid,
+            ["action"] = action, 
+            ["recommend_source_locked"] = 0,
+            ["song_pool_id"] = songPoolId, 
+            ["callerid"] = 0,
+            ["m_type"] = 1,
+            ["platform"] = "android", 
+            ["area_code"] = 1,
+            ["remain_songcnt"] = remainSongCount, 
+            ["clientver"] = KuGouConfig.ClientVer,["is_overplay"] = isOverplay ? 1 : 0,
+            ["mode"] = mode, 
+            ["fakem"] = "ca981cfc583a4c37f28d2d49000013c16a0a",
+            ["key"] = key
+        };
+
+        if (!string.IsNullOrEmpty(userid) && userid != "0")
+        {
+            body["userid"] = userid;
+            body["kguid"] = userid;
+        }
+
+        if (!string.IsNullOrEmpty(token)) body["token"] = token;
+        if (!string.IsNullOrEmpty(vipType)) body["vip_type"] = vipType;
+
+        if (!string.IsNullOrEmpty(hash)) body["hash"] = hash;
+        if (!string.IsNullOrEmpty(songid)) body["songid"] = songid;
+        if (playtime.HasValue) body["playtime"] = playtime.Value;
+
+        var request = new KgRequest
+        {
+            Method = HttpMethod.Post,
+            Path = "/v2/personal_recommend",
+            Body = body,
+            SpecificRouter = "persnfm.service.kugou.com",
+            SignatureType = SignatureType.Default
+        };
+
+        return await transport.SendAsync(request);
+    }
 }

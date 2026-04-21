@@ -7,7 +7,7 @@ using KuGou.Net.util;
 namespace KuGou.Net.Protocol.Raw;
 
 /// <summary>
-///     原始搜索接口 (对应原来的 SearchService)
+///     原始搜索接口 
 /// </summary>
 public class RawSearchApi(IKgTransport transport)
 {
