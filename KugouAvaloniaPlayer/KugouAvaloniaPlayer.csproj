@@ -33,11 +33,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.11"/>
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.11"/>
+        <PackageReference Include="Avalonia" Version="11.3.13"/>
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.13"/>
         <PackageReference Include="Avalonia.Labs.Controls" Version="11.3.1"/>
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.11"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.11"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.13"/>
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.13"/>
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
@@ -47,7 +47,7 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.3"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.3"/>
-        <PackageReference Include="SukiUI" Version="6.0.4-nightly20260124"/>
+        <PackageReference Include="SukiUI" Version="6.0.4-nightly20260408"/>
         <PackageReference Include="Svg.Controls.Avalonia" Version="11.3.9.2"/>
         <PackageReference Include="TagLibSharp" Version="2.3.0"/>
         <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0"/>

@@ -6,29 +6,31 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 
 namespace KugouAvaloniaPlayer.Controls;
 
 public class MeasuredLyricScrollView : ItemsControl
 {
-    private const int StaggerRange = 5;
-    private const int StaggerStepMs = 35;
-    private const int EntranceStepMs = 25;
-    private const double DefaultEstimatedLineHeight = 72;
-    private const double EntranceRiseOffset = 110;
-    private const double SpringStiffness = 0.105;
+    private const int StaggerRange = 10;
+    private const int StaggerStepMs = 20;
+    private const int EntranceStepMs = 12;
+    private const double EntranceRiseOffset = 48;
+    private const double SpringStiffness = 0.063;
     private const double SpringDamping = 0.72;
-    private const double OpacityResponse = 14.0;
-    private const double SettleTopThreshold = 0.35;
-    private const double SettleVelocityThreshold = 0.2;
-    private const double SettleOpacityThreshold = 0.01;
+    private const double OpacityResponse = 18.0;
+    private const double SettleTopThreshold = 0.22;
+    private const double SettleVelocityThreshold = 0.12;
+    private const double SettleOpacityThreshold = 0.008;
 
+    private const double DefaultEstimatedLineHeight = 72;
+    
     public static readonly StyledProperty<object?> ActiveItemProperty =
         AvaloniaProperty.Register<MeasuredLyricScrollView, object?>(nameof(ActiveItem));
 
     public static readonly StyledProperty<double> LineSpacingProperty =
-        AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(LineSpacing), 18);
+        AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(LineSpacing), 14);
 
     public static readonly StyledProperty<TimeSpan> ScrollDurationProperty =
         AvaloniaProperty.Register<MeasuredLyricScrollView, TimeSpan>(nameof(ScrollDuration),
@@ -38,7 +40,14 @@ public class MeasuredLyricScrollView : ItemsControl
         AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(WheelStep), 80);
 
     public static readonly StyledProperty<double> ActiveAnchorRatioProperty =
-        AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(ActiveAnchorRatio), 0.5);
+        AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(ActiveAnchorRatio), 0.35);
+    
+    public static readonly StyledProperty<bool> EnableScaleProperty =
+        AvaloniaProperty.Register<MeasuredLyricScrollView, bool>(nameof(EnableScale), true);
+
+    public static readonly StyledProperty<double> InactiveScaleProperty =
+        AvaloniaProperty.Register<MeasuredLyricScrollView, double>(nameof(InactiveScale), 0.97);
+
 
     private readonly Dictionary<int, double> _knownHeights = new();
     private readonly Dictionary<Control, SpringState> _springStates = new();
@@ -95,6 +104,18 @@ public class MeasuredLyricScrollView : ItemsControl
     {
         get => GetValue(ActiveAnchorRatioProperty);
         set => SetValue(ActiveAnchorRatioProperty, value);
+    }
+    
+    public bool EnableScale
+    {
+        get => GetValue(EnableScaleProperty);
+        set => SetValue(EnableScaleProperty, value);
+    }
+
+    public double InactiveScale
+    {
+        get => GetValue(InactiveScaleProperty);
+        set => SetValue(InactiveScaleProperty, value);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -266,8 +287,20 @@ public class MeasuredLyricScrollView : ItemsControl
             container.Width = Bounds.Width;
 
             var distance = Math.Abs(i - activeIndex);
-            var targetOpacity = Math.Clamp(1 - distance * 0.16, 0.24, 1);
-            UpdateSpringState(container, targetTop, targetOpacity, i, activeIndex);
+            double targetOpacity;
+            if (distance == 0)
+                targetOpacity = 1.0;
+            else if (distance == 1)
+                targetOpacity = 0.88;
+            else if (distance == 2)
+                targetOpacity = 0.72;
+            else
+                targetOpacity = Math.Clamp(0.58 - (distance - 3) * 0.10, 0.16, 1.0);
+            double targetScale = 1.0;
+            if (EnableScale && distance > 0)
+                targetScale = InactiveScale;
+
+            UpdateSpringState(container, targetTop, targetOpacity, targetScale, i, activeIndex);
         }
 
         TrimStaleStates(activeContainers);
@@ -303,7 +336,7 @@ public class MeasuredLyricScrollView : ItemsControl
         return TimeSpan.FromMilliseconds(Math.Max(0, delayMs));
     }
 
-    private void UpdateSpringState(Control container, double targetTop, double targetOpacity, int index, int activeIndex)
+    private void UpdateSpringState(Control container, double targetTop, double targetOpacity, double targetScale, int index, int activeIndex)
     {
         var isEntrance = _isFirstLayoutPass && !_isUserScrolling;
         var topDelay = isEntrance
@@ -322,10 +355,15 @@ public class MeasuredLyricScrollView : ItemsControl
             state.Velocity = 0;
             state.CurrentOpacity = targetOpacity;
             state.TargetOpacity = targetOpacity;
+            state.CurrentScale = targetScale;
+            state.TargetScale = targetScale;
             state.ClearPendingTarget();
             state.IsInitialized = true;
+
             Canvas.SetTop(container, targetTop);
             container.Opacity = targetOpacity;
+            container.RenderTransform = new ScaleTransform(targetScale, targetScale);
+            container.RenderTransformOrigin = RelativePoint.Center;
             return;
         }
 
@@ -338,25 +376,32 @@ public class MeasuredLyricScrollView : ItemsControl
             state.CurrentOpacity = isEntrance ? 0 : targetOpacity;
             state.IsInitialized = true;
 
+            state.CurrentOpacity = isEntrance ? 0 : targetOpacity;
+            state.CurrentScale = isEntrance ? 0.985 : targetScale;
+
             if (topDelay > TimeSpan.Zero)
             {
                 state.TargetTop = state.CurrentTop;
                 state.TargetOpacity = state.CurrentOpacity;
-                state.QueueTarget(targetTop, targetOpacity, topDelay.TotalSeconds);
+                state.TargetScale = state.CurrentScale;
+                state.QueueTarget(targetTop, targetOpacity, targetScale, topDelay.TotalSeconds);
             }
             else
             {
                 state.TargetTop = targetTop;
                 state.TargetOpacity = targetOpacity;
+                state.TargetScale = targetScale;
                 state.ClearPendingTarget();
             }
 
             Canvas.SetTop(container, state.CurrentTop);
             container.Opacity = state.CurrentOpacity;
+            container.RenderTransform = new ScaleTransform(state.CurrentScale, state.CurrentScale);
+            container.RenderTransformOrigin = RelativePoint.Center;
             return;
         }
 
-        state.ScheduleTarget(targetTop, targetOpacity, topDelay.TotalSeconds);
+        state.ScheduleTarget(targetTop, targetOpacity, targetScale, topDelay.TotalSeconds);
     }
 
     private void ResetFirstLayoutState()
@@ -447,8 +492,20 @@ public class MeasuredLyricScrollView : ItemsControl
                 hasActiveMotion = true;
             }
 
+            state.CurrentScale += (state.TargetScale - state.CurrentScale) * opacityFactor;
+            if (Math.Abs(state.TargetScale - state.CurrentScale) <= 0.001)
+            {
+                state.CurrentScale = state.TargetScale;
+            }
+            else
+            {
+                hasActiveMotion = true;
+            }
+
             Canvas.SetTop(container, state.CurrentTop);
             container.Opacity = state.CurrentOpacity;
+            container.RenderTransform = new ScaleTransform(state.CurrentScale, state.CurrentScale);
+            container.RenderTransformOrigin = RelativePoint.Center;
         }
 
         if (!hasActiveMotion)
@@ -481,62 +538,74 @@ public class MeasuredLyricScrollView : ItemsControl
     }
 
     private sealed class SpringState
+{
+    public double CurrentOpacity;
+    public double CurrentTop;
+    public double CurrentScale = 1.0;
+
+    public double DelayRemainingSeconds;
+    public bool HasPendingTarget;
+    public bool IsInitialized;
+
+    public double PendingTargetOpacity;
+    public double PendingTargetTop;
+    public double PendingTargetScale = 1.0;
+
+    public double TargetOpacity;
+    public double TargetTop;
+    public double TargetScale = 1.0;
+
+    public double Velocity;
+
+    public void ScheduleTarget(double targetTop, double targetOpacity, double targetScale, double delaySeconds)
     {
-        public double CurrentOpacity;
-        public double CurrentTop;
-        public double DelayRemainingSeconds;
-        public bool HasPendingTarget;
-        public bool IsInitialized;
-        public double PendingTargetOpacity;
-        public double PendingTargetTop;
-        public double TargetOpacity;
-        public double TargetTop;
-        public double Velocity;
+        var currentRequestedTop = HasPendingTarget ? PendingTargetTop : TargetTop;
+        var currentRequestedOpacity = HasPendingTarget ? PendingTargetOpacity : TargetOpacity;
+        var currentRequestedScale = HasPendingTarget ? PendingTargetScale : TargetScale;
 
-        public void ScheduleTarget(double targetTop, double targetOpacity, double delaySeconds)
+        if (Math.Abs(currentRequestedTop - targetTop) <= 0.5 &&
+            Math.Abs(currentRequestedOpacity - targetOpacity) <= 0.01 &&
+            Math.Abs(currentRequestedScale - targetScale) <= 0.001)
+            return;
+
+        if (delaySeconds <= 0)
         {
-            var currentRequestedTop = HasPendingTarget ? PendingTargetTop : TargetTop;
-            var currentRequestedOpacity = HasPendingTarget ? PendingTargetOpacity : TargetOpacity;
-
-            if (Math.Abs(currentRequestedTop - targetTop) <= 0.5 &&
-                Math.Abs(currentRequestedOpacity - targetOpacity) <= 0.01)
-                return;
-
-            if (delaySeconds <= 0)
-            {
-                TargetTop = targetTop;
-                TargetOpacity = targetOpacity;
-                ClearPendingTarget();
-                return;
-            }
-
-            QueueTarget(targetTop, targetOpacity, delaySeconds);
-        }
-
-        public void QueueTarget(double targetTop, double targetOpacity, double delaySeconds)
-        {
-            PendingTargetTop = targetTop;
-            PendingTargetOpacity = targetOpacity;
-            DelayRemainingSeconds = Math.Max(0, delaySeconds);
-            HasPendingTarget = true;
-        }
-
-        public void UpdatePendingTarget(double dt)
-        {
-            if (!HasPendingTarget) return;
-
-            DelayRemainingSeconds -= dt;
-            if (DelayRemainingSeconds > 0) return;
-
-            TargetTop = PendingTargetTop;
-            TargetOpacity = PendingTargetOpacity;
+            TargetTop = targetTop;
+            TargetOpacity = targetOpacity;
+            TargetScale = targetScale;
             ClearPendingTarget();
+            return;
         }
 
-        public void ClearPendingTarget()
-        {
-            HasPendingTarget = false;
-            DelayRemainingSeconds = 0;
-        }
+        QueueTarget(targetTop, targetOpacity, targetScale, delaySeconds);
     }
+
+    public void QueueTarget(double targetTop, double targetOpacity, double targetScale, double delaySeconds)
+    {
+        PendingTargetTop = targetTop;
+        PendingTargetOpacity = targetOpacity;
+        PendingTargetScale = targetScale;
+        DelayRemainingSeconds = Math.Max(0, delaySeconds);
+        HasPendingTarget = true;
+    }
+
+    public void UpdatePendingTarget(double dt)
+    {
+        if (!HasPendingTarget) return;
+
+        DelayRemainingSeconds -= dt;
+        if (DelayRemainingSeconds > 0) return;
+
+        TargetTop = PendingTargetTop;
+        TargetOpacity = PendingTargetOpacity;
+        TargetScale = PendingTargetScale;
+        ClearPendingTarget();
+    }
+
+    public void ClearPendingTarget()
+    {
+        HasPendingTarget = false;
+        DelayRemainingSeconds = 0;
+    }
+}
 }

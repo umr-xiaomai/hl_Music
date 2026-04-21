@@ -11,22 +11,30 @@
              x:DataType="vm:SongItem">
 
     <UserControl.Styles>
-        <Style Selector="Grid#ItemRoot">
-            <Setter Property="Background" Value="Transparent" />
+        <Style Selector="Border#ItemShell">
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" />
                     <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Grid#ItemRoot:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}" />
+        <Style Selector="Border#ItemShell:pointerover">
             <Setter Property="RenderTransform" Value="scale(1.01)" />
+        </Style>
+        <Style Selector="Border#ItemShell Border#HoverOverlay">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border#ItemShell:pointerover Border#HoverOverlay">
+            <Setter Property="Opacity" Value="1" />
         </Style>
     </UserControl.Styles>
 
-    <Border CornerRadius="8" Padding="5" Margin="0,1">
+    <Border Name="ItemShell" CornerRadius="14" Padding="6" Margin="0,2">
         <Border.ContextMenu>
             <ContextMenu>
                 <MenuItem Header="查看歌手" ItemsSource="{Binding Singers}">
@@ -57,6 +65,11 @@
         <Grid ColumnDefinitions="Auto, *, 150, 80, 150"
               Background="Transparent"
               behaviors:InteractionBehaviors.DoubleTappedCommand="{Binding PlayCommand}">
+            <Border Name="HoverOverlay"
+                    Grid.ColumnSpan="5"
+                    CornerRadius="12"
+                    Background="{DynamicResource SukiControlTouchBackground}" />
+
             <Border Grid.Column="0" CornerRadius="6" ClipToBounds="True" Width="45" Height="45" Margin="8,5">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="5" Opacity="0.3" OffsetX="1" OffsetY="1" />

@@ -409,13 +409,9 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void NavigateToUser()
     {
-        if (!IsLoggedIn)
-        {
-            ShowLoginDialog();
-            return;
-        }
+        if (IsLoggedIn)
+            _ = _userViewModel.LoadUserInfoAsync();
 
-        _ = _userViewModel.LoadUserInfoAsync();
         _navigationService.Push(_userViewModel);
     }
 
