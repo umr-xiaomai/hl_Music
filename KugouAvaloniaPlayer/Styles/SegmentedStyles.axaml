@@ -3,6 +3,8 @@
 
     <Style Selector="RadioButton.Segmented">
         <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="Background" Value="{DynamicResource SukiCardBackground}" />
+        <Setter Property="BorderBrush" Value="#15888888" />
         <Setter Property="Padding" Value="24,6" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Cursor" Value="Hand" />
@@ -12,7 +14,7 @@
             <ControlTemplate>
                 <Panel Background="Transparent">
                     <Border x:Name="HoverBorder"
-                            Background="#15888888"
+                            Background="{TemplateBinding BorderBrush}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Opacity="0">
                         <Border.Transitions>
@@ -23,7 +25,7 @@
                     </Border>
 
                     <Border x:Name="CheckedBorder"
-                            Background="{DynamicResource SukiCardBackground}"
+                            Background="{TemplateBinding Background}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             BoxShadow="0 1 4 0 #20000000"
                             Opacity="0">
@@ -37,7 +39,7 @@
                     <ContentPresenter x:Name="PART_ContentPresenter"
                                       Content="{TemplateBinding Content}"
                                       Margin="{TemplateBinding Padding}"
-                                      Foreground="{DynamicResource SukiLowText}"
+                                      Foreground="{TemplateBinding Foreground}"
                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                 </Panel>

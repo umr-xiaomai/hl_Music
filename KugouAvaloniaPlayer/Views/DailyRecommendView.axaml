@@ -1,12 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:KugouAvaloniaPlayer.ViewModels"
+             xmlns:models="using:KugouAvaloniaPlayer.Models"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:localControls="using:KugouAvaloniaPlayer.Controls"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             xmlns:controls="clr-namespace:Avalonia.Labs.Controls;assembly=Avalonia.Labs.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
              x:Class="KugouAvaloniaPlayer.Views.DailyRecommendView"
+             x:Name="DailyRecommendRoot"
              x:DataType="vm:DailyRecommendViewModel">
 
     <UserControl.Resources>
@@ -16,21 +19,129 @@
                     <Color x:Key="ACGGradStart">#89D4F9</Color>
                     <Color x:Key="ACGGradEnd">#3D8BFF</Color>
                     <Color x:Key="ACGTextShadow">#40003366</Color>
+                    <Color x:Key="FmCardStart">#0F172A</Color>
+                    <Color x:Key="FmCardEnd">#1D4ED8</Color>
+                    <Color x:Key="FmAccent">#22C55E</Color>
+                    <Color x:Key="FmHeartChip">#16FFFFFF</Color>
+                    <Color x:Key="FmSmallChip">#16FFFFFF</Color>
+                    <Color x:Key="FmPeakChip">#16FFFFFF</Color>
+                    <Color x:Key="FmHeartInk">#9F1239</Color>
+                    <Color x:Key="FmSmallInk">#155E75</Color>
+                    <Color x:Key="FmPeakInk">#9A3412</Color>
                 </ResourceDictionary>
 
-                <ResourceDictionary x:Key="Dark" />
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="ACGGradStart">#1D4ED8</Color>
+                    <Color x:Key="ACGGradEnd">#0F172A</Color>
+                    <Color x:Key="ACGTextShadow">#80000000</Color>
+                    <Color x:Key="FmCardStart">#020617</Color>
+                    <Color x:Key="FmCardEnd">#1E40AF</Color>
+                    <Color x:Key="FmAccent">#4ADE80</Color>
+                    <Color x:Key="FmHeartChip">#4C1024</Color>
+                    <Color x:Key="FmSmallChip">#0E3A47</Color>
+                    <Color x:Key="FmPeakChip">#4B240F</Color>
+                    <Color x:Key="FmHeartInk">#FFD5E2</Color>
+                    <Color x:Key="FmSmallInk">#C5F6FF</Color>
+                    <Color x:Key="FmPeakInk">#FFE0BC</Color>
+                </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <UserControl.Styles>
+        <Style Selector="Border.fm-preview-chip">
+            <Setter Property="Background" Value="#16FFFFFF" />
+            <Setter Property="BorderBrush" Value="#24FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="8,3" />
+        </Style>
+        <Style Selector="Border.fm-pool-switch">
+            <Setter Property="Background" Value="#1AFFFFFF" />
+            <Setter Property="BorderBrush" Value="#24FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="3" />
+        </Style>
+        <Style Selector="Border.fm-pool-thumb">
+            <Setter Property="Background" Value="{DynamicResource SukiPopupBackground}" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector="Button.fm-pool-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-pill">
+            <Setter Property="MinWidth" Value="88" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="{DynamicResource SukiAccentColor3}" />
+            <Setter Property="BorderBrush" Value="#1EFFFFFF" />
+            <Setter Property="Foreground" Value="#ECF7FF" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-pill /template/ Border#CheckedBorder">
+            <Setter Property="BoxShadow" Value="0 10 24 0 #24040B14" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-pill TextBlock.fm-mode-title">
+            <Setter Property="Foreground" Value="#F8FCFF" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.fm-mode-dot">
+            <Setter Property="Width" Value="7" />
+            <Setter Property="Height" Value="7" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-heart:checked /template/ Border#CheckedBorder">
+            <Setter Property="Background" Value="{DynamicResource FmHeartChip}" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-small:checked /template/ Border#CheckedBorder">
+            <Setter Property="Background" Value="{DynamicResource FmSmallChip}" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-peak:checked /template/ Border#CheckedBorder">
+            <Setter Property="Background" Value="{DynamicResource FmPeakChip}" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-heart:checked TextBlock.fm-mode-title">
+            <Setter Property="Foreground" Value="{DynamicResource FmHeartInk}" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-small:checked TextBlock.fm-mode-title">
+            <Setter Property="Foreground" Value="{DynamicResource FmSmallInk}" />
+        </Style>
+        <Style Selector="RadioButton.fm-mode-peak:checked TextBlock.fm-mode-title">
+            <Setter Property="Foreground" Value="{DynamicResource FmPeakInk}" />
+        </Style>
+        <Style Selector="Border.fm-mode-dot-heart">
+            <Setter Property="Background" Value="#FB7185" />
+        </Style>
+        <Style Selector="Border.fm-mode-dot-small">
+            <Setter Property="Background" Value="#22D3EE" />
+        </Style>
+        <Style Selector="Border.fm-mode-dot-peak">
+            <Setter Property="Background" Value="#FB923C" />
+        </Style>
+        <Style Selector="Border.fm-tag-chip">
+            <Setter Property="Background" Value="#14FFFFFF" />
+            <Setter Property="BorderBrush" Value="#22FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </UserControl.Styles>
+
     <suki:GlassCard Margin="15" Padding="0" CornerRadius="16">
-        <Grid RowDefinitions="Auto, *">
+        <Grid RowDefinitions="Auto,*">
 
             <Border Grid.Row="0"
-                    Height="220"
+                    Height="212"
                     CornerRadius="16,16,0,0"
                     ClipToBounds="True">
-
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                         <GradientStop Color="{DynamicResource ACGGradStart}" Offset="0" />
@@ -38,26 +149,37 @@
                     </LinearGradientBrush>
                 </Border.Background>
 
-                <Panel>
-                    <Path Data="M 250,0 L 450,0 L 150,220 L -50,220 Z"
-                          Fill="#15FFFFFF" HorizontalAlignment="Right" />
-                    <Path Data="M 450,0 L 650,0 L 350,220 L 150,220 Z"
-                          Fill="#0AFFFFFF" HorizontalAlignment="Right" />
+                <Grid ColumnDefinitions="*,360" Margin="0">
+                    <Panel Grid.ColumnSpan="2">
+                        <Path Data="M 260,0 L 470,0 L 180,212 L -50,212 Z"
+                              Fill="#15FFFFFF"
+                              HorizontalAlignment="Right" />
+                        <Path Data="M 470,0 L 690,0 L 390,212 L 170,212 Z"
+                              Fill="#0BFFFFFF"
+                              HorizontalAlignment="Right" />
+                        <Ellipse Width="104" Height="104"
+                                 Stroke="#25FFFFFF"
+                                 StrokeThickness="6"
+                                 HorizontalAlignment="Left"
+                                 VerticalAlignment="Top"
+                                 Margin="36,-32,0,0" />
+                        <Ellipse Width="24" Height="24"
+                                 Fill="#30FFFFFF"
+                                 HorizontalAlignment="Left"
+                                 VerticalAlignment="Bottom"
+                                 Margin="142,0,0,34" />
+                        <Ellipse Width="148" Height="148"
+                                 Stroke="#15FFFFFF"
+                                 StrokeThickness="2"
+                                 HorizontalAlignment="Right"
+                                 VerticalAlignment="Bottom"
+                                 Margin="0,0,140,-54" />
+                    </Panel>
 
-                    <Ellipse Width="100" Height="100"
-                             Stroke="#25FFFFFF" StrokeThickness="6"
-                             HorizontalAlignment="Left" VerticalAlignment="Top"
-                             Margin="40,-30,0,0" />
-                    <Ellipse Width="24" Height="24"
-                             Fill="#30FFFFFF"
-                             HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                             Margin="140,0,0,40" />
-                    <Ellipse Width="160" Height="160"
-                             Stroke="#15FFFFFF" StrokeThickness="2"
-                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                             Margin="0,0,80,-60" />
-
-                    <StackPanel VerticalAlignment="Center" Spacing="2" Margin="35,0,0,0">
+                    <StackPanel Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Margin="34,0,24,0"
+                                Spacing="4">
                         <Border Background="#30FFFFFF"
                                 CornerRadius="4"
                                 HorizontalAlignment="Left"
@@ -75,17 +197,262 @@
                                    FontWeight="Black"
                                    Foreground="White"
                                    LetterSpacing="2">
-
                             <TextBlock.Effect>
                                 <DropShadowEffect BlurRadius="8"
                                                   Opacity="0.8"
-                                                  OffsetX="0" OffsetY="3"
+                                                  OffsetX="0"
+                                                  OffsetY="3"
                                                   Color="{DynamicResource ACGTextShadow}" />
                             </TextBlock.Effect>
                         </TextBlock>
-
                     </StackPanel>
-                </Panel>
+
+                    <Border Grid.Column="1"
+                            Margin="0,20,20,20"
+                            Padding="16"
+                            Width="396"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Stretch"
+                            CornerRadius="20"
+                            Background="#22030A16"
+                            BorderBrush="#26FFFFFF"
+                            BorderThickness="1">
+                        <Grid RowDefinitions="Auto,*"
+                              RowSpacing="10">
+                            <Grid Grid.Row="0"
+                                  ColumnDefinitions="102,*,70"
+                                  ColumnSpacing="12">
+                                <StackPanel Grid.Column="0"
+                                            Spacing="6"
+                                            IsVisible="{Binding CanUsePersonalFm}">
+                                    <RadioButton Classes="Segmented fm-mode-pill fm-mode-heart"
+                                                 IsEnabled="{Binding CanEditFmConfiguration}"
+                                                 IsChecked="{Binding SelectedFmMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PersonalFmMode.Normal}}"
+                                                 Command="{Binding ChangePersonalFmModeCommand}"
+                                                 CommandParameter="{x:Static models:PersonalFmMode.Normal}">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="6"
+                                                    HorizontalAlignment="Center">
+                                            <Border Classes="fm-mode-dot fm-mode-dot-heart" />
+                                            <TextBlock Classes="fm-mode-title" Text="红心" />
+                                        </StackPanel>
+                                    </RadioButton>
+
+                                    <RadioButton Classes="Segmented fm-mode-pill fm-mode-small"
+                                                 IsEnabled="{Binding CanEditFmConfiguration}"
+                                                 IsChecked="{Binding SelectedFmMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PersonalFmMode.Small}}"
+                                                 Command="{Binding ChangePersonalFmModeCommand}"
+                                                 CommandParameter="{x:Static models:PersonalFmMode.Small}">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="6"
+                                                    HorizontalAlignment="Center">
+                                            <Border Classes="fm-mode-dot fm-mode-dot-small" />
+                                            <TextBlock Classes="fm-mode-title" Text="小众" />
+                                        </StackPanel>
+                                    </RadioButton>
+
+                                    <RadioButton Classes="Segmented fm-mode-pill fm-mode-peak"
+                                                 IsEnabled="{Binding CanEditFmConfiguration}"
+                                                 IsChecked="{Binding SelectedFmMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PersonalFmMode.Peak}}"
+                                                 Command="{Binding ChangePersonalFmModeCommand}"
+                                                 CommandParameter="{x:Static models:PersonalFmMode.Peak}">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="6"
+                                                    HorizontalAlignment="Center">
+                                            <Border Classes="fm-mode-dot fm-mode-dot-peak" />
+                                            <TextBlock Classes="fm-mode-title" Text="巅峰" />
+                                        </StackPanel>
+                                    </RadioButton>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="5">
+                                    <Grid ColumnDefinitions="Auto,*"
+                                          ColumnSpacing="10"
+                                          IsVisible="{Binding CanUsePersonalFm}">
+                                        <Border Classes="fm-pool-switch"
+                                                HorizontalAlignment="Left">
+                                            <Grid ColumnDefinitions="*,*">
+                                                <Border Classes="fm-pool-thumb"
+                                                        Grid.Column="0"
+                                                        IsVisible="{Binding SelectedFmSongPoolId, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PersonalFmSongPoolId.Taste}}" />
+                                                <Border Classes="fm-pool-thumb"
+                                                        Grid.Column="1"
+                                                        IsVisible="{Binding SelectedFmSongPoolId, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PersonalFmSongPoolId.Style}}" />
+
+                                                <Button Grid.Column="0"
+                                                        Classes="fm-pool-btn"
+                                                        IsEnabled="{Binding CanEditFmConfiguration}"
+                                                        Command="{Binding ChangePersonalFmSongPoolCommand}"
+                                                        CommandParameter="{x:Static models:PersonalFmSongPoolId.Taste}">
+                                                    <Grid>
+                                                        <TextBlock Text="口味"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="#E7F4FF" />
+                                                        <TextBlock Text="口味"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="#0B1622"
+                                                                   IsVisible="{Binding SelectedFmSongPoolId, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PersonalFmSongPoolId.Taste}}" />
+                                                    </Grid>
+                                                </Button>
+
+                                                <Button Grid.Column="1"
+                                                        Classes="fm-pool-btn"
+                                                        IsEnabled="{Binding CanEditFmConfiguration}"
+                                                        Command="{Binding ChangePersonalFmSongPoolCommand}"
+                                                        CommandParameter="{x:Static models:PersonalFmSongPoolId.Style}">
+                                                    <Grid>
+                                                        <TextBlock Text="风格"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="#E7F4FF" />
+                                                        <TextBlock Text="风格"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="#0B1622"
+                                                                   IsVisible="{Binding SelectedFmSongPoolId, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static models:PersonalFmSongPoolId.Style}}" />
+                                                    </Grid>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
+
+                                    <Border Background="#20FFFFFF"
+                                            CornerRadius="999"
+                                            Padding="8,2"
+                                            HorizontalAlignment="Left"
+                                            IsVisible="{Binding !CanUsePersonalFm}">
+                                        <TextBlock Text="{Binding FmStatusCaption}"
+                                                   FontSize="11"
+                                                   Foreground="White" />
+                                    </Border>
+
+                                    <TextBlock Text="{Binding FmCardTitle}"
+                                               FontSize="22"
+                                               FontWeight="Black"
+                                               Foreground="White" />
+                                    <Border Classes="fm-tag-chip">
+                                        <TextBlock Text="{Binding FmCardTagline}"
+                                                   Foreground="#E7F4FF"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold" />
+                                    </Border>
+                                    <TextBlock Text="{Binding FmCardSubtitle}"
+                                               Foreground="#D7EAFE"
+                                               FontSize="12"
+                                               TextWrapping="Wrap"
+                                               MaxLines="2"
+                                               IsVisible="{Binding ShowFmSongs}" />
+                                    <TextBlock Text="{Binding FmEmptyText}"
+                                               Foreground="White"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               TextWrapping="Wrap"
+                                               MaxLines="2"
+                                               IsVisible="{Binding ShowFmLoginState}" />
+                                    <TextBlock Text="正在更新专属电台..."
+                                               Foreground="White"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               IsVisible="{Binding IsFmLoading}" />
+                                    <TextBlock Text="{Binding FmEmptyText}"
+                                               Foreground="White"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               TextWrapping="Wrap"
+                                               MaxLines="2"
+                                               IsVisible="{Binding ShowFmEmptyState}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2"
+                                            Spacing="8"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Top">
+                                    <Border Width="50"
+                                            Height="50"
+                                            CornerRadius="50"
+                                            BorderBrush="#18FFFFFF"
+                                            ClipToBounds="True"
+                                            HorizontalAlignment="Center">
+                                        <controls:AsyncImage Source="{Binding CurrentFmPreviewSong.Cover, FallbackValue=avares://KugouAvaloniaPlayer/Assets/Default.png}"
+                                                             Stretch="UniformToFill" />
+                                    </Border>
+
+                                    <StackPanel Spacing="8"
+                                                HorizontalAlignment="Center"
+                                                IsVisible="{Binding ShowFmControls}">
+                                        <Button Classes="Basic"
+                                                Width="28"
+                                                Height="28"
+                                                Cursor="Hand"
+                                                Command="{Binding PlayPersonalFmCommand}">
+                                            <Svg Path="{Binding FmPlayIconPath}" Css="path { fill: white; }"  Width="18" Height="18" />
+                                        </Button>
+
+                                        <Button Classes="Basic"
+                                                Width="28"
+                                                Height="28"
+                                                Cursor="Hand"
+                                                ToolTip.Tip="不喜欢"
+                                                Command="{Binding DislikePersonalFmCommand}">
+                                            <Svg Path="/Assets/unlike-svgrepo-com.svg" Width="18" Height="18" />
+                                        </Button>
+
+                                        <Button Classes="Basic"
+                                                Width="28"
+                                                Height="28"
+                                                Cursor="Hand"
+                                                ToolTip.Tip="刷新"
+                                                IsEnabled="{Binding CanEditFmConfiguration}"
+                                                Command="{Binding RefreshPersonalFmCommand}"
+                                                Margin="0,-10,-5,0">
+                                            <PathIcon Data="{x:Static suki:Icons.Refresh}"
+                                                      Foreground="White"
+                                                      Width="14"
+                                                      Height="14" />
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Grid.Row="1">
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="8"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding ShowCompactFmPreview}">
+                                    <Border Classes="fm-preview-chip">
+                                        <TextBlock Text="接下来"
+                                                   Foreground="#ECF7FF"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold" />
+                                    </Border>
+                                    <Border Classes="fm-preview-chip">
+                                        <TextBlock Text="{Binding CompactFmPreviewSongsText}"
+                                                   Foreground="#D9EAFE"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxWidth="220" />
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Spacing="4"
+                                            IsVisible="{Binding IsFmLoading}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <suki:Loading Width="16" Height="16" />
+                                        <TextBlock Text="正在更新专属电台..."
+                                                   Foreground="White"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Border>
 
             <ListBox Grid.Row="1"

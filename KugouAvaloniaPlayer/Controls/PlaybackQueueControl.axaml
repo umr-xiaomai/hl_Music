@@ -198,7 +198,7 @@
                             CornerRadius="20"
                             Padding="7,2"
                             VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Player.PlaybackQueue.Count}"
+                        <TextBlock Text="{Binding Player.DisplayPlaybackQueueCount}"
                                    FontSize="11"
                                    FontWeight="Medium"
                                    Foreground="{StaticResource TextMuted}" />
@@ -231,7 +231,7 @@
 
             <!-- ── 列表内容 ── -->
             <ListBox Grid.Row="2"
-                     ItemsSource="{Binding Player.PlaybackQueue}"
+                     ItemsSource="{Binding Player.DisplayPlaybackQueue}"
                      Background="Transparent"
                      BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"

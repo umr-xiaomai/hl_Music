@@ -29,13 +29,12 @@ namespace KugouAvaloniaPlayer.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
-    private const string DefaultCover = "avares://KugouAvaloniaPlayer/Assets/Default.png";
     private static readonly IBrush DefaultLyricBrush = new SolidColorBrush(Colors.White);
     private static readonly IBrush DefaultTranslationLineBrush = new SolidColorBrush(Color.Parse("#CCFFFFFF"));
     private static readonly IBrush DefaultTranslationWordBrush = new SolidColorBrush(Colors.White);
     private readonly AuthClient _authClient;
     private readonly IDesktopLyricWindowService _desktopLyricWindowService;
-    private readonly DiscoveryClient _discoveryClient;
+    private readonly DailyRecommendViewModel _dailyRecommendViewModel;
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly ILoginDialogService _loginDialogService;
     private readonly INavigationService _navigationService;
@@ -84,7 +83,6 @@ public partial class MainWindowViewModel : ObservableObject
         ISukiDialogManager dialogManager,
         KgSessionManager sessionManager,
         AuthClient authClient,
-        DiscoveryClient discoveryClient,
         UserClient userClient,
         ISingerViewModelFactory singerViewModelFactory,
         IDesktopLyricWindowService desktopLyricWindowService,
@@ -102,8 +100,7 @@ public partial class MainWindowViewModel : ObservableObject
         DialogManager = dialogManager;
         _sessionManager = sessionManager;
         _authClient = authClient;
-        _discoveryClient = discoveryClient;
-
+        _dailyRecommendViewModel = dailyRecommendViewModel;
         _userClient = userClient;
         var singerViewModelFactory1 = singerViewModelFactory;
         _desktopLyricWindowService = desktopLyricWindowService;
@@ -122,13 +119,13 @@ public partial class MainWindowViewModel : ObservableObject
         Player = player;
         ToastManager = toastManager;
 
-        Pages.Add(dailyRecommendViewModel);
+        Pages.Add(_dailyRecommendViewModel);
         Pages.Add(discoverViewModel);
         Pages.Add(rankViewModel);
         Pages.Add(_searchViewModel);
         _navigationService.CurrentPageChanged += OnNavigationCurrentPageChanged;
-        _navigationService.ReplaceRoot(dailyRecommendViewModel);
-        ActivePage = dailyRecommendViewModel;
+        _navigationService.ReplaceRoot(_dailyRecommendViewModel);
+        ActivePage = _dailyRecommendViewModel;
         IsDesktopLyricEnabled = _desktopLyricWindowService.IsOpen;
         ApplyNowPlayingLyricStyleSettings(
             SettingsManager.Settings.PlayPageLyricUseCustomMainColor,
@@ -386,11 +383,12 @@ public partial class MainWindowViewModel : ObservableObject
             _userViewModel.UserAvatar = null;
             _userViewModel.UserId = string.Empty;
             _userViewModel.VipStatus = "未开通";
+            Player.ClearPersonalFmSession();
+            _ = _dailyRecommendViewModel.OnAuthStateChangedAsync();
             _logger.LogInformation("已退出登录");
 
             // 返回每日推荐页面
-            var dailyVm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
-            if (dailyVm != null) _navigationService.ReplaceRoot(dailyVm);
+            _navigationService.ReplaceRoot(_dailyRecommendViewModel);
         });
     }
 
@@ -418,37 +416,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task GetDailyRecommendations()
     {
-        var vm = Pages.OfType<DailyRecommendViewModel>().FirstOrDefault();
-        if (vm == null) return;
-
-        _logger.LogInformation("正在获取每日推荐...");
-        try
-        {
-            var response = await _discoveryClient.GetRecommendedSongsAsync();
-            if (response?.Songs != null)
-            {
-                vm.Songs.Clear();
-                var songItems = response.Songs
-                    .Select(item => new SongItem
-                    {
-                        Name = item.Name,
-                        Singer = item.SingerName,
-                        Hash = item.Hash,
-                        AlbumId = item.AlbumId,
-                        Singers = item.Singers,
-                        Cover = string.IsNullOrWhiteSpace(item.SizableCover) ? DefaultCover : item.SizableCover,
-                        DurationSeconds = item.Duration
-                    })
-                    .ToList();
-
-                if (songItems.Any())
-                    vm.Songs.AddRange(songItems);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogInformation($"获取推荐失败: {ex.Message}");
-        }
+        await _dailyRecommendViewModel.LoadContentAsync();
     }
 
     [RelayCommand(CanExecute = nameof(CanSearch))]

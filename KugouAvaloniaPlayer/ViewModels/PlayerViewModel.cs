@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -33,6 +34,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private static readonly TimeSpan SeamlessVisualSwitchDelay = TimeSpan.FromSeconds(2);
     private const int TailTelemetryCapacity = 320;
     private static readonly TimeSpan AudioLoadTimeout = TimeSpan.FromSeconds(12);
+    private readonly DiscoveryClient _discoveryClient;
     private readonly FavoritePlaylistService _favoriteService;
     private readonly ILogger<PlayerViewModel> _logger;
     private readonly LyricsService _lyricsService;
@@ -95,11 +97,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _transitionWorkCancellation;
 
     public PlayerViewModel(
-        MusicClient musicClient, ISukiToastManager toastManager, ILogger<PlayerViewModel> logger,
+        MusicClient musicClient, DiscoveryClient discoveryClient, ISukiToastManager toastManager, ILogger<PlayerViewModel> logger,
         PlaybackQueueManager queueManager, LyricsService lyricsService, FavoritePlaylistService favoriteService,
         KgSessionManager sessionManager, ITransitionAnalysisService transitionAnalysisService)
     {
         _musicClient = musicClient;
+        _discoveryClient = discoveryClient;
         _toastManager = toastManager;
         _logger = logger;
         _queueManager = queueManager;
@@ -120,15 +123,25 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _playbackTimer.Tick += OnPlaybackTimerTick;
 
         WeakReferenceMessenger.Default.Register<AddToNextMessage>(this,
-            (_, m) => { _queueManager.AddToNext(m.Song, CurrentPlayingSong); });
+            (_, m) =>
+            {
+                if (!AddSongToPersonalFmNext(m.Song))
+                    _queueManager.AddToNext(m.Song, CurrentPlayingSong);
+            });
         WeakReferenceMessenger.Default.Register<ShowPlaylistDialogMessage>(this,
             (_, m) => _ = ShowPlaylistDialogSafelyAsync(m.Song));
+
+        _queueManager.PlaybackQueue.CollectionChanged += OnPlaybackQueueCollectionChanged;
+        PersonalFmStateChanged += SyncDisplayPlaybackQueue;
+        SyncDisplayPlaybackQueue();
     }
 
     public AvaloniaList<SongItem> PlaybackQueue => _queueManager.PlaybackQueue;
+    public AvaloniaList<SongItem> DisplayPlaybackQueue { get; } = new();
     public AvaloniaList<LyricLineViewModel> LyricLines => _lyricsService.LyricLines;
     public AvaloniaList<AudioVisualizerBarViewModel> NowPlayingVisualizerBars { get; } = CreateVisualizerBars();
     public string[] QualityOptions { get; } = ["128", "320", "flac", "high"];
+    public int DisplayPlaybackQueueCount => DisplayPlaybackQueue.Count;
 
     public bool IsShuffleMode => _queueManager.IsShuffleMode;
 
@@ -139,14 +152,44 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         CancelAndDisposeLoadCancellation();
         CancelAndDisposeDelayedVisualSwitchCancellation();
         CancelAndDisposeTransitionCancellation();
+        ClearPersonalFmSession();
         _playSongLock.Dispose();
         _playbackTimer.Stop();
         _playbackTimer.Tick -= OnPlaybackTimerTick;
         _player.PlaybackEnded -= OnPlaybackEnded;
+        _queueManager.PlaybackQueue.CollectionChanged -= OnPlaybackQueueCollectionChanged;
+        PersonalFmStateChanged -= SyncDisplayPlaybackQueue;
         _player.Dispose();
         _queueManager.Clear();
         _lyricsService.Clear();
         GC.SuppressFinalize(this);
+    }
+
+    private void OnPlaybackQueueCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (IsPersonalFmSessionActive)
+            return;
+
+        SyncDisplayPlaybackQueue();
+    }
+
+    private void SyncDisplayPlaybackQueue()
+    {
+        void Update()
+        {
+            DisplayPlaybackQueue.Clear();
+            if (IsPersonalFmSessionActive)
+                DisplayPlaybackQueue.AddRange(GetPersonalFmQueueSongs());
+            else
+                DisplayPlaybackQueue.AddRange(_queueManager.PlaybackQueue);
+
+            OnPropertyChanged(nameof(DisplayPlaybackQueueCount));
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+            Update();
+        else
+            Dispatcher.UIThread.Post(Update);
     }
 
     private async Task ShowPlaylistDialogSafelyAsync(SongItem song)
@@ -161,9 +204,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         }
     }
 
-    public async Task PlaySongAsync(SongItem? song, IList<SongItem>? contextList = null)
+    public async Task PlaySongAsync(SongItem? song, IList<SongItem>? contextList = null, bool preservePersonalFmSession = false)
     {
         if (song == null) return;
+
+        if (!preservePersonalFmSession && IsPersonalFmSessionActive)
+            ClearPersonalFmSession();
 
         await _playSongLock.WaitAsync();
         var requestVersion = Interlocked.Increment(ref _playRequestVersion);
@@ -377,12 +423,24 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task PlayNext()
     {
+        if (IsPersonalFmSessionActive)
+        {
+            await PlayNextPersonalFmAsync();
+            return;
+        }
+
         await PlaySongAsync(_queueManager.GetNext(CurrentPlayingSong));
     }
 
     [RelayCommand]
     private async Task PlayPrevious()
     {
+        if (IsPersonalFmSessionActive)
+        {
+            await PlayPreviousPersonalFmAsync();
+            return;
+        }
+
         await PlaySongAsync(_queueManager.GetPrevious(CurrentPlayingSong));
     }
 
@@ -396,6 +454,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void ClearQueue()
     {
+        ClearPersonalFmSession();
         _queueManager.Clear();
         StopAndReset();
     }
@@ -434,6 +493,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     private void OnPlaybackEnded()
     {
+        if (IsPersonalFmSessionActive)
+        {
+            Dispatcher.UIThread.Post(async () => await PlayNextPersonalFmAsync(true));
+            return;
+        }
+
         Dispatcher.UIThread.Post(() => PlayNextCommand.Execute(null));
     }
 
@@ -903,6 +968,9 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     private SongItem? GetUpcomingSong()
     {
+        if (IsPersonalFmSessionActive)
+            return GetUpcomingPersonalFmSong();
+
         if (CurrentPlayingSong == null || _queueManager.PlaybackQueue.Count <= 1) return null;
 
         var nextSong = _queueManager.GetNext(CurrentPlayingSong);
@@ -1050,6 +1118,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _autoTransitionStarted = true;
         _activeTransitionProfile = _pendingTransitionProfile;
         _incomingSteadyStateLogged = false;
+        AdvancePersonalFmSessionForAutoTransition(_preparedNextSong);
         var oldSong = CurrentPlayingSong;
         if (oldSong != null) oldSong.IsPlaying = false;
 

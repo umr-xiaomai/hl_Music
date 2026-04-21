@@ -10,6 +10,7 @@ namespace KugouAvaloniaPlayer.ViewModels;
 public partial class SongItem : ObservableObject
 {
     [ObservableProperty] private string _albumId = "";
+    [ObservableProperty] private long _audioId;
     [ObservableProperty] private string? _cover = "avares://KugouAvaloniaPlayer/Assets/default_song.png";
     [ObservableProperty] private double _durationSeconds;
     [ObservableProperty] private long _fileId; // 用于从歌单中删除歌曲
@@ -19,6 +20,7 @@ public partial class SongItem : ObservableObject
     [ObservableProperty] private bool _isPlaying;
     [ObservableProperty] private string? _localFilePath;
     [ObservableProperty] private string _name = "";
+    [ObservableProperty] private SongPlaybackSource _playbackSource = SongPlaybackSource.Default;
     [ObservableProperty] private string _singer = "";
 
     public List<SingerLite> Singers { get; set; } = new();

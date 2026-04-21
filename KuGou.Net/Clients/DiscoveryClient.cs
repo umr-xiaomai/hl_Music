@@ -80,7 +80,7 @@ public class DiscoveryClient(RawDiscoveryApi rawApi, KgSessionManager sessionMan
     /// <param name="mode">模式：'normal'(红心 Radio), 'small'(小众 Radio), 'peak'(巅峰 Radio)</param>
     /// <param name="songPoolId">推荐策略：0(根据口味), 1(根据风格), 2(特殊推荐池)</param>
     /// <param name="isOverplay">是否已播放完成</param>
-    /// <param name="remainSongCount">剩余未播歌曲数</param>
+    /// <param name="remainSongCount">剩余未播歌曲数，大于 4 不返回推荐歌曲</param>
     public async Task<PersonalFmResponse?> GetPersonalRecommendFMAsync(
         string? hash = null, 
         string? songid = null, 
