@@ -1,15 +1,30 @@
-# KA Music
+<div align="center">
+  <img src="KugouAvaloniaPlayer/Assets/Test.png" alt="KA Music Logo" width="128" />
 
-[![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-brightgreen.svg)](https://github.com/Linsxyx/KugouMusic.NET/releases)
-[![Release](https://img.shields.io/github/v/release/Linsxyx/KugouMusic.NET)](https://github.com/Linsxyx/KugouMusic.NET/releases)
+  <h1>KA Music</h1>
 
-最好用、最轻量的酷狗音乐概念版播放器，登录自动领取VIP。
 
-基于 **.NET 10 + Avalonia** 打造的跨平台桌面播放器，彻底告别浏览器套壳。由于作者是Arch和Windows双系统，而Linux上又没有一款好用的酷狗音乐播放器，所以就有了这个项目，尽可能的实现了全平台体验一致。
+  <p>
+    <a href="https://dotnet.microsoft.com"><img src="https://img.shields.io/badge/.NET-10.0-blue.svg" alt=".NET 10.0" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT" /></a>
+    <a href="https://github.com/Linsxyx/KugouMusic.NET/releases"><img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-brightgreen.svg" alt="Platform" /></a>
+    <a href="https://github.com/Linsxyx/KugouMusic.NET/releases"><img src="https://img.shields.io/github/v/release/Linsxyx/KugouMusic.NET" alt="Release" /></a>
+  </p>
 
-> 注：“最好用、最轻量”为目标与设计方向。
+  <p>
+    <a href="https://github.com/Linsxyx/KugouMusic.NET/releases">下载体验</a>
+    ·
+    <a href="https://github.com/Linsxyx/KugouMusic.NET/issues">问题反馈</a>
+    ·
+    <a href="#页面展示">查看截图</a>
+  </p>
+</div>
+
+最好用、最轻量的酷狗音乐概念版播放器，登录自动领取 VIP。
+
+项目基于 **.NET 10 + Avalonia** 打造，尽量提供一致的全平台桌面体验，而不是浏览器套壳式客户端。因为作者长期使用 Arch Linux 和 Windows 双系统，而 Linux 上又缺少一款体验完整的酷狗音乐播放器，这个项目就这样诞生了。
+
+> 注：“最好用、最轻量”是项目目标与设计方向。
 
 ## 快速开始
 
@@ -27,6 +42,7 @@
 - 在线和本地都能打：支持在线播放，也支持本地文件夹导入、本地歌词和本地播放
 - 搬家无压力：支持解析并导入网易云音乐、QQ 音乐歌单，轻松迁移歌单
 - 播放控制更到位：播放队列、随机模式、热切音质、10 段均衡器都可用
+- 智能过渡：在PC端也能体验到丝滑的智能过渡效果（点名批评网易云PC版甚至没这功能）
 
 ## 页面展示
 
@@ -44,7 +60,7 @@
 
 ### 桌面歌词
 
-Apple Music风格的滚动歌词，支持在线歌词和本地歌词，歌词浮窗全平台体验一致。
+Apple Music风味的滚动歌词，支持在线歌词和本地歌词，歌词浮窗全平台体验一致。
 
 ![歌词界面](docs/images/lyrics.gif)
 
@@ -134,7 +150,6 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 - Windows、Linux、macOS 三端可运行
 - Linux 提供 `AppImage`
 - 桌面歌词鼠标穿透支持跨平台实现
-- `SimpleAudio + ManagedBass`提供统一播放能力
 
 ## 为什么它在 Linux 上更值得用
 
@@ -205,15 +220,17 @@ KugouMusic.NET
 
 下一次更新计划：
 
-- 新增智能过渡
 - 优化滚动歌词动效和错峰延迟
-- 快捷键暂停和播放
 - 升级到 Avalonia 12
 
 ## 更新日志
 
 完整版本历史请查看 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)。
 
+
+### v1.1.1
+- 更好的桌面歌词
+- 修复无法删除歌单
 
 ### v1.1.0
 - 修复歌单超过12时选择歌单导致程序卡死
@@ -223,11 +240,6 @@ KugouMusic.NET
 - 支持音频可视化
 - 支持设置快捷键
 
-### v1.0.1
-
-- 为托盘菜单新增“显示/隐藏歌词悬浮窗”菜单项
-- 修复底部控制台和设置页面切换音质时不同步
-- 添加Linux-arm64和MacOS-x64的自动构建和发布
 
 ### v1.0.0
 

@@ -87,5 +87,8 @@
         <Compile Update="Views\DiscoverView.axaml.cs">
             <DependentUpon>DiscoverView.axaml</DependentUpon>
         </Compile>
+        <Compile Update="Views\DesktopLyricLockOverlayWindow.axaml.cs">
+          <DependentUpon>DesktopLyricLockOverlayWindow.axaml</DependentUpon>
+        </Compile>
     </ItemGroup>
 </Project>

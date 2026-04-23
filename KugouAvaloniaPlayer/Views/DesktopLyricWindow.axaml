@@ -17,27 +17,116 @@
         WindowStartupLocation="Manual">
 
     <Window.Styles>
-        <Style Selector="Grid#ControlPanel">
+        <Style Selector="Border#BackgroundPlate">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="12" />
+        </Style>
+
+        <Style Selector="Border#BackgroundPlate.interactive">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="suki|GlassCard#ControlCard">
+            <Setter Property="Width" Value="716" />
             <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsOpaque" Value="False" />
+            <Setter Property="ClipToBounds" Value="True" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0" />
+            <Setter Property="RenderTransform" Value="translateY(-6px)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.22" />
+                    <TransformOperationsTransition Property="RenderTransform"
+                                                   Duration="0:0:0.22"
+                                                   Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="suki|GlassCard#ControlCard.expanded">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="RenderTransform" Value="translateY(0)" />
+        </Style>
+
+        <Style Selector="suki|GlassCard#ControlCard.locked">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
+        <Style Selector="StackPanel#LeftControls">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="RenderTransformOrigin" Value="1,0.5" />
+            <Setter Property="RenderTransform" Value="scaleX(1)" />
             <Setter Property="Transitions">
                 <Transitions>
                     <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+                    <TransformOperationsTransition Property="RenderTransform"
+                                                   Duration="0:0:0.28"
+                                                   Easing="CubicEaseOut" />
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Window:pointerover Grid#ControlPanel">
-            <Setter Property="Opacity" Value="1" />
+
+        <Style Selector="StackPanel#LeftControls.locked">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="RenderTransform" Value="scaleX(0.02)" />
         </Style>
-        <Style Selector="Border#BackgroundPlate">
-            <Setter Property="Background" Value="#01000000" />
+
+        <Style Selector="StackPanel#RightControls">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="RenderTransformOrigin" Value="0,0.5" />
+            <Setter Property="RenderTransform" Value="scaleX(1)" />
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.2" />
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+                    <TransformOperationsTransition Property="RenderTransform"
+                                                   Duration="0:0:0.28"
+                                                   Easing="CubicEaseOut" />
                 </Transitions>
             </Setter>
         </Style>
-        <Style Selector="Window:pointerover Border#BackgroundPlate">
-            <Setter Property="Background" Value="#40000000" />
+
+        <Style Selector="StackPanel#RightControls.locked">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="RenderTransform" Value="scaleX(0.02)" />
+        </Style>
+
+        <Style Selector="Button#CenterLockButton">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.14" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button#CenterLockButton.locked">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
+        <Style Selector="Border#CollapsedLockBubble">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Background" Value="#6C383838" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform" Value="scaleX(0.72) scaleY(0.86)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.22" />
+                    <TransformOperationsTransition Property="RenderTransform"
+                                                   Duration="0:0:0.28"
+                                                   Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border#CollapsedLockBubble.locked">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="RenderTransform" Value="scaleX(1) scaleY(1)" />
+        </Style>
+
+        <Style Selector="Border#CollapsedLockBubble.locked.revealed">
+            <Setter Property="Opacity" Value="0.96" />
+            <Setter Property="RenderTransform" Value="scaleX(1.06) scaleY(1.04)" />
         </Style>
 
         <Style Selector="TextBlock.DesktopLine">
@@ -63,10 +152,129 @@
         </Style>
     </Window.Styles>
 
-    <Panel IsHitTestVisible="{Binding !IsLocked}">
+    <Grid RowDefinitions="Auto,*"
+          PointerEntered="OnControlHotspotPointerEntered"
+          PointerExited="OnControlHotspotPointerExited">
+        <Border Grid.RowSpan="2"
+                Name="BackgroundPlate"
+                Classes.interactive="{Binding IsControlBarExpanded}"
+                PointerPressed="OnLyricPointerPressed"
+                IsHitTestVisible="{Binding IsUnlockedInteractionEnabled}" />
 
-        <Border Name="BackgroundPlate" CornerRadius="10" PointerPressed="OnPointerPressed" />
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False">
+        <Grid Grid.Row="0"
+              Width="716"
+              Height="64"
+              Background="Transparent"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Top">
+            <suki:GlassCard Name="ControlCard"
+                            Classes.expanded="{Binding IsControlBarExpanded}"
+                            Classes.locked="{Binding IsLocked}"
+                            IsHitTestVisible="{Binding IsControlBarExpanded}"
+                            Padding="12,10"
+                            Margin="0,8,0,0"
+                            Background="#8C4F4F4F"
+                            BorderBrush="#26FFFFFF"
+                            BorderThickness="1"
+                            PointerPressed="OnControlSurfacePointerPressed">
+                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" ColumnSpacing="12">
+                    <StackPanel Name="LeftControls"
+                                Grid.Column="0"
+                                Classes.locked="{Binding IsLocked}"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Spacing="8">
+                        <Button Command="{Binding DecreaseFontSizeCommand}" Classes="Basic" ToolTip.Tip="减小歌词字号">
+                            <TextBlock Text="A-" Foreground="White" FontWeight="SemiBold" />
+                        </Button>
+
+                        <TextBlock Text="{Binding FontSizeDisplay}"
+                                   Foreground="White"
+                                   VerticalAlignment="Center" />
+
+                        <Button Command="{Binding IncreaseFontSizeCommand}" Classes="Basic" ToolTip.Tip="增大歌词字号">
+                            <TextBlock Text="A+" Foreground="White" FontWeight="SemiBold" />
+                        </Button>
+                    </StackPanel>
+
+                    <Button Name="CenterLockButton"
+                            Grid.Column="2"
+                            Classes.locked="{Binding IsLocked}"
+                            Command="{Binding ToggleLockCommand}"
+                            IsVisible="{Binding CanMousePassthrough}"
+                            Classes="Basic"
+                            Margin="75,-5,0,0"
+                            Cursor="Hand"
+                            ToolTip.Tip="锁定后收起为悬浮图标">
+                        <Svg Path="/Assets/lock2-svgrepo-com.svg"
+                             Width="22"
+                             Height="22"
+                             Css="path { fill: white; }" />
+                    </Button>
+
+                    <StackPanel Name="RightControls"
+                                Grid.Column="4"
+                                Classes.locked="{Binding IsLocked}"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Spacing="16">
+                        <Button Command="{Binding Player.PlayPreviousCommand}" Classes="Basic">
+                            <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="White" />
+                        </Button>
+
+                        <Button Command="{Binding Player.TogglePlayPauseCommand}" Classes="Basic">
+                            <Panel>
+                                <Svg Path="/Assets/pause-1006-svgrepo-com.svg"
+                                     Width="24"
+                                     Height="24"
+                                     Css="path { fill: white; }"
+                                     IsVisible="{Binding Player.IsPlayingAudio}" />
+                                <Svg Path="/Assets/play-1003-svgrepo-com.svg"
+                                     Width="24"
+                                     Height="24"
+                                     Css="path { fill: white; }"
+                                     IsVisible="{Binding !Player.IsPlayingAudio}" />
+                            </Panel>
+                        </Button>
+
+                        <Button Command="{Binding Player.PlayNextCommand}" Classes="Basic">
+                            <PathIcon Data="{x:Static suki:Icons.ChevronRight}" Foreground="White" />
+                        </Button>
+
+                        <Button Click="OnCloseClicked" Classes="Basic" ToolTip.Tip="关闭歌词">
+                            <PathIcon Data="{x:Static suki:Icons.Cross}" Foreground="White" Width="12" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </suki:GlassCard>
+
+            <Border Name="CollapsedLockBubble"
+                    Classes.locked="{Binding IsLocked}"
+                    Classes.revealed="{Binding IsCollapsedLockIconHovered}"
+                    IsVisible="{Binding IsEmbeddedCollapsedLockIconVisible}"
+                    IsHitTestVisible="{Binding IsCollapsedLockIconVisible}"
+                    Width="40"
+                    Height="40"
+                    Padding="8"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Margin="0,12,0,0"
+                    PointerEntered="OnCollapsedIconPointerEntered"
+                    PointerExited="OnCollapsedIconPointerExited"
+                    PointerPressed="OnCollapsedIconPointerPressed">
+                <Svg Path="/Assets/lock2-svgrepo-com.svg"
+                     Width="22"
+                     Height="22"
+                     Css="path { fill: white; }" />
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="1"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    IsHitTestVisible="False"
+                    Margin="32,0">
             <TextBlock Text="{Binding Player.CurrentLyricText}"
                        Classes="KaraokeLine DesktopLine"
                        Classes.active="True"
@@ -148,61 +356,5 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
-
-        <Grid Name="ControlPanel" ColumnDefinitions="Auto, Auto, *, Auto" VerticalAlignment="Top" Margin="10">
-            <Button Grid.Column="0"
-                    Command="{Binding ToggleLockCommand}"
-                    IsVisible="{Binding CanMousePassthrough}"
-                    Classes="Basic"
-                    Cursor="Hand"
-                    ToolTip.Tip="锁定后需在主界面关闭重开解锁">
-                <Panel>
-                    <Svg Path="/Assets/lock2-svgrepo-com.svg" Width="24" Height="24"
-                         Css="path { fill: white; }"
-                         IsVisible="{Binding !IsLocked}" />
-                    <Svg Path="/Assets/lock2-svgrepo-com.svg" Width="24" Height="24"
-                         Css="path { fill: black; }"
-                         IsVisible="{Binding IsLocked}" />
-                </Panel>
-            </Button>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8"
-                        Margin="12,0,0,0">
-                <Button Command="{Binding DecreaseFontSizeCommand}" Classes="Basic" ToolTip.Tip="减小歌词字号">
-                    <TextBlock Text="A-" Foreground="White" FontWeight="SemiBold" />
-                </Button>
-
-                <TextBlock Text="{Binding FontSizeDisplay}" Foreground="White" VerticalAlignment="Center" />
-
-                <Button Command="{Binding IncreaseFontSizeCommand}" Classes="Basic" ToolTip.Tip="增大歌词字号">
-                    <TextBlock Text="A+" Foreground="White" FontWeight="SemiBold" />
-                </Button>
-            </StackPanel>
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="15">
-                <Button Command="{Binding Player.PlayPreviousCommand}" Classes="Basic">
-                    <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="White" />
-                </Button>
-
-                <Button Command="{Binding Player.TogglePlayPauseCommand}" Classes="Basic">
-                    <Panel>
-                        <Svg Path="/Assets/pause-1006-svgrepo-com.svg" Width="24" Height="24"
-                             Css="path { fill: white; }"
-                             IsVisible="{Binding Player.IsPlayingAudio}" />
-                        <Svg Path="/Assets/play-1003-svgrepo-com.svg" Width="24" Height="24"
-                             Css="path { fill: white; }"
-                             IsVisible="{Binding !Player.IsPlayingAudio}" />
-                    </Panel>
-                </Button>
-
-                <Button Command="{Binding Player.PlayNextCommand}" Classes="Basic">
-                    <PathIcon Data="{x:Static suki:Icons.ChevronRight}" Foreground="White" />
-                </Button>
-            </StackPanel>
-
-            <Button Grid.Column="3" Click="OnCloseClicked" Classes="Basic" ToolTip.Tip="关闭歌词">
-                <PathIcon Data="{x:Static suki:Icons.Cross}" Foreground="White" Width="12" />
-            </Button>
-        </Grid>
-    </Panel>
+    </Grid>
 </Window>

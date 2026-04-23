@@ -20,7 +20,9 @@ public sealed class DesktopLyricMousePassthroughService(ILogger<DesktopLyricMous
         OperatingSystem.IsLinux() &&
         !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"));
 
-    public void Apply(Window window, bool enabled)
+    public bool SupportsSelectiveHitTesting => IsSupported;
+
+    public void Apply(Window window, DesktopLyricHitTestLayout layout)
     {
         if (!IsSupported || !_x11Available) return;
 
@@ -40,35 +42,65 @@ public sealed class DesktopLyricMousePassthroughService(ILogger<DesktopLyricMous
             display = XOpenDisplay(IntPtr.Zero);
             if (display == IntPtr.Zero) return;
 
-            if (enabled)
+            switch (layout.Mode)
             {
-                XShapeCombineRectangles(
-                    display,
-                    platformHandle.Handle,
-                    ShapeInput,
-                    0,
-                    0,
-                    null,
-                    0,
-                    ShapeSet,
-                    Unsorted);
-            }
-            else
-            {
-                var width = (ushort)Math.Clamp((int)Math.Ceiling(window.Bounds.Width), 1, ushort.MaxValue);
-                var height = (ushort)Math.Clamp((int)Math.Ceiling(window.Bounds.Height), 1, ushort.MaxValue);
-                var rects = new[] { new XRectangle(0, 0, width, height) };
+                case DesktopLyricHitTestMode.Transparent:
+                    XShapeCombineRectangles(
+                        display,
+                        platformHandle.Handle,
+                        ShapeInput,
+                        0,
+                        0,
+                        null,
+                        0,
+                        ShapeSet,
+                        Unsorted);
+                    break;
+                case DesktopLyricHitTestMode.Region:
+                    var regions = layout.InteractiveRegions;
+                    if (regions is { Count: > 0 })
+                    {
+                        var rects = new XRectangle[regions.Count];
+                        for (var i = 0; i < regions.Count; i++)
+                        {
+                            var region = regions[i];
+                            rects[i] = new XRectangle(
+                                (short)Math.Clamp(region.X, short.MinValue, short.MaxValue),
+                                (short)Math.Clamp(region.Y, short.MinValue, short.MaxValue),
+                                (ushort)Math.Clamp(region.Width, 1, ushort.MaxValue),
+                                (ushort)Math.Clamp(region.Height, 1, ushort.MaxValue));
+                        }
 
-                XShapeCombineRectangles(
-                    display,
-                    platformHandle.Handle,
-                    ShapeInput,
-                    0,
-                    0,
-                    rects,
-                    rects.Length,
-                    ShapeSet,
-                    Unsorted);
+                        XShapeCombineRectangles(
+                            display,
+                            platformHandle.Handle,
+                            ShapeInput,
+                            0,
+                            0,
+                            rects,
+                            rects.Length,
+                            ShapeSet,
+                            Unsorted);
+                        break;
+                    }
+
+                    goto case DesktopLyricHitTestMode.Transparent;
+                default:
+                    var width = (ushort)Math.Clamp((int)Math.Ceiling(window.Bounds.Width), 1, ushort.MaxValue);
+                    var height = (ushort)Math.Clamp((int)Math.Ceiling(window.Bounds.Height), 1, ushort.MaxValue);
+                    var fullWindowRect = new[] { new XRectangle(0, 0, width, height) };
+
+                    XShapeCombineRectangles(
+                        display,
+                        platformHandle.Handle,
+                        ShapeInput,
+                        0,
+                        0,
+                        fullWindowRect,
+                        fullWindowRect.Length,
+                        ShapeSet,
+                        Unsorted);
+                    break;
             }
 
             _ = XFlush(display);

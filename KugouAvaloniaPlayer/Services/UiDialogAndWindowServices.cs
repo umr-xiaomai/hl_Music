@@ -59,7 +59,12 @@ public sealed class DesktopLyricWindowService(
     IDesktopLyricMousePassthroughService desktopLyricMousePassthroughService)
     : IDesktopLyricWindowService
 {
+    private const int CollapsedIconSize = 40;
+    private const int CollapsedIconTopMargin = 12;
+
     private DesktopLyricWindow? _lyricWindow;
+    private DesktopLyricLockOverlayWindow? _lockOverlayWindow;
+    private bool _isSynchronizingWindowPositions;
 
     public bool IsOpen => _lyricWindow != null;
     public event Action<bool>? IsOpenChanged;
@@ -98,15 +103,27 @@ public sealed class DesktopLyricWindowService(
 
         PropertyChangedEventHandler onLyricViewModelPropertyChanged = (_, e) =>
         {
-            if (e.PropertyName != nameof(DesktopLyricViewModel.IsLocked)) return;
-            desktopLyricMousePassthroughService.Apply(lyricWindow, lyricViewModel.IsLocked);
+            if (e.PropertyName is nameof(DesktopLyricViewModel.IsLocked)
+                or nameof(DesktopLyricViewModel.IsControlBarExpanded)
+                or nameof(DesktopLyricViewModel.IsCollapsedLockIconHovered))
+            {
+                UpdateHitTestState(lyricWindow, lyricViewModel);
+            }
         };
 
         lyricViewModel.PropertyChanged += onLyricViewModelPropertyChanged;
 
+        lyricWindow.Opened += (_, _) => UpdateHitTestState(lyricWindow, lyricViewModel);
+        lyricWindow.PositionChanged += (_, _) =>
+        {
+            if (_isSynchronizingWindowPositions) return;
+            SyncOverlayPositionFromLyricWindow();
+        };
+
         lyricWindow.Closed += (_, _) =>
         {
-            desktopLyricMousePassthroughService.Apply(lyricWindow, false);
+            desktopLyricMousePassthroughService.Apply(lyricWindow, DesktopLyricHitTestLayout.FullWindow);
+            CloseLockOverlayWindow();
             lyricViewModel.PropertyChanged -= onLyricViewModelPropertyChanged;
             if (ReferenceEquals(_lyricWindow, lyricWindow))
                 _lyricWindow = null;
@@ -122,8 +139,126 @@ public sealed class DesktopLyricWindowService(
     {
         if (_lyricWindow == null) return;
 
-        desktopLyricMousePassthroughService.Apply(_lyricWindow, false);
+        desktopLyricMousePassthroughService.Apply(_lyricWindow, DesktopLyricHitTestLayout.FullWindow);
+        CloseLockOverlayWindow();
         _lyricWindow.Close();
+    }
+
+    private void UpdateHitTestState(Window lyricWindow, DesktopLyricViewModel lyricViewModel)
+    {
+        if (!desktopLyricMousePassthroughService.IsSupported)
+            return;
+
+        if (!lyricViewModel.IsLocked)
+        {
+            CloseLockOverlayWindow();
+            desktopLyricMousePassthroughService.Apply(lyricWindow, DesktopLyricHitTestLayout.FullWindow);
+            return;
+        }
+
+        if (desktopLyricMousePassthroughService.SupportsSelectiveHitTesting)
+        {
+            CloseLockOverlayWindow();
+            desktopLyricMousePassthroughService.Apply(
+                lyricWindow,
+                DesktopLyricHitTestLayout.ForRegions(GetCollapsedIconRegion(lyricWindow)));
+            return;
+        }
+
+        desktopLyricMousePassthroughService.Apply(lyricWindow, DesktopLyricHitTestLayout.Transparent);
+        EnsureLockOverlayWindow(lyricViewModel);
+        SyncOverlayPositionFromLyricWindow();
+    }
+
+    private void EnsureLockOverlayWindow(DesktopLyricViewModel lyricViewModel)
+    {
+        if (_lockOverlayWindow != null || _lyricWindow == null)
+            return;
+
+        var overlayWindow = new DesktopLyricLockOverlayWindow
+        {
+            DataContext = lyricViewModel,
+            Position = GetOverlayPosition(_lyricWindow)
+        };
+
+        overlayWindow.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_lockOverlayWindow, overlayWindow))
+                _lockOverlayWindow = null;
+        };
+
+        _lockOverlayWindow = overlayWindow;
+        overlayWindow.Show();
+        overlayWindow.PositionChanged += (_, _) =>
+        {
+            if (_isSynchronizingWindowPositions) return;
+            SyncLyricWindowPositionFromOverlay();
+        };
+    }
+
+    private void CloseLockOverlayWindow()
+    {
+        if (_lockOverlayWindow == null)
+            return;
+
+        var overlayWindow = _lockOverlayWindow;
+        _lockOverlayWindow = null;
+        overlayWindow.Close();
+    }
+
+    private void SyncOverlayPositionFromLyricWindow()
+    {
+        if (_lyricWindow == null || _lockOverlayWindow == null)
+            return;
+
+        _isSynchronizingWindowPositions = true;
+        try
+        {
+            _lockOverlayWindow.Position = GetOverlayPosition(_lyricWindow);
+        }
+        finally
+        {
+            _isSynchronizingWindowPositions = false;
+        }
+    }
+
+    private void SyncLyricWindowPositionFromOverlay()
+    {
+        if (_lyricWindow == null || _lockOverlayWindow == null)
+            return;
+
+        _isSynchronizingWindowPositions = true;
+        try
+        {
+            _lyricWindow.Position = GetLyricWindowPosition(_lyricWindow, _lockOverlayWindow);
+        }
+        finally
+        {
+            _isSynchronizingWindowPositions = false;
+        }
+    }
+
+    private static PixelRect GetCollapsedIconRegion(Window lyricWindow)
+    {
+        var width = (int)Math.Ceiling(lyricWindow.Bounds.Width);
+        var x = Math.Max((width - CollapsedIconSize) / 2, 0);
+        return new PixelRect(x, CollapsedIconTopMargin, CollapsedIconSize, CollapsedIconSize);
+    }
+
+    private static PixelPoint GetOverlayPosition(Window lyricWindow)
+    {
+        var region = GetCollapsedIconRegion(lyricWindow);
+        return new PixelPoint(
+            lyricWindow.Position.X + region.X - (CollapsedIconSize - region.Width) / 2,
+            lyricWindow.Position.Y + region.Y - (CollapsedIconSize - region.Height) / 2);
+    }
+
+    private static PixelPoint GetLyricWindowPosition(Window lyricWindow, Window overlayWindow)
+    {
+        var region = GetCollapsedIconRegion(lyricWindow);
+        return new PixelPoint(
+            overlayWindow.Position.X - region.X + (CollapsedIconSize - region.Width) / 2,
+            overlayWindow.Position.Y - region.Y + (CollapsedIconSize - region.Height) / 2);
     }
 }
 

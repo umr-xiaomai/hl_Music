@@ -30,6 +30,9 @@ public sealed class DesktopLyricViewModelFactory(
 {
     public DesktopLyricViewModel Create()
     {
-        return new DesktopLyricViewModel(playerViewModel, desktopLyricMousePassthroughService.IsSupported);
+        return new DesktopLyricViewModel(
+            playerViewModel,
+            desktopLyricMousePassthroughService.IsSupported,
+            usesSeparateLockOverlay: !desktopLyricMousePassthroughService.SupportsSelectiveHitTesting);
     }
 }

@@ -21,6 +21,9 @@ public partial class DesktopLyricViewModel : ViewModelBase
     [ObservableProperty] private double _fontSize = 30;
 
     [ObservableProperty] private bool _isLocked;
+    [ObservableProperty] private bool _isControlBarExpanded;
+    [ObservableProperty] private bool _isControlHotspotHovered;
+    [ObservableProperty] private bool _isCollapsedLockIconHovered;
 
     [ObservableProperty] private FontFamily? _lyricFontFamily;
     [ObservableProperty] private IBrush _lyricForeground = DefaultLyricBrush;
@@ -28,10 +31,12 @@ public partial class DesktopLyricViewModel : ViewModelBase
     [ObservableProperty] private IBrush _translationLineForeground = DefaultTranslationLineBrush;
     [ObservableProperty] private IBrush _translationWordForeground = DefaultTranslationWordBrush;
 
-    public DesktopLyricViewModel(PlayerViewModel player, bool canMousePassthrough)
+    public DesktopLyricViewModel(PlayerViewModel player, bool canMousePassthrough, bool usesSeparateLockOverlay)
     {
         Player = player;
         CanMousePassthrough = canMousePassthrough;
+        UsesSeparateLockOverlay = canMousePassthrough && usesSeparateLockOverlay;
+        IsControlBarExpanded = false;
         FontSize = ClampFontSize(SettingsManager.Settings.DesktopLyricFontSize);
         ApplyLyricStyleSettings(
             SettingsManager.Settings.DesktopLyricUseCustomMainColor,
@@ -57,10 +62,14 @@ public partial class DesktopLyricViewModel : ViewModelBase
     }
 
     public bool CanMousePassthrough { get; }
+    public bool UsesSeparateLockOverlay { get; }
 
     public PlayerViewModel Player { get; }
 
     public string FontSizeDisplay => $"{Math.Round(FontSize):0}pt";
+    public bool IsUnlockedInteractionEnabled => !IsLocked;
+    public bool IsCollapsedLockIconVisible => CanMousePassthrough && IsLocked;
+    public bool IsEmbeddedCollapsedLockIconVisible => IsCollapsedLockIconVisible && !UsesSeparateLockOverlay;
 
     [RelayCommand]
     private void ToggleLock()
@@ -93,6 +102,56 @@ public partial class DesktopLyricViewModel : ViewModelBase
         SettingsManager.Settings.DesktopLyricFontSize = value;
         SettingsManager.Save();
         OnPropertyChanged(nameof(FontSizeDisplay));
+    }
+
+    partial void OnIsLockedChanged(bool value)
+    {
+        if (value)
+        {
+            IsControlBarExpanded = false;
+            IsControlHotspotHovered = false;
+        }
+        else
+        {
+            IsControlBarExpanded = false;
+            IsControlHotspotHovered = false;
+            IsCollapsedLockIconHovered = false;
+        }
+
+        OnPropertyChanged(nameof(IsUnlockedInteractionEnabled));
+        OnPropertyChanged(nameof(IsCollapsedLockIconVisible));
+        OnPropertyChanged(nameof(IsEmbeddedCollapsedLockIconVisible));
+    }
+
+    partial void OnIsControlHotspotHoveredChanged(bool value)
+    {
+        if (IsLocked)
+            return;
+
+        IsControlBarExpanded = value;
+    }
+
+    public void SetControlHotspotHovered(bool value)
+    {
+        IsControlHotspotHovered = value;
+    }
+
+    public void SetCollapsedLockIconHovered(bool value)
+    {
+        if (!CanMousePassthrough || !IsLocked)
+        {
+            IsCollapsedLockIconHovered = false;
+            return;
+        }
+
+        IsCollapsedLockIconHovered = value;
+    }
+
+    public void Unlock()
+    {
+        IsLocked = false;
+        IsControlBarExpanded = true;
+        IsControlHotspotHovered = true;
     }
 
     private void ApplyLyricStyleSettings(

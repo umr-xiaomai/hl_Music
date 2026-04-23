@@ -65,7 +65,6 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private SongItem? _currentPlayingSong;
     [ObservableProperty] private double _currentPositionSeconds;
     private int _disposeState;
-    private bool _incomingSteadyStateLogged;
     private bool _isAnalyzingTransition;
     [ObservableProperty] private bool _isBuffering;
     [ObservableProperty] private bool _isDraggingProgress;
@@ -911,7 +910,6 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _preparedNextIsLocal = false;
         PreparedNextCover = null;
         _activeTransitionProfile = null;
-        _incomingSteadyStateLogged = false;
         _analysisFailureSongKey = null;
         _prepareFailureSongKey = null;
         if (cancelPreparedTrack)
@@ -1117,7 +1115,6 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 #endif*/
         _autoTransitionStarted = true;
         _activeTransitionProfile = _pendingTransitionProfile;
-        _incomingSteadyStateLogged = false;
         AdvancePersonalFmSessionForAutoTransition(_preparedNextSong);
         var oldSong = CurrentPlayingSong;
         if (oldSong != null) oldSong.IsPlaying = false;

@@ -20,14 +20,16 @@ public sealed class DesktopLyricMousePassthroughService : IDesktopLyricMousePass
     private readonly Dictionary<IntPtr, IntPtr> _originalExStyles = new();
 
     public bool IsSupported => true;
+    public bool SupportsSelectiveHitTesting => false;
 
-    public void Apply(Window window, bool enabled)
+    public void Apply(Window window, DesktopLyricHitTestLayout layout)
     {
         var platformHandle = window.TryGetPlatformHandle();
         if (platformHandle == null) return;
 
         var hwnd = platformHandle.Handle;
         var currentStyle = GetWindowLongPtr(hwnd, GwlExStyle);
+        var enabled = layout.Mode != DesktopLyricHitTestMode.FullWindow;
 
         if (enabled)
         {

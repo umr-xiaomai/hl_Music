@@ -56,8 +56,10 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
 
           EXE_NAME="KugouAvaloniaPlayer"
+          ICON_PATH="./KugouAvaloniaPlayer/Assets/Test.png"
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             EXE_NAME="KugouAvaloniaPlayer.exe"
+            ICON_PATH="./KugouAvaloniaPlayer/Assets/Test.ico"
           fi
 
           vpk pack \
@@ -65,7 +67,7 @@ jobs:
             -v "$VERSION" \
             -p ./publish \
             -e "$EXE_NAME" \
-            -i ./KugouAvaloniaPlayer/Assets/Test.ico \
+            -i "$ICON_PATH" \
             -o ./releases
 
       - name: Create linux-arm64 archive (no auto-update)

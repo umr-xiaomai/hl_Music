@@ -1,0 +1,59 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:KugouAvaloniaPlayer.ViewModels"
+        mc:Ignorable="d"
+        x:Class="KugouAvaloniaPlayer.Views.DesktopLyricLockOverlayWindow"
+        x:DataType="vm:DesktopLyricViewModel"
+        Width="48"
+        Height="48"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SystemDecorations="None"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent">
+
+    <Window.Styles>
+        <Style Selector="Border#LockBubble">
+            <Setter Property="Background" Value="#70353535" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform" Value="scaleX(0.72) scaleY(0.86)" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.22" />
+                    <TransformOperationsTransition Property="RenderTransform"
+                                                   Duration="0:0:0.28"
+                                                   Easing="CubicEaseOut" />
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border#LockBubble.locked">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="RenderTransform" Value="scaleX(1) scaleY(1)" />
+        </Style>
+        <Style Selector="Border#LockBubble.locked.revealed">
+            <Setter Property="Opacity" Value="0.96" />
+            <Setter Property="RenderTransform" Value="scaleX(1.06) scaleY(1.04)" />
+        </Style>
+    </Window.Styles>
+
+    <Border Name="LockBubble"
+            Classes.locked="{Binding IsLocked}"
+            Classes.revealed="{Binding IsCollapsedLockIconHovered}"
+            Width="40"
+            Height="40"
+            Padding="8"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            PointerEntered="OnHotspotPointerEntered"
+            PointerExited="OnHotspotPointerExited"
+            PointerPressed="OnHotspotPointerPressed">
+        <PathIcon Data="M16,8 A4,4 0 0 0 8,8 L8,11 L7,11 C5.9,11 5,11.9 5,13 L5,21 C5,22.1 5.9,23 7,23 L17,23 C18.1,23 19,22.1 19,21 L19,13 C19,11.9 18.1,11 17,11 L16,11 L16,8 M10,8 A2,2 0 0 1 14,8 L14,11 L10,11 L10,8 Z"
+                  Foreground="White" />
+    </Border>
+</Window>

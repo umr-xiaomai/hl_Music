@@ -10,8 +10,9 @@ public sealed class DesktopLyricMousePassthroughService : IDesktopLyricMousePass
     private static readonly IntPtr SelSetIgnoresMouseEvents = sel_registerName("setIgnoresMouseEvents:");
 
     public bool IsSupported => true;
+    public bool SupportsSelectiveHitTesting => false;
 
-    public void Apply(Window window, bool enabled)
+    public void Apply(Window window, DesktopLyricHitTestLayout layout)
     {
         var platformHandle = window.TryGetPlatformHandle();
         if (platformHandle == null) return;
@@ -19,7 +20,7 @@ public sealed class DesktopLyricMousePassthroughService : IDesktopLyricMousePass
         var nsWindow = platformHandle.Handle;
         if (nsWindow == IntPtr.Zero) return;
 
-        objc_msgSend_bool(nsWindow, SelSetIgnoresMouseEvents, enabled);
+        objc_msgSend_bool(nsWindow, SelSetIgnoresMouseEvents, layout.Mode != DesktopLyricHitTestMode.FullWindow);
     }
 
     [DllImport("/usr/lib/libobjc.A.dylib")]

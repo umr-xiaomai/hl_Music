@@ -5,5 +5,6 @@ namespace KugouAvaloniaPlayer.Services.DesktopLyric;
 public interface IDesktopLyricMousePassthroughService
 {
     bool IsSupported { get; }
-    void Apply(Window window, bool enabled);
+    bool SupportsSelectiveHitTesting { get; }
+    void Apply(Window window, DesktopLyricHitTestLayout layout);
 }
