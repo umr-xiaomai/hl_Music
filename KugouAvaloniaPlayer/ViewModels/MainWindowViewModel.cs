@@ -199,6 +199,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public AvaloniaList<PlaylistItem> SidebarOnlinePlaylists { get; } = new();
     public AvaloniaList<PlaylistItem> SidebarLocalPlaylists { get; } = new();
+    public AvaloniaList<PlaylistItem> SidebarAlbumPlaylists { get; } = new();
     public bool IsNowPlayingPrimaryLyricVisible => true;
 
     public bool IsNowPlayingTranslationVisible =>
@@ -452,9 +453,11 @@ public partial class MainWindowViewModel : ObservableObject
     {
         SidebarOnlinePlaylists.Clear();
         SidebarLocalPlaylists.Clear();
+        SidebarAlbumPlaylists.Clear();
 
         SidebarOnlinePlaylists.AddRange(PlaylistsViewModel.Items.Where(x => x.Type == PlaylistType.Online));
         SidebarLocalPlaylists.AddRange(PlaylistsViewModel.Items.Where(x => x.Type == PlaylistType.Local));
+        SidebarAlbumPlaylists.AddRange(PlaylistsViewModel.Items.Where(x => x.Type == PlaylistType.Album));
     }
 
     [RelayCommand]

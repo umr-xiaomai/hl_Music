@@ -29,8 +29,7 @@ public static class KuGouServiceCollectionExtensions
                 {
                     UseCookies = true,
                     CookieContainer = cookieContainer,
-                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                    ServerCertificateCustomValidationCallback = delegate { return true; }
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
                 };
             })
             .AddHttpMessageHandler<KgSignatureHandler>();

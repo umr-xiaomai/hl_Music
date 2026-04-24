@@ -67,7 +67,32 @@ public class PlaylistClient(RawPlaylistApi rawApi, KgSessionManager sessionManag
         var (uid, token) = GetAuth();
 
         // 调用 RawApi
-        return await rawApi.CollectPlaylistAsync(uid, token, uid, "1", sourceGlobalId, name, 1, 0);
+        return await rawApi.CollectPlaylistAsync(uid, token, uid, "1", sourceGlobalId, name, 1, 1, 0);
+    }
+
+    /// <summary>
+    ///     收藏专辑
+    /// </summary>
+    /// <param name="name">专辑名称</param>
+    /// <param name="albumId">原专辑 ID</param>
+    /// <param name="authorId">原专辑歌手 ID，未知时传 0</param>
+    public async Task<JsonElement?> CollectAlbumAsync(
+        string name,
+        long albumId,
+        long authorId = 0)
+    {
+        var (uid, token) = GetAuth();
+
+        return await rawApi.CollectPlaylistAsync(
+            uid,
+            token,
+            authorId > 0 ? authorId.ToString() : "0",
+            albumId.ToString(),
+            "",
+            name,
+            1,
+            2,
+            0);
     }
 
     /// <summary>
@@ -81,7 +106,7 @@ public class PlaylistClient(RawPlaylistApi rawApi, KgSessionManager sessionManag
     {
         var (uid, token) = GetAuth();
 
-        return await rawApi.CollectPlaylistAsync(uid, token, uid, "1", "", name, 0, isPri);
+        return await rawApi.CollectPlaylistAsync(uid, token, uid, "1", "", name, 0, 1, isPri);
     }
 
     /// <summary>

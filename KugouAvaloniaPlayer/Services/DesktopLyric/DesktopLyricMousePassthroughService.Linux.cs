@@ -2,11 +2,10 @@
 using System;
 using System.Runtime.InteropServices;
 using Avalonia.Controls;
-using Microsoft.Extensions.Logging;
 
 namespace KugouAvaloniaPlayer.Services.DesktopLyric;
 
-public sealed class DesktopLyricMousePassthroughService(ILogger<DesktopLyricMousePassthroughService> logger)
+public sealed class DesktopLyricMousePassthroughService()
     : IDesktopLyricMousePassthroughService
 {
     private const int ShapeInput = 2;
@@ -29,7 +28,7 @@ public sealed class DesktopLyricMousePassthroughService(ILogger<DesktopLyricMous
         var platformHandle = window.TryGetPlatformHandle();
         if (platformHandle == null || platformHandle.Handle == IntPtr.Zero) return;
 
-        LogRuntimeInfoOnce(platformHandle.HandleDescriptor);
+        //LogRuntimeInfoOnce(platformHandle.HandleDescriptor);
 
         // Avalonia on Linux can run on Wayland or X11/XWayland.
         // Click-through is implemented only for X11 windows.
@@ -120,7 +119,7 @@ public sealed class DesktopLyricMousePassthroughService(ILogger<DesktopLyricMous
         }
     }
 
-    private void LogRuntimeInfoOnce(string? handleDescriptor)
+    /*private void LogRuntimeInfoOnce(string? handleDescriptor)
     {
         if (_runtimeInfoLogged) return;
         _runtimeInfoLogged = true;
@@ -134,7 +133,7 @@ public sealed class DesktopLyricMousePassthroughService(ILogger<DesktopLyricMous
             handleDescriptor ?? "(null)",
             display,
             waylandDisplay);
-    }
+    }*/
 
     [DllImport("libX11.so.6")]
     private static extern IntPtr XOpenDisplay(IntPtr displayName);

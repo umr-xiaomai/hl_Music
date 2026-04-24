@@ -259,7 +259,7 @@
                             </StackPanel>
 
                             <Button Grid.Column="2" Command="{Binding CollectPlaylistCommand}"
-                                    IsVisible="{Binding IsPlaylistDetail}"
+                                    IsVisible="{Binding CanCollectDetail}"
                                     Classes="Standard Icon" VerticalAlignment="Center" Margin="10,0" ToolTip.Tip="收藏">
                                 <StackPanel Orientation="Horizontal" Spacing="5">
                                     <PathIcon Data="{x:Static suki:Icons.Star}" />

@@ -24,6 +24,8 @@ public partial class SearchViewModel(
     private const string DefaultSongCover = "avares://KugouAvaloniaPlayer/Assets/default_song.png";
     private const string DefaultCardCover = "avares://KugouAvaloniaPlayer/Assets/default_listcard.png";
     private string _currentDetailId = "";
+    private long _currentAlbumAuthorId;
+    private long _currentAlbumId;
 
     private int _currentDetailPage = 1;
     private DetailType _currentDetailType = DetailType.None;
@@ -59,6 +61,8 @@ public partial class SearchViewModel(
 
     // 当前是否显示歌单详情（用于控制收藏按钮可见性）
     public bool IsPlaylistDetail => _currentDetailType == DetailType.Playlist;
+    public bool IsAlbumDetail => _currentDetailType == DetailType.Album;
+    public bool CanCollectDetail => IsPlaylistDetail || IsAlbumDetail;
 
     [RelayCommand]
     private async Task Search()
@@ -241,12 +245,16 @@ public partial class SearchViewModel(
         DetailTitle = null;
         DetailSubTitle = null;
         DetailCover = null;
+        _currentAlbumId = 0;
+        _currentAlbumAuthorId = 0;
         _currentPlaylistGlobalId = string.Empty;
         _currentPlaylistName = string.Empty;
 
         ClearResults();
         DetailSongs.Clear();
         OnPropertyChanged(nameof(IsPlaylistDetail));
+        OnPropertyChanged(nameof(IsAlbumDetail));
+        OnPropertyChanged(nameof(CanCollectDetail));
     }
 
     [RelayCommand]
@@ -267,6 +275,8 @@ public partial class SearchViewModel(
         // 初始化状态
         _currentDetailType = DetailType.Playlist;
         OnPropertyChanged(nameof(IsPlaylistDetail));
+        OnPropertyChanged(nameof(IsAlbumDetail));
+        OnPropertyChanged(nameof(CanCollectDetail));
         _currentDetailId = item.GlobalId;
         _currentDetailPage = 1;
         _hasMoreDetails = true;
@@ -292,7 +302,11 @@ public partial class SearchViewModel(
 
         _currentDetailType = DetailType.Album;
         OnPropertyChanged(nameof(IsPlaylistDetail));
+        OnPropertyChanged(nameof(IsAlbumDetail));
+        OnPropertyChanged(nameof(CanCollectDetail));
         _currentDetailId = item.AlbumId.ToString();
+        _currentAlbumId = item.AlbumId;
+        _currentAlbumAuthorId = 0;
         _currentDetailPage = 1;
         _hasMoreDetails = true;
 
@@ -382,7 +396,19 @@ public partial class SearchViewModel(
                     }).ToList();
 
                     if (songItems.Any())
+                    {
+                        if (_currentAlbumAuthorId <= 0)
+                        {
+                            var authorId = songItems
+                                .SelectMany(x => x.Singers)
+                                .Select(x => x.Id)
+                                .FirstOrDefault(x => x > 0);
+                            if (authorId > 0)
+                                _currentAlbumAuthorId = authorId;
+                        }
+
                         DetailSongs.AddRange(songItems);
+                    }
                 }
             }
         }
@@ -426,7 +452,19 @@ public partial class SearchViewModel(
     [RelayCommand]
     private async Task CollectPlaylist()
     {
-        if (string.IsNullOrEmpty(_currentPlaylistGlobalId) || _currentDetailType != DetailType.Playlist)
+        if (_currentDetailType == DetailType.Playlist)
+        {
+            await CollectPlaylistInternalAsync();
+            return;
+        }
+
+        if (_currentDetailType == DetailType.Album)
+            await CollectAlbumInternalAsync();
+    }
+
+    private async Task CollectPlaylistInternalAsync()
+    {
+        if (string.IsNullOrEmpty(_currentPlaylistGlobalId))
             return;
 
         try
@@ -447,6 +485,43 @@ public partial class SearchViewModel(
         catch (Exception ex)
         {
             logger.LogError(ex, "收藏歌单失败");
+            toastManager.CreateToast()
+                .OfType(NotificationType.Error)
+                .WithTitle("收藏失败")
+                .WithContent(ex.Message)
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Dismiss().ByClicking()
+                .Queue();
+        }
+    }
+
+    private async Task CollectAlbumInternalAsync()
+    {
+        if (_currentAlbumId <= 0 || string.IsNullOrWhiteSpace(DetailTitle))
+            return;
+
+        try
+        {
+            var result = await playlistClient.CollectAlbumAsync(
+                DetailTitle,
+                _currentAlbumId,
+                _currentAlbumAuthorId);
+
+            if (result != null)
+            {
+                WeakReferenceMessenger.Default.Send(new RefreshPlaylistsMessage());
+                toastManager.CreateToast()
+                    .OfType(NotificationType.Success)
+                    .WithTitle("收藏成功")
+                    .WithContent($"已将专辑「{DetailTitle}」收藏到我的歌单")
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Dismiss().ByClicking()
+                    .Queue();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "收藏专辑失败");
             toastManager.CreateToast()
                 .OfType(NotificationType.Error)
                 .WithTitle("收藏失败")

@@ -263,7 +263,7 @@ public partial class FavoritePlaylistService(
                 return;
             }
 
-            var onlinePlaylists = playlists.Playlists.Where(p => !string.IsNullOrEmpty(p.ListCreateId)).ToList();
+            var onlinePlaylists = playlists.Playlists.Where(p => !string.IsNullOrEmpty(p.ListCreateId) && p.Type == 0).ToList();
             if (onlinePlaylists.Count == 0)
             {
                 ShowToast(NotificationType.Warning, "提示", "请先创建歌单");

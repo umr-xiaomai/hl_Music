@@ -65,7 +65,7 @@ public partial class PlaylistItem : ObservableObject
     [ObservableProperty] private long _listId; // 用于删除歌单的数字 ID
     [ObservableProperty] private string? _localPath;
     [ObservableProperty] private string _name = "";
-
+    [ObservableProperty] private string _subtitle = "";
 
     [ObservableProperty] private PlaylistType _type;
 }

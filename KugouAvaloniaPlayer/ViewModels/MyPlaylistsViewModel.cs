@@ -32,6 +32,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     private readonly FavoritePlaylistService _favoritePlaylistService;
     private readonly IFolderPickerService _folderPickerService;
     private readonly ILogger<MyPlaylistsViewModel> _logger;
+    private readonly AlbumClient _albumClient;
     private readonly PlaylistClient _playlistClient;
     private readonly ISukiToastManager _toastManager;
     private readonly UserClient _userClient;
@@ -51,6 +52,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     public MyPlaylistsViewModel(
         UserClient userClient,
         PlaylistClient playlistClient,
+        AlbumClient albumClient,
         FavoritePlaylistService favoritePlaylistService,
         ISukiToastManager toastManager,
         ICreatePlaylistDialogService createPlaylistDialogService,
@@ -60,6 +62,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     {
         _userClient = userClient;
         _playlistClient = playlistClient;
+        _albumClient = albumClient;
         _favoritePlaylistService = favoritePlaylistService;
         _toastManager = toastManager;
         _createPlaylistDialogService = createPlaylistDialogService;
@@ -131,17 +134,18 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         {
             var onlineItems = new List<PlaylistItem>();
             foreach (var item in onlinePlaylists.Playlists)
-                if (!string.IsNullOrEmpty(item.ListCreateId))
+                if (!string.IsNullOrEmpty(item.ListCreateId) || item.IsCollectedAlbum)
                     onlineItems.Add(new PlaylistItem
                     {
                         Name = item.Name,
-                        Id = item.ListCreateId,
+                        Id = item.IsCollectedAlbum ? item.AlbumId.ToString() : item.ListCreateId,
                         ListId = item.ListId,
                         Count = item.Count,
-                        Type = PlaylistType.Online,
+                        Type = item.IsCollectedAlbum ? PlaylistType.Album : PlaylistType.Online,
                         Cover = string.IsNullOrWhiteSpace(item.Pic)
                             ? item.ListId != 2 ? DefaultCover : LikeCover
-                            : item.Pic
+                            : item.Pic,
+                        Subtitle = item.ListCreateUsername
                     });
 
             if (onlineItems.Count > 0)
@@ -196,6 +200,10 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 await LoadMoreSongsInternal();
             }
         }
+        else if (item.Type == PlaylistType.Album)
+        {
+            await LoadAlbumSongsAsync();
+        }
         else if (item.Type == PlaylistType.Local)
         {
             await ScanLocalFolder(item.LocalPath!);
@@ -205,12 +213,16 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     [RelayCommand]
     private async Task LoadMore()
     {
-        if (SelectedPlaylist?.Type != PlaylistType.Online || IsLoadingMore || !_hasMoreSongs ||
+        if ((SelectedPlaylist?.Type != PlaylistType.Online && SelectedPlaylist?.Type != PlaylistType.Album) ||
+            IsLoadingMore || !_hasMoreSongs ||
             _isLikePlaylistLocalMode)
             return;
 
         _currentPage++;
-        await LoadMoreSongsInternal();
+        if (SelectedPlaylist?.Type == PlaylistType.Album)
+            await LoadAlbumSongsAsync();
+        else
+            await LoadMoreSongsInternal();
     }
 
     [RelayCommand]
@@ -265,6 +277,47 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         catch (Exception)
         {
             _currentPage--;
+        }
+        finally
+        {
+            IsLoadingMore = false;
+        }
+    }
+
+    private async Task LoadAlbumSongsAsync()
+    {
+        if (SelectedPlaylist == null || SelectedPlaylist.Type != PlaylistType.Album) return;
+
+        IsLoadingMore = true;
+        try
+        {
+            var songs = await _albumClient.GetSongsAsync(SelectedPlaylist.Id, _currentPage, 50);
+            if (songs == null)
+            {
+                _currentPage = Math.Max(1, _currentPage - 1);
+                _hasMoreSongs = false;
+                return;
+            }
+
+            if (songs.Count < 50) _hasMoreSongs = false;
+
+            var songItems = songs.Select(s => new SongItem
+            {
+                Name = s.Name,
+                Singer = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知",
+                Hash = s.Hash,
+                AlbumId = s.AlbumId,
+                Singers = s.Singers,
+                Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,
+                DurationSeconds = s.DurationMs / 1000.0
+            }).ToList();
+
+            if (songItems.Count > 0)
+                SelectedPlaylistSongs.AddRange(songItems);
+        }
+        catch (Exception)
+        {
+            _currentPage = Math.Max(1, _currentPage - 1);
         }
         finally
         {
@@ -534,7 +587,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     [RelayCommand]
     private async Task DeleteOnlinePlaylist(PlaylistItem? item)
     {
-        if (item == null || item.Type != PlaylistType.Online) return;
+        if (item == null || (item.Type != PlaylistType.Online && item.Type != PlaylistType.Album)) return;
 
         try
         {
@@ -542,14 +595,19 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
             if (result != null)
             {
                 var removed = RemoveOnlinePlaylistLocally(item);
-                _logger.LogInformation("删除歌单后本地移除结果: removed={Removed}, listId={ListId}, id={Id}",
-                    removed, item.ListId, item.Id);
+                _logger.LogInformation("移除收藏项后本地移除结果: removed={Removed}, type={Type}, listId={ListId}, id={Id}",
+                    removed, item.Type, item.ListId, item.Id);
                 _ = SchedulePlaylistsRefreshAsync("DeleteOnlinePlaylist", 1500);
+
+                var successTitle = item.Type == PlaylistType.Album ? "取消收藏成功" : "删除成功";
+                var successContent = item.Type == PlaylistType.Album
+                    ? $"已取消收藏专辑「{item.Name}」"
+                    : $"已删除歌单「{item.Name}」";
 
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Success)
-                    .WithTitle("删除成功")
-                    .WithContent($"已删除歌单「{item.Name}」")
+                    .WithTitle(successTitle)
+                    .WithContent(successContent)
                     .Dismiss().After(TimeSpan.FromSeconds(3))
                     .Dismiss().ByClicking()
                     .Queue();
@@ -557,9 +615,10 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
         }
         catch (Exception ex)
         {
+            var failTitle = item.Type == PlaylistType.Album ? "取消收藏失败" : "删除失败";
             _toastManager.CreateToast()
                 .OfType(NotificationType.Error)
-                .WithTitle("删除失败")
+                .WithTitle(failTitle)
                 .WithContent(ex.Message)
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Dismiss().ByClicking()
@@ -570,7 +629,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
     private bool RemoveOnlinePlaylistLocally(PlaylistItem item)
     {
         var target = Items.FirstOrDefault(x =>
-            x.Type == PlaylistType.Online &&
+            (x.Type == PlaylistType.Online || x.Type == PlaylistType.Album) &&
             (x.ListId == item.ListId || (!string.IsNullOrEmpty(item.Id) && x.Id == item.Id)));
 
         if (target == null)

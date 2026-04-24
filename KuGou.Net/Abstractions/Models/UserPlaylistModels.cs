@@ -32,6 +32,9 @@ public record UserPlaylistItem : KgBaseModel
 
     [JsonPropertyName("list_create_gid")] public string ListCreateId { get; set; } = "";
 
+    [JsonPropertyName("list_create_listid")]
+    public long ListCreateListId { get; set; }
+
     // 歌曲数量
     [JsonPropertyName("count")] public int Count { get; set; }
 
@@ -48,4 +51,18 @@ public record UserPlaylistItem : KgBaseModel
 
     // 创建时间
     [JsonPropertyName("create_time")] public long CreateTime { get; set; }
+
+    //是否可添加歌曲进歌单
+    [JsonPropertyName("type")] public int Type { get; set; }
+
+    [JsonPropertyName("musiclib_id")] public long MusiclibId { get; set; }
+
+    [JsonPropertyName("list_create_username")]
+    public string ListCreateUsername { get; set; } = "";
+
+    [JsonIgnore]
+    public bool IsCollectedAlbum => string.IsNullOrWhiteSpace(ListCreateId);
+
+    [JsonIgnore]
+    public long AlbumId => MusiclibId > 0 ? MusiclibId : ListCreateListId;
 }

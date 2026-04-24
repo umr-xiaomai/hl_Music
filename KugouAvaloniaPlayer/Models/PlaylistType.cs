@@ -4,5 +4,6 @@ public enum PlaylistType
 {
     Online,
     Local,
-    AddButton
+    AddButton,
+    Album
 }
