@@ -134,7 +134,7 @@ public partial class PlayerViewModel
         CancelAndDisposeDelayedVisualSwitchCancellation();
         ResetTransitionPipeline(true);
         _playbackTimer.Stop();
-        InvalidatePendingStreamLoads();
+        _playbackCoordinator.InvalidatePendingLoads();
         _player.Stop();
         IsPlayingAudio = false;
         CurrentLyricText = "---";

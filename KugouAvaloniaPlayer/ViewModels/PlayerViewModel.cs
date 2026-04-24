@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using KuGou.Net.Clients;
-using KuGou.Net.Protocol.Session;
 using KugouAvaloniaPlayer.Models;
 using KugouAvaloniaPlayer.Services;
 using Microsoft.Extensions.Logging;
@@ -38,15 +36,14 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private readonly FavoritePlaylistService _favoriteService;
     private readonly ILogger<PlayerViewModel> _logger;
     private readonly LyricsService _lyricsService;
-    private readonly MusicClient _musicClient;
     private readonly DispatcherTimer _playbackTimer;
+    private readonly IPlaybackCoordinator _playbackCoordinator;
+    private readonly IPlaybackSourceResolver _playbackSourceResolver;
 
     private readonly DualTrackAudioPlayer _player;
-    private readonly SemaphoreSlim _streamLoadGate = new(1, 1);
     private readonly SemaphoreSlim _playSongLock = new(1, 1);
 
     private readonly PlaybackQueueManager _queueManager;
-    private readonly KgSessionManager _sessionManager;
     private readonly List<PlaybackTelemetryPoint> _tailTelemetry = [];
     private readonly ISukiToastManager _toastManager;
     private readonly ITransitionAnalysisService _transitionAnalysisService;
@@ -59,7 +56,6 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private int _lyricsLoadVersion;
 
     private int _consecutiveFailures;
-    private int _streamLoadOperationVersion;
 
     [ObservableProperty] private LyricLineViewModel? _currentLyricLine;
     [ObservableProperty] private string _currentLyricText = "---";
@@ -98,21 +94,22 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     private CancellationTokenSource? _transitionWorkCancellation;
 
     public PlayerViewModel(
-        MusicClient musicClient, DiscoveryClient discoveryClient, ISukiToastManager toastManager, ILogger<PlayerViewModel> logger,
+        DiscoveryClient discoveryClient, ISukiToastManager toastManager, ILogger<PlayerViewModel> logger,
         PlaybackQueueManager queueManager, LyricsService lyricsService, FavoritePlaylistService favoriteService,
-        KgSessionManager sessionManager, ITransitionAnalysisService transitionAnalysisService)
+        ITransitionAnalysisService transitionAnalysisService, IPlaybackSourceResolver playbackSourceResolver,
+        IPlaybackCoordinator playbackCoordinator)
     {
-        _musicClient = musicClient;
         _discoveryClient = discoveryClient;
         _toastManager = toastManager;
         _logger = logger;
         _queueManager = queueManager;
         _lyricsService = lyricsService;
         _favoriteService = favoriteService;
-        _sessionManager = sessionManager;
         _transitionAnalysisService = transitionAnalysisService;
+        _playbackSourceResolver = playbackSourceResolver;
+        _playbackCoordinator = playbackCoordinator;
 
-        _player = new DualTrackAudioPlayer();
+        _player = playbackCoordinator.Player;
         _player.PlaybackEnded += OnPlaybackEnded;
         MusicQuality = SettingsManager.Settings.MusicQuality;
         IsSeamlessTransitionEnabled = SettingsManager.Settings.EnableSeamlessTransition;
@@ -154,14 +151,12 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         CancelAndDisposeDelayedVisualSwitchCancellation();
         CancelAndDisposeTransitionCancellation();
         ClearPersonalFmSession();
-        _streamLoadGate.Dispose();
         _playSongLock.Dispose();
         _playbackTimer.Stop();
         _playbackTimer.Tick -= OnPlaybackTimerTick;
         _player.PlaybackEnded -= OnPlaybackEnded;
         _queueManager.PlaybackQueue.CollectionChanged -= OnPlaybackQueueCollectionChanged;
         PersonalFmStateChanged -= SyncDisplayPlaybackQueue;
-        _player.Dispose();
         _queueManager.Clear();
         _lyricsService.Clear();
         GC.SuppressFinalize(this);
@@ -179,22 +174,6 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var localFilePath = song.LocalFilePath;
-            var isLocalSong = !string.IsNullOrWhiteSpace(localFilePath) && File.Exists(localFilePath);
-
-            if (!isLocalSong &&
-                (string.IsNullOrEmpty(_sessionManager.Session.Token) || _sessionManager.Session.UserId == "0"))
-            {
-                _toastManager.CreateToast()
-                    .OfType(NotificationType.Warning)
-                    .WithTitle("请先登录")
-                    .WithContent("登录后才能播放音乐")
-                    .Dismiss().After(TimeSpan.FromSeconds(3))
-                    .Dismiss().ByClicking()
-                    .Queue();
-                return;
-            }
-
             if (_consecutiveFailures >= MaxConsecutiveFailures)
             {
                 _toastManager.CreateToast()
@@ -212,6 +191,18 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
             var currentLoadCts = new CancellationTokenSource();
             _loadCancellation = currentLoadCts;
 
+            var sourceInfo = await ResolvePlaybackSourceAsync(song, currentLoadCts.Token);
+            if (!sourceInfo.Success || string.IsNullOrWhiteSpace(sourceInfo.Source))
+            {
+                ShowPlaybackSourceFailure(sourceInfo.FailureReason);
+                CancelAndDisposeLoadCancellation();
+                if (sourceInfo.FailureReason == PlaybackSourceFailureReason.LoginRequired)
+                    return;
+
+                HandlePlayError(song, requestVersion);
+                return;
+            }
+
             _queueManager.SetupQueue(song, contextList);
             ResetTransitionPipeline(true);
             ResetTailTelemetry();
@@ -225,19 +216,13 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
             StopAndReset();
 
-            var sourceInfo = await ResolvePlaybackSourceAsync(song, currentLoadCts.Token);
-            if (sourceInfo.Source == null)
-            {
-                HandlePlayError(song, requestVersion);
-                return;
-            }
-
             StartLyricsLoad(song, sourceInfo.IsLocal);
 
             if (requestVersion != _playRequestVersion || currentLoadCts.IsCancellationRequested) return;
 
             var loadSuccess =
-                await TryLoadStreamAsync(sourceInfo.Source, song.Name, AudioLoadTimeout, currentLoadCts.Token);
+                await _playbackCoordinator.LoadAsync(sourceInfo.Source, song.Name, AudioLoadTimeout,
+                    currentLoadCts.Token);
 
             if (loadSuccess)
             {
@@ -273,69 +258,6 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task<bool> TryLoadStreamAsync(
-        string url,
-        string songName,
-        TimeSpan timeout,
-        CancellationToken cancellationToken)
-    {
-        var operationVersion = Interlocked.Increment(ref _streamLoadOperationVersion);
-        try
-        {
-            var loadTask = Task.Run(async () =>
-            {
-                await _streamLoadGate.WaitAsync().ConfigureAwait(false);
-                try
-                {
-                    if (operationVersion != Volatile.Read(ref _streamLoadOperationVersion) ||
-                        cancellationToken.IsCancellationRequested)
-                        return false;
-
-                    var loaded = _player.Load(url);
-                    if (!loaded)
-                        return false;
-
-                    if (operationVersion != Volatile.Read(ref _streamLoadOperationVersion) ||
-                        cancellationToken.IsCancellationRequested)
-                    {
-                        _player.Stop();
-                        return false;
-                    }
-
-                    return true;
-                }
-                finally
-                {
-                    _streamLoadGate.Release();
-                }
-            }, CancellationToken.None);
-            var completed = await Task.WhenAny(loadTask, Task.Delay(timeout, cancellationToken));
-            if (completed != loadTask)
-            {
-                if (cancellationToken.IsCancellationRequested) return false;
-                InvalidatePendingStreamLoads();
-                _logger.LogWarning("加载歌曲超时: {SongName}, timeout={Timeout}s", songName, timeout.TotalSeconds);
-                return false;
-            }
-
-            if (cancellationToken.IsCancellationRequested ||
-                operationVersion != Volatile.Read(ref _streamLoadOperationVersion))
-                return false;
-
-            return await loadTask;
-        }
-        catch (OperationCanceledException)
-        {
-            InvalidatePendingStreamLoads();
-            return false;
-        }
-    }
-
-    private void InvalidatePendingStreamLoads()
-    {
-        Interlocked.Increment(ref _streamLoadOperationVersion);
-    }
-
     private void CancelAndDisposeLoadCancellation()
     {
         var cts = Interlocked.Exchange(ref _loadCancellation, null);
@@ -344,7 +266,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         try
         {
             cts.Cancel();
-            InvalidatePendingStreamLoads();
+            _playbackCoordinator.InvalidatePendingLoads();
         }
         catch (ObjectDisposedException)
         {
@@ -394,19 +316,31 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         _ = Task.Run(async () =>
         {
             await Task.Delay(1000);
-            if (requestVersion != Volatile.Read(ref _playRequestVersion) ||
-                requestVersion != Volatile.Read(ref _streamLoadOperationVersion))
+            if (requestVersion != Volatile.Read(ref _playRequestVersion))
                 return;
 
             Dispatcher.UIThread.Post(() =>
             {
-                if (requestVersion != Volatile.Read(ref _playRequestVersion) ||
-                    requestVersion != Volatile.Read(ref _streamLoadOperationVersion))
+                if (requestVersion != Volatile.Read(ref _playRequestVersion))
                     return;
 
                 PlayNextCommand.Execute(null);
             });
         });
+    }
+
+    private void ShowPlaybackSourceFailure(PlaybackSourceFailureReason reason)
+    {
+        if (reason != PlaybackSourceFailureReason.LoginRequired)
+            return;
+
+        _toastManager.CreateToast()
+            .OfType(NotificationType.Warning)
+            .WithTitle("请先登录")
+            .WithContent("登录后才能播放音乐")
+            .Dismiss().After(TimeSpan.FromSeconds(3))
+            .Dismiss().ByClicking()
+            .Queue();
     }
 
 }

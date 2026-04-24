@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -197,12 +196,6 @@ public partial class PlayerViewModel
             return true;
         }
 
-        if (!string.IsNullOrWhiteSpace(currentSong.LocalFilePath) && File.Exists(currentSong.LocalFilePath))
-        {
-            MusicQuality = quality;
-            return true;
-        }
-
         await _playSongLock.WaitAsync();
         IsSwitchingQuality = true;
         try
@@ -214,27 +207,23 @@ public partial class PlayerViewModel
                 return true;
             }
 
-            var playData = await _musicClient.GetPlayInfoAsync(currentSong.Hash, quality);
-            if (playData == null || playData.Status != 1)
+            var currentLoadCts = new CancellationTokenSource();
+            var sourceInfo = await _playbackSourceResolver.ResolveAsync(currentSong, quality, currentLoadCts.Token);
+            if (sourceInfo.IsLocal)
             {
-                RevertQualitySelectionToCurrentQuality();
-                _toastManager.CreateToast()
-                    .OfType(NotificationType.Warning)
-                    .WithTitle("切换音质失败")
-                    .WithContent("当前音质暂不可用，已保持原音质。")
-                    .Dismiss().After(TimeSpan.FromSeconds(3))
-                    .Queue();
-                return false;
+                currentLoadCts.Dispose();
+                MusicQuality = quality;
+                return true;
             }
 
-            var url = playData.Urls?.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-            if (string.IsNullOrWhiteSpace(url))
+            if (!sourceInfo.Success || string.IsNullOrWhiteSpace(sourceInfo.Source))
             {
+                currentLoadCts.Dispose();
                 RevertQualitySelectionToCurrentQuality();
                 _toastManager.CreateToast()
                     .OfType(NotificationType.Warning)
                     .WithTitle("切换音质失败")
-                    .WithContent("没有获取到新的播放地址。")
+                    .WithContent(GetQualitySwitchFailureMessage(sourceInfo.FailureReason))
                     .Dismiss().After(TimeSpan.FromSeconds(3))
                     .Queue();
                 return false;
@@ -245,13 +234,13 @@ public partial class PlayerViewModel
 
             CancelAndDisposeLoadCancellation();
             ResetTransitionPipeline(true);
-            var currentLoadCts = new CancellationTokenSource();
             _loadCancellation = currentLoadCts;
 
             _playbackTimer.Stop();
             _player.Stop();
 
-            var loadSuccess = await TryLoadStreamAsync(url, currentSong.Name, AudioLoadTimeout, currentLoadCts.Token);
+            var loadSuccess = await _playbackCoordinator.LoadAsync(sourceInfo.Source, currentSong.Name,
+                AudioLoadTimeout, currentLoadCts.Token);
             if (!loadSuccess)
             {
                 RevertQualitySelectionToCurrentQuality();
@@ -308,6 +297,16 @@ public partial class PlayerViewModel
             IsSwitchingQuality = false;
             _playSongLock.Release();
         }
+    }
+
+    private static string GetQualitySwitchFailureMessage(PlaybackSourceFailureReason reason)
+    {
+        return reason switch
+        {
+            PlaybackSourceFailureReason.LoginRequired => "登录后才能切换在线播放音质。",
+            PlaybackSourceFailureReason.EmptyUrl => "没有获取到新的播放地址。",
+            _ => "当前音质暂不可用，已保持原音质。"
+        };
     }
 
     private float[] GetEqPreset(string preset)

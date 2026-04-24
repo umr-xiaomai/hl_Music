@@ -73,6 +73,8 @@ public partial class App : Application
         collection.AddSingleton<PlaybackQueueManager>();
         collection.AddSingleton<LyricsService>();
         collection.AddSingleton<FavoritePlaylistService>();
+        collection.AddSingleton<IPlaybackSourceResolver, PlaybackSourceResolver>();
+        collection.AddSingleton<IPlaybackCoordinator, PlaybackCoordinator>();
         collection.AddSingleton<ITransitionAnalysisService, ManagedBassTransitionAnalysisService>();
         collection.AddSingleton<PlayerViewModel>();
 

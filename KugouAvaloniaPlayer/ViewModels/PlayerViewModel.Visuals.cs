@@ -1,31 +1,19 @@
 using System;
-using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using KugouAvaloniaPlayer.Services;
 using Microsoft.Extensions.Logging;
 
 namespace KugouAvaloniaPlayer.ViewModels;
 
 public partial class PlayerViewModel
 {
-    private async Task<(string? Source, bool IsLocal)> ResolvePlaybackSourceAsync(
+    private Task<PlaybackSourceResult> ResolvePlaybackSourceAsync(
         SongItem song,
         CancellationToken cancellationToken)
     {
-        var localFilePath = song.LocalFilePath;
-        var isLocalSong = !string.IsNullOrWhiteSpace(localFilePath) && File.Exists(localFilePath);
-        if (isLocalSong)
-            return (localFilePath, true);
-
-        cancellationToken.ThrowIfCancellationRequested();
-        var playData = await _musicClient.GetPlayInfoAsync(song.Hash, MusicQuality);
-        if (playData == null || playData.Status != 1)
-            return (null, false);
-
-        var url = playData.Urls?.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-        return (url, false);
+        return _playbackSourceResolver.ResolveAsync(song, MusicQuality, cancellationToken);
     }
 
     private void StartLyricsLoad(SongItem song, bool isLocal)

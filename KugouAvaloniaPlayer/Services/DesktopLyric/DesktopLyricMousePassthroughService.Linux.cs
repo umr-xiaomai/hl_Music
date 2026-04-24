@@ -11,7 +11,6 @@ public sealed class DesktopLyricMousePassthroughService()
     private const int ShapeInput = 2;
     private const int ShapeSet = 0;
     private const int Unsorted = 0;
-    private bool _runtimeInfoLogged;
 
     private bool _x11Available = true;
 
@@ -28,11 +27,9 @@ public sealed class DesktopLyricMousePassthroughService()
         var platformHandle = window.TryGetPlatformHandle();
         if (platformHandle == null || platformHandle.Handle == IntPtr.Zero) return;
 
-        //LogRuntimeInfoOnce(platformHandle.HandleDescriptor);
-
-        // Avalonia on Linux can run on Wayland or X11/XWayland.
-        // Click-through is implemented only for X11 windows.
-        if (!string.Equals(platformHandle.HandleDescriptor, "XID", StringComparison.OrdinalIgnoreCase))
+            // Avalonia on Linux can run on Wayland or X11/XWayland.
+            // Click-through is implemented only for X11 windows.
+            if (!string.Equals(platformHandle.HandleDescriptor, "XID", StringComparison.OrdinalIgnoreCase))
             return;
 
         var display = IntPtr.Zero;
@@ -118,22 +115,6 @@ public sealed class DesktopLyricMousePassthroughService()
                 _ = XCloseDisplay(display);
         }
     }
-
-    /*private void LogRuntimeInfoOnce(string? handleDescriptor)
-    {
-        if (_runtimeInfoLogged) return;
-        _runtimeInfoLogged = true;
-
-        var display = Environment.GetEnvironmentVariable("DISPLAY") ?? "(null)";
-        var waylandDisplay = Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") ?? "(null)";
-
-        logger.LogInformation(
-            "Desktop lyric mouse passthrough runtime: HandleDescriptor={HandleDescriptor}, DISPLAY={Display}, WAYLAND_DISPLAY={WaylandDisplay}. " +
-            "Only XID (X11/XWayland) supports click-through.",
-            handleDescriptor ?? "(null)",
-            display,
-            waylandDisplay);
-    }*/
 
     [DllImport("libX11.so.6")]
     private static extern IntPtr XOpenDisplay(IntPtr displayName);

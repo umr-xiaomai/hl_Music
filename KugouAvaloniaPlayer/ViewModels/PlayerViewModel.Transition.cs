@@ -118,7 +118,7 @@ public partial class PlayerViewModel
                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, transitionCts.Token);
             var sourceInfo = await ResolvePlaybackSourceAsync(nextSong, linkedCts.Token);
             if (requestVersion != _playRequestVersion || linkedCts.IsCancellationRequested ||
-                string.IsNullOrWhiteSpace(sourceInfo.Source))
+                !sourceInfo.Success || string.IsNullOrWhiteSpace(sourceInfo.Source))
                 return;
 
             if (!_player.PrepareNext(sourceInfo.Source))
