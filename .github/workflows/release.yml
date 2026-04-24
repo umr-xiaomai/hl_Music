@@ -332,6 +332,7 @@ jobs:
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
+          draft: true
           files: ./release_files/*
           body_path: RELEASE_NOTES.md
           token: ${{ secrets.GITHUB_TOKEN }}
