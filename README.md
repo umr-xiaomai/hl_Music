@@ -31,6 +31,7 @@
 - 下载地址：[Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)
 - 问题反馈：[Issues](https://github.com/Linsxyx/KugouMusic.NET/issues)
 - 桌面客户端：`KugouAvaloniaPlayer`
+- 终端播放器：`KgTest`
 - 开发者入口：`KuGou.Net` / `KgWebApi.Net` / `SimpleAudio`
 
 ## 为什么值得用
@@ -179,10 +180,43 @@ xattr -dr com.apple.quarantine /Applications/KugouAvaloniaPlayer.app
 这个仓库不只有播放器本体，也包含围绕酷狗能力做的几个底层项目。
 
 - `KugouAvaloniaPlayer`：Avalonia 桌面客户端，也就是现在的 `KA Music`
+- `KgTest`：终端 TUI 播放器
 - `KuGou.Net`：酷狗业务 SDK，封装登录、搜索、歌单、歌词、榜单、用户等能力
 - `KgWebApi.Net`：基于 SDK 的 ASP.NET Core Web API 封装
 - `SimpleAudio`：基于 ManagedBass 的跨平台播放与音效层
 - `KuGou.Net.Native`：把 SDK 能力导出为 Native AOT 友好的 C ABI
+
+## 终端播放器 KgTest
+
+`KgTest` 一个测试用的终端播放器，功能还算凑合，目前也把智能过渡功能加上了，想试试的肯定都会自己打包的。
+
+主要能力：
+
+- TUI 三栏界面：导航、内容列表、当前播放状态
+- 每日推荐、私人 FM、发现歌单、排行榜、搜索、我的歌单、播放队列
+- 在线播放、歌词同步、播放队列、随机模式、音质切换
+- 10 段 EQ、环绕音效、智能过渡
+- 沉浸播放页：大面积渐变频谱、歌词、播放进度
+
+常用快捷键：
+
+| 快捷键 | 功能 |
+| --- | --- |
+| `←` / `→` 或 `Tab` | 切换页面 |
+| `↑` / `↓` | 移动选择 |
+| `Enter` | 打开歌单 / 播放歌曲 / 调整当前设置项 |
+| `Space` | 播放 / 暂停 |
+| `n` / `b` | 下一首 / 上一首 |
+| `[` / `]` | 快退 / 快进 10 秒 |
+| `/` | 搜索 |
+| `i` | 进入 / 退出沉浸播放页 |
+| `+` / `-` | 普通页面调音量；设置页调整当前设置或 EQ |
+| `s` | 随机播放 |
+| `t` | 智能过渡开关 |
+| `l` | 歌词显示模式切换 |
+| `e` | 进入设置页；设置页内切换环绕 |
+| `F5` / `F6` / `F9` | 二维码登录 / 短信登录 / 退出登录 |
+| `q` / `Esc` | 返回 / 退出 |
 
 ### 本地开发
 
@@ -194,6 +228,12 @@ dotnet restore KugouMusic.NET.slnx
 dotnet build KugouMusic.NET.slnx
 
 dotnet run --project KugouAvaloniaPlayer/KugouAvaloniaPlayer.csproj
+```
+
+如需运行终端播放器：
+
+```bash
+dotnet run --project KgTest/KgTest.csproj
 ```
 
 如需运行 Web API：
@@ -209,6 +249,7 @@ Web API 文档（开发环境）：`http://localhost:5058/scalar/v1`
 ```text
 KugouMusic.NET
 ├─ KugouAvaloniaPlayer   # Avalonia 桌面客户端
+├─ KgTest                # 终端 TUI 播放器
 ├─ KuGou.Net             # 核心 SDK
 ├─ SimpleAudio           # 音频播放与音效层
 ├─ KgWebApi.Net          # ASP.NET Core Web API
@@ -227,10 +268,9 @@ KugouMusic.NET
 
 完整版本历史请查看 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)。
 
-
-### v1.1.1
-- 更好的桌面歌词
-- 修复无法删除歌单
+### v1.2.0
+- 更好的智能过渡
+- 支持专辑的收藏
 
 ### v1.1.0
 - 修复歌单超过12时选择歌单导致程序卡死
