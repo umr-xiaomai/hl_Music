@@ -84,16 +84,18 @@
         </Style>
 
         <Style Selector="Border.VisualizerBar">
-            <Setter Property="Width" Value="6" />
+            <Setter Property="Width" Value="10" />
             <Setter Property="CornerRadius" Value="999" />
             <Setter Property="VerticalAlignment" Value="Bottom" />
             <Setter Property="Background">
                 <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
-                    <GradientStop Color="#45FFFFFF" Offset="0" />
-                    <GradientStop Color="#B8FFFFFF" Offset="0.6" />
-                    <GradientStop Color="#F5FFFFFF" Offset="1" />
+                    <GradientStop Color="#22FFFFFF" Offset="0" />
+                    <GradientStop Color="#9A22D3EE" Offset="0.36" />
+                    <GradientStop Color="#E8FFFFFF" Offset="0.7" />
+                    <GradientStop Color="#CFF472B6" Offset="1" />
                 </LinearGradientBrush>
             </Setter>
+            <Setter Property="BoxShadow" Value="0 0 36 0 #8022D3EE" />
         </Style>
 
         <Style Selector="StackPanel#AlbumMotionContainer">
@@ -136,12 +138,47 @@
                     <BlurEffect Radius="100" />
                 </controls:AsyncImage.Effect>
             </controls:AsyncImage>
+
+            <Grid IsHitTestVisible="False"
+                  IsVisible="{Binding Player.IsNowPlayingVisualizerEnabled}"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  RowDefinitions="*,Auto"
+                  Opacity="0.96">
+                <ItemsControl Grid.Row="1"
+                              Height="320"
+                              Margin="-80,0,-80,-28"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Bottom"
+                              ItemsSource="{Binding Player.NowPlayingVisualizerBars}">
+                    <ItemsControl.Effect>
+                        <BlurEffect Radius="1.6" />
+                    </ItemsControl.Effect>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="8"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Bottom" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:AudioVisualizerBarViewModel">
+                            <Border Classes="VisualizerBar"
+                                    Height="{Binding Height}"
+                                    Opacity="{Binding Opacity}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+
             <Border Background="#50000000" />
             <Border>
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                        <GradientStop Color="#20000000" Offset="0" />
-                        <GradientStop Color="#80000000" Offset="1" />
+                        <GradientStop Color="#24000000" Offset="0" />
+                        <GradientStop Color="#64000000" Offset="0.48" />
+                        <GradientStop Color="#90000000" Offset="1" />
                     </LinearGradientBrush>
                 </Border.Background>
             </Border>
@@ -263,7 +300,6 @@
                             </StackPanel>
 
                             <Grid Grid.Row="1"
-                                  RowDefinitions="Auto, 78"
                                   MinWidth="220"
                                   MaxWidth="420"
                                   Margin="0,4,0,0"
@@ -275,29 +311,6 @@
                                             HorizontalAlignment="Stretch"
                                             Classes="Player" />
                                 </Grid>
-
-                                <ItemsControl Grid.Row="1"
-                                              Height="64"
-                                              Margin="0,14,0,0"
-                                              HorizontalAlignment="Center"
-                                              IsVisible="{Binding Player.IsNowPlayingVisualizerEnabled}"
-                                              VerticalAlignment="Bottom"
-                                              ItemsSource="{Binding Player.NowPlayingVisualizerBars}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal"
-                                                        Spacing="5"
-                                                        HorizontalAlignment="Center" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:AudioVisualizerBarViewModel">
-                                            <Border Classes="VisualizerBar"
-                                                    Height="{Binding Height}"
-                                                    Opacity="{Binding Opacity}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
                             </Grid>
 
                             <Grid Grid.Row="2"
