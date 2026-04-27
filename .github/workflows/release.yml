@@ -19,7 +19,7 @@ jobs:
           - os: ubuntu-latest
             rid: linux-x64
             name: linux-x64
-          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
             rid: linux-arm64
             name: linux-arm64
 
@@ -34,6 +34,13 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Install Linux NativeAOT prerequisites
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev
+
       - name: Install Velopack CLI
         shell: bash
         run: dotnet tool install -g vpk
@@ -47,7 +54,16 @@ jobs:
             "-p:BUILD_VERSION=$CLEAN_VERSION" \
             -r ${{ matrix.rid }} \
             --self-contained true \
+            -p:PublishAot=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
             -o ./publish
+
+      - name: Remove debug symbol files
+        shell: bash
+        run: |
+          find ./publish -type d -name '*.dSYM' -prune -exec rm -rf {} +
+          find ./publish -type f \( -name '*.pdb' -o -name '*.dbg' \) -delete
 
       - name: Pack with Velopack
         if: ${{ matrix.rid != 'linux-arm64' }}
@@ -87,12 +103,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - rid: osx-arm64
+          - os: macos-latest
+            rid: osx-arm64
             name: macos-arm64
-          - rid: osx-x64
+          - os: macos-15-intel
+            rid: osx-x64
             name: macos-x64
 
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
 
     env:
       APP_NAME: KugouAvaloniaPlayer
@@ -147,7 +165,16 @@ jobs:
             "-p:BUILD_VERSION=$VERSION" \
             -r "$RID" \
             --self-contained true \
+            -p:PublishAot=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
             -o ./publish/macos
+
+      - name: Remove debug symbol files
+        shell: bash
+        run: |
+          find ./publish/macos -type d -name '*.dSYM' -prune -exec rm -rf {} +
+          find ./publish/macos -type f \( -name '*.pdb' -o -name '*.dbg' \) -delete
 
       - name: Create .app bundle
         shell: bash
