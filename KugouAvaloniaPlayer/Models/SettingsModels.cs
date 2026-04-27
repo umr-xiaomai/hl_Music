@@ -114,6 +114,7 @@ public class AppSettings
     public string DesktopLyricCustomFontFamily { get; set; } = string.Empty;
     public LyricAlignmentOption DesktopLyricAlignment { get; set; } = LyricAlignmentOption.Left;
     public double DesktopLyricFontSize { get; set; } = 30;
+    public bool DesktopLyricShowTranslation { get; set; } = true;
 
     public bool PlayPageLyricUseCustomMainColor { get; set; }
     public string PlayPageLyricCustomMainColor { get; set; } = "#FFFFFFFF";

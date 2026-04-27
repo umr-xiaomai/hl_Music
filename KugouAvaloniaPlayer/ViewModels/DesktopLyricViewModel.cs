@@ -25,6 +25,7 @@ public partial class DesktopLyricViewModel : ViewModelBase
     [ObservableProperty] private bool _isControlHotspotHovered;
     [ObservableProperty] private bool _isCollapsedLockIconHovered;
     [ObservableProperty] private bool _enableLegacyWordLyricEffect;
+    [ObservableProperty] private bool _isTranslationVisible = true;
 
     [ObservableProperty] private FontFamily? _lyricFontFamily;
     [ObservableProperty] private IBrush _lyricForeground = DefaultLyricBrush;
@@ -40,6 +41,7 @@ public partial class DesktopLyricViewModel : ViewModelBase
         IsControlBarExpanded = false;
         EnableLegacyWordLyricEffect = SettingsManager.Settings.EnableLegacyWordLyricEffect;
         FontSize = ClampFontSize(SettingsManager.Settings.DesktopLyricFontSize);
+        IsTranslationVisible = SettingsManager.Settings.DesktopLyricShowTranslation;
         ApplyLyricStyleSettings(
             SettingsManager.Settings.DesktopLyricUseCustomMainColor,
             SettingsManager.Settings.DesktopLyricCustomMainColor,
@@ -92,6 +94,12 @@ public partial class DesktopLyricViewModel : ViewModelBase
         FontSize = ClampFontSize(FontSize - FontSizeStep);
     }
 
+    [RelayCommand]
+    private void ToggleTranslationVisibility()
+    {
+        IsTranslationVisible = !IsTranslationVisible;
+    }
+
     partial void OnFontSizeChanged(double value)
     {
         var clamped = ClampFontSize(value);
@@ -105,6 +113,12 @@ public partial class DesktopLyricViewModel : ViewModelBase
         SettingsManager.Settings.DesktopLyricFontSize = value;
         SettingsManager.Save();
         OnPropertyChanged(nameof(FontSizeDisplay));
+    }
+
+    partial void OnIsTranslationVisibleChanged(bool value)
+    {
+        SettingsManager.Settings.DesktopLyricShowTranslation = value;
+        SettingsManager.Save();
     }
 
     partial void OnIsLockedChanged(bool value)

@@ -185,6 +185,24 @@
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center"
                                 Spacing="8">
+                        <Button Command="{Binding ToggleTranslationVisibilityCommand}"
+                                Classes="Basic"
+                                ToolTip.Tip="切换翻译显示">
+                            <Panel>
+                                <Svg Path="/Assets/translation-svgrepo-com.svg"
+                                     Width="18"
+                                     Height="18"
+                                     Css="path { fill: white; }"
+                                     IsVisible="{Binding IsTranslationVisible}" />
+                                <Svg Path="/Assets/translation-svgrepo-com.svg"
+                                     Width="18"
+                                     Height="18"
+                                     Opacity="0.38"
+                                     Css="path { fill: white; }"
+                                     IsVisible="{Binding !IsTranslationVisible}" />
+                            </Panel>
+                        </Button>
+
                         <Button Command="{Binding DecreaseFontSizeCommand}" Classes="Basic" ToolTip.Tip="减小歌词字号">
                             <TextBlock Text="A-" Foreground="White" FontWeight="SemiBold" />
                         </Button>
@@ -241,6 +259,22 @@
 
                         <Button Command="{Binding Player.PlayNextCommand}" Classes="Basic">
                             <PathIcon Data="{x:Static suki:Icons.ChevronRight}" Foreground="White" />
+                        </Button>
+
+                        <Button Command="{Binding Player.ToggleShuffleModeCommand}"
+                                Classes="Basic">
+                            <Panel>
+                                <Svg Path="/Assets/shuffle-svgrepo-com.svg"
+                                     Width="18"
+                                     Height="18"
+                                     Css="path { fill: white; }"
+                                     IsVisible="{Binding Player.IsShuffleMode}" />
+                                <Svg Path="/Assets/repeat-svgrepo-com.svg"
+                                     Width="18"
+                                     Height="18"
+                                     Css="path { fill: white; }"
+                                     IsVisible="{Binding !Player.IsShuffleMode}" />
+                            </Panel>
                         </Button>
 
                         <Button Click="OnCloseClicked" Classes="Basic" ToolTip.Tip="关闭歌词">
@@ -358,6 +392,7 @@
                        TextAlignment="Center">
                 <TextBlock.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="IsTranslationVisible" />
                         <Binding Path="Player.CurrentLyricTrans"
                                  Converter="{x:Static StringConverters.IsNotNullOrEmpty}" />
                         <Binding Path="Player.CurrentLyricLine.HasWordLevelTranslation"
@@ -373,6 +408,7 @@
                           HorizontalAlignment="Center">
                 <ItemsControl.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="IsTranslationVisible" />
                         <Binding Path="Player.CurrentLyricLine.HasWordLevelTranslation" />
                         <Binding Path="EnableLegacyWordLyricEffect" />
                     </MultiBinding>
@@ -402,6 +438,7 @@
                           HorizontalAlignment="Center">
                 <ItemsControl.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="IsTranslationVisible" />
                         <Binding Path="Player.CurrentLyricLine.HasWordLevelTranslation" />
                         <Binding Path="EnableLegacyWordLyricEffect"
                                  Converter="{x:Static BoolConverters.Not}" />
