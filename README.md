@@ -241,8 +241,10 @@ KugouMusic.NET
 
 完整版本历史请查看 [Releases](https://github.com/Linsxyx/KugouMusic.NET/releases)。
 
-### v1.2.1
-- 优化逐字歌词
+### v1.3.0
+- 可切换桌面歌词是否显示翻译，可在桌面歌词开启随机播放
+- 优化滚动歌词
+- 优化音频可视化
 
 ### v1.2.0
 - 更好的智能过渡
