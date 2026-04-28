@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace KuGou.Net.util;
 
@@ -136,9 +137,9 @@ public static class KgCrypto
         return Convert.ToHexString(encryptedBytes).ToLower();
     }
 
-    public static (string str, string key) PlaylistAesEncrypt(object data)
+    public static (string str, string key) PlaylistAesEncrypt(JsonObject data)
     {
-        var json = JsonSerializer.Serialize(data, KgUtils.JsonOptions);
+        var json = JsonSerializer.Serialize(data, AppJsonContext.Default.JsonObject);
         var key = KgUtils.RandomString(6).ToLower();
 
         var md5Key = KgUtils.Md5(key);

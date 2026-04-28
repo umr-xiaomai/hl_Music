@@ -55,7 +55,10 @@ public class KgHttpTransport(HttpClient client) : IKgTransport
         var responseBytes = await response.Content.ReadAsByteArrayAsync();
 
         if (responseBytes.Length == 0)
-            return JsonSerializer.Deserialize<JsonElement>("{}");
+        {
+            using var emptyDoc = JsonDocument.Parse("{}");
+            return emptyDoc.RootElement.Clone();
+        }
 
         try
         {

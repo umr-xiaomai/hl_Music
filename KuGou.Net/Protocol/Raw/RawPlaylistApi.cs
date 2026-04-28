@@ -49,10 +49,8 @@ public class RawPlaylistApi(IKgTransport transport, ILogger<RawPlaylistApi> logg
             ["global_collection_id"] = playlistId
         };
 
-        var dataArray = new JsonArray
-        {
-            innerItem
-        };
+        var dataArray = new JsonArray();
+        dataArray.Add((JsonNode)innerItem);
         var body = new JsonObject
         {
             ["data"] = dataArray,
@@ -241,7 +239,7 @@ public class RawPlaylistApi(IKgTransport transport, ILogger<RawPlaylistApi> logg
         // 构建 resources 数组
         var resourceArray = new JsonArray();
         foreach (var song in songs)
-            resourceArray.Add(new JsonObject
+            resourceArray.Add((JsonNode)new JsonObject
             {
                 ["number"] = 1,
                 ["name"] = song.Name,
@@ -297,7 +295,7 @@ public class RawPlaylistApi(IKgTransport transport, ILogger<RawPlaylistApi> logg
         // 构建 data 数组: [{fileid: 123}, {fileid: 456}]
         var resourceArray = new JsonArray();
         foreach (var fid in fileIds)
-            resourceArray.Add(new JsonObject
+            resourceArray.Add((JsonNode)new JsonObject
             {
                 ["fileid"] = fid
             });
