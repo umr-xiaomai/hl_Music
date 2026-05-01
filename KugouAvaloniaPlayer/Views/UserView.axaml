@@ -30,7 +30,7 @@
         </Style>
     </UserControl.Styles>
 
-    <suki:GlassCard Margin="24" Padding="20">
+    <suki:GlassCard Margin="24,24,24,104" Padding="20">
         <Grid ColumnDefinitions="180,*" ColumnSpacing="16">
 
             <Border Grid.Column="0"
@@ -86,7 +86,8 @@
 
             <ScrollViewer Grid.Column="1"
                           HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
+                          VerticalScrollBarVisibility="Auto"
+                          Padding="0,0,0,24">
                 <StackPanel Spacing="12" Margin="2,0,4,0">
                     <TextBlock Text="设置"
                                FontSize="22"
