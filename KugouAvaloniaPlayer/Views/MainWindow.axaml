@@ -20,16 +20,13 @@
                  TitleBarVisibilityOnFullScreen="AutoHidden">
 
     <suki:SukiWindow.RightWindowTitleBarControls>
-        <Button Width="34"
-                Height="34"
-                Padding="7"
-                Classes="Basic"
+        <Button Classes="WindowControlsButton"
                 Cursor="Hand"
                 Command="{Binding NavigateToUserCommand}"
                 ToolTip.Tip="设置">
             <Svg Path="/Assets/gear-svgrepo-com.svg"
-                 Width="20"
-                 Height="20"
+                 Width="18"
+                 Height="18"
                  VerticalAlignment="Center" />
         </Button>
     </suki:SukiWindow.RightWindowTitleBarControls>

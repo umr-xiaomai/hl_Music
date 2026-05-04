@@ -31,6 +31,9 @@ public record RankSongItem : KgBaseModel
 
 
     [JsonIgnore] public int DurationMs => AudioInfo.Duration;
+    
+    [property: JsonPropertyName("album_info")]
+    public RankAlbum? Album { get; set; }
 
 
     /// <summary>
@@ -59,4 +62,13 @@ public record RankSongAuthor
 
     [property: JsonPropertyName("author_name")]
     public string AuthorName { get; set; } = "";
+}
+
+public record RankAlbum : KgBaseModel
+{
+    [property: JsonPropertyName("sizable_cover")]
+    public string Cover { get; set; } = "";
+
+    [property: JsonPropertyName("album_name")] 
+    public string Name { get; set; } = "";
 }

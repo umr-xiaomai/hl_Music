@@ -332,6 +332,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 Singer = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知",
                 Hash = s.Hash,
                 AlbumId = s.AlbumId,
+                AlbumName = s.Album?.Name ?? "",
                 FileId = s.FileId, // 保存 FileId 用于删除
                 Singers = s.Singers,
                 Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,
@@ -374,6 +375,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 Singer = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知",
                 Hash = s.Hash,
                 AlbumId = s.AlbumId,
+                AlbumName = s.AlbumInfo.AlbumName,
                 Singers = s.Singers,
                 Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,
                 DurationSeconds = s.DurationMs / 1000.0
@@ -411,6 +413,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 {
                     var title = Path.GetFileNameWithoutExtension(file);
                     var singer = "未知艺术家";
+                    var albumName = "";
                     double duration = 0;
 
                     try
@@ -422,6 +425,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                         var artists = tfile.Tag.Performers;
                         if (artists is { Length: > 0 }) singer = string.Join(", ", artists);
 
+                        albumName = tfile.Tag.Album ?? "";
                         duration = tfile.Properties?.Duration.TotalSeconds ?? 0;
                     }
                     catch (UnsupportedFormatException)
@@ -441,6 +445,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                     {
                         Name = title,
                         Singer = singer,
+                        AlbumName = albumName,
                         DurationSeconds = duration,
                         LocalFilePath = file,
                         Cover = GetLocalSongCoverSource(path, file)
@@ -815,6 +820,7 @@ public partial class MyPlaylistsViewModel : PageViewModelBase
                 Singer = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知",
                 Hash = s.Hash,
                 AlbumId = s.AlbumId,
+                AlbumName = s.Album?.Name ?? "",
                 FileId = s.FileId,
                 Singers = s.Singers,
                 Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,

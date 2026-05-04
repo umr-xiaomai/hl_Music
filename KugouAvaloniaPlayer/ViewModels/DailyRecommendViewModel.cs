@@ -283,6 +283,7 @@ public partial class DailyRecommendViewModel : PageViewModelBase
                     Singer = item.SingerName,
                     Hash = item.Hash,
                     AlbumId = item.AlbumId,
+                    AlbumName = item.AlbumName,
                     AudioId = item.AudioId,
                     Singers = item.Singers,
                     Cover = string.IsNullOrWhiteSpace(item.SizableCover) ? DefaultCover : item.SizableCover,

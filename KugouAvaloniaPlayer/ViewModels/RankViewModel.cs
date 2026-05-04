@@ -132,6 +132,7 @@ public partial class RankViewModel : PageViewModelBase
                     Singer = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知",
                     Hash = s.Hash,
                     AlbumId = s.AlbumId.ToString(),
+                    AlbumName = s.Album?.Name ?? "",
                     Singers = s.Singers,
                     Cover =
                         string.IsNullOrWhiteSpace(s.TransParam?.UnionCover) ? DefaultCover : s.TransParam.UnionCover,

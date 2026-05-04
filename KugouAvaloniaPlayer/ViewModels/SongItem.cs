@@ -11,6 +11,7 @@ namespace KugouAvaloniaPlayer.ViewModels;
 public partial class SongItem : ObservableObject
 {
     [ObservableProperty] private string _albumId = "";
+    [ObservableProperty] private string _albumName = "";
     [ObservableProperty] private long _audioId;
     [ObservableProperty] private string? _cover = "avares://KugouAvaloniaPlayer/Assets/default_song.png";
     [ObservableProperty] private double _durationSeconds;

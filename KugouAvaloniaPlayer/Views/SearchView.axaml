@@ -244,65 +244,27 @@
                         </ItemsControl>
                     </ScrollViewer>
 
-                    <Grid IsVisible="{Binding IsShowingDetail}" RowDefinitions="Auto, *">
-                        <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto, Auto" Margin="0,0,0,15">
-                            <Border Width="80" Height="80" CornerRadius="8" ClipToBounds="True"
-                                    Background="{DynamicResource SukiPrimaryColorLow}">
-                                <controls:AsyncImage Source="{Binding DetailCover}" Stretch="UniformToFill" />
-                            </Border>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
-                                <TextBlock Text="{Binding DetailTitle}" FontSize="24" FontWeight="Bold"
-                                           TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding DetailSubTitle}" FontSize="14"
-                                           Foreground="{DynamicResource SukiLiquid2}" Margin="0,5,0,0" />
-                            </StackPanel>
-
-                            <Button Grid.Column="2" Command="{Binding CollectPlaylistCommand}"
+                    <localControls:SongCollectionDetailView
+                        IsVisible="{Binding IsShowingDetail}"
+                        Cover="{Binding DetailCover}"
+                        Title="{Binding DetailTitle}"
+                        Subtitle="{Binding DetailSubTitle}"
+                        Songs="{Binding DetailSongs}"
+                        LoadMoreCommand="{Binding LoadMoreDetailsCommand}"
+                        BackCommand="{Binding GoBackCommand}"
+                        IsLoadingMore="{Binding IsLoadingMoreDetails}"
+                        LoadingMoreText="加载更多..."
+                        ListPadding="0,0,0,50"
+                        TitleFontSize="24">
+                        <localControls:SongCollectionDetailView.Actions>
+                            <Button Command="{Binding CollectPlaylistCommand}"
                                     IsVisible="{Binding CanCollectDetail}"
-                                    Classes="Standard Icon" VerticalAlignment="Center" Margin="10,0" ToolTip.Tip="收藏">
-                                <StackPanel Orientation="Horizontal" Spacing="5">
-                                    <PathIcon Data="{x:Static suki:Icons.Star}" />
-                                </StackPanel>
+                                    Classes="Standard Icon"
+                                    ToolTip.Tip="收藏">
+                                <PathIcon Data="{x:Static suki:Icons.Star}" />
                             </Button>
-
-                            <Button Grid.Column="3" Command="{Binding GoBackCommand}" Classes="Basic"
-                                    VerticalAlignment="Top">
-                                <PathIcon Data="{x:Static suki:Icons.ChevronLeft}"
-                                          Foreground="{DynamicResource SukiLowText}" Width="28"
-                                          Height="28" />
-                            </Button>
-                        </Grid>
-
-                        <Grid Grid.Row="1">
-                            <ListBox Classes="SongList"
-                                     ItemsSource="{Binding DetailSongs}"
-                                     behaviors:InteractionBehaviors.ScrollNearBottomCommand="{Binding LoadMoreDetailsCommand}"
-                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     Padding="0,0,0,50">
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <VirtualizingStackPanel />
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate DataType="vm:SongItem">
-                                        <localControls:SongListItemControl />
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
-                                        VerticalAlignment="Bottom"
-                                        Margin="10" Spacing="10"
-                                        IsVisible="{Binding IsLoadingMoreDetails}">
-                                <suki:Loading Width="20" Height="20" />
-                                <TextBlock Text="加载更多..." VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SukiLiquid2}" />
-                            </StackPanel>
-                        </Grid>
-                    </Grid>
+                        </localControls:SongCollectionDetailView.Actions>
+                    </localControls:SongCollectionDetailView>
                 </Grid>
             </Grid>
         </Grid>

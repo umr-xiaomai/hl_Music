@@ -82,12 +82,15 @@
                 <controls:AsyncImage Source="{Binding Cover}" Stretch="UniformToFill" />
             </Border>
 
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0" Spacing="3">
                 <TextBlock Text="{Binding Name}" FontWeight="DemiBold" TextTrimming="CharacterEllipsis"
                            Foreground="{DynamicResource SukiLowText}" />
+                <TextBlock Text="{Binding Singer}" FontSize="12"
+                           Foreground="{DynamicResource SukiLiquid2}"
+                           TextTrimming="CharacterEllipsis" />
             </StackPanel>
 
-            <TextBlock Grid.Column="2" Text="{Binding Singer}" VerticalAlignment="Center"
+            <TextBlock Grid.Column="2" Text="{Binding AlbumName}" VerticalAlignment="Center"
                        Foreground="{DynamicResource SukiLowText}"
                        TextTrimming="CharacterEllipsis" />
 

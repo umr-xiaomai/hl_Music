@@ -29,6 +29,9 @@ public record SongInfo : KgBaseModel
 
     [property: JsonPropertyName("AlbumID")]
     public string AlbumId { get; set; } = "";
+        
+    [property: JsonPropertyName("AlbumName")]
+    public string AlbumName { get; set; } = "";
 
     [property: JsonPropertyName("Duration")]
     public int Duration { get; set; }

@@ -360,6 +360,7 @@ public partial class SearchViewModel(
                         Singer = singerName,
                         Hash = s.Hash,
                         AlbumId = s.AlbumId,
+                        AlbumName = s.Album?.Name ?? "",
                         Singers = s.Singers,
                         Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,
                         DurationSeconds = s.DurationMs / 1000.0
@@ -389,6 +390,7 @@ public partial class SearchViewModel(
                             Singer = singerName,
                             Hash = s.Hash,
                             AlbumId = s.AlbumId,
+                            AlbumName = s.AlbumInfo.AlbumName,
                             Singers = s.Singers,
                             Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,
                             DurationSeconds = s.DurationMs / 1000.0
@@ -443,6 +445,8 @@ public partial class SearchViewModel(
             Name = item.Name,
             Singer = item.Singer,
             Hash = item.Hash,
+            AlbumId = item.AlbumId,
+            AlbumName = item.AlbumName,
             Singers = item.Singers,
             Cover = string.IsNullOrWhiteSpace(item.Cover) ? DefaultSongCover : item.Cover,
             DurationSeconds = item.Duration

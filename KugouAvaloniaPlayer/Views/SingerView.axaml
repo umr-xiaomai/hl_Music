@@ -8,63 +8,24 @@
              x:Class="KugouAvaloniaPlayer.Views.SingerView"
              x:DataType="vm:SingerViewModel">
     <suki:GlassCard Margin="15" Padding="20">
-        <Grid RowDefinitions="Auto, *">
-            <Grid Grid.Row="0" ColumnDefinitions=" *, Auto,Auto" Margin="0,0,0,20">
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="15" VerticalAlignment="Center">
-                    <Border Width="80" Height="80" CornerRadius="8" ClipToBounds="True"
-                            Background="{DynamicResource SukiPrimaryColorLow}">
-                        <controls:AsyncImage Source="{Binding SingerAvatar}" Stretch="UniformToFill" />
-                    </Border>
-                    <TextBlock Text="{Binding SingerName}" FontSize="24" FontWeight="Bold" VerticalAlignment="Center" />
-                </StackPanel>
-
-                <Button Grid.Column="1" Command="{Binding ToggleSortCommand}" Classes="Basic" Cursor="Hand">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding CurrentSortText}" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource SukiLowText}" />
-                    </StackPanel>
+        <localControls:SongCollectionDetailView
+            Cover="{Binding SingerAvatar}"
+            Title="{Binding SingerName}"
+            Songs="{Binding Songs}"
+            LoadMoreCommand="{Binding LoadMoreCommand}"
+            BackCommand="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).NavigateBackCommand}"
+            IsLoading="{Binding IsLoading}"
+            IsLoadingMore="{Binding IsLoadingMore}"
+            LoadingText="正在加载..."
+            LoadingMoreText="正在加载更多..."
+            ListPadding="0,0,0,50"
+            TitleFontSize="24">
+            <localControls:SongCollectionDetailView.Actions>
+                <Button Command="{Binding ToggleSortCommand}" Classes="Basic" Cursor="Hand">
+                    <TextBlock Text="{Binding CurrentSortText}"
+                               Foreground="{DynamicResource SukiLowText}" />
                 </Button>
-
-                <Button Grid.Column="2" Cursor="Hand"
-                        Command="{Binding $parent[suki:SukiWindow].((vm:MainWindowViewModel)DataContext).NavigateBackCommand}"
-                        Classes="Basic" Margin="0,0,15,0" HorizontalAlignment="Right">
-                    <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="{DynamicResource SukiLowText}"
-                              Width="24" Height="24" />
-                </Button>
-            </Grid>
-
-            <Grid Grid.Row="1">
-                <ListBox Classes="SongList"
-                         ItemsSource="{Binding Songs}"
-                         behaviors:InteractionBehaviors.ScrollNearBottomCommand="{Binding LoadMoreCommand}"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         Padding="0,0,0,50">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel />
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate DataType="vm:SongItem">
-                            <localControls:SongListItemControl />
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                            IsVisible="{Binding IsLoading}" Spacing="10">
-                    <suki:Loading Width="40" Height="40" />
-                    <TextBlock Text="正在加载..." Foreground="{DynamicResource SukiLiquid2}" />
-                </StackPanel>
-
-                <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,20"
-                            IsVisible="{Binding IsLoadingMore}" Spacing="10">
-                    <suki:Loading Width="30" Height="30" />
-                    <TextBlock Text="正在加载更多..." Foreground="{DynamicResource SukiLiquid2}" FontSize="12" />
-                </StackPanel>
-            </Grid>
-        </Grid>
+            </localControls:SongCollectionDetailView.Actions>
+        </localControls:SongCollectionDetailView>
     </suki:GlassCard>
 </UserControl>

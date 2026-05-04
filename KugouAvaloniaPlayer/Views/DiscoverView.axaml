@@ -115,59 +115,22 @@
             </Grid>
         </Grid>
 
-        <Grid IsVisible="{Binding IsShowingSongs}" RowDefinitions="Auto,*">
-            <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*">
-                <Border Width="80" Height="80" CornerRadius="8" ClipToBounds="True"
-                        Background="{DynamicResource SukiPrimaryColorLow}">
-                    <controls:AsyncImage Source="{Binding SelectedPlaylist.Cover}" Stretch="UniformToFill" />
-                </Border>
-
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
-                    <TextBlock Text="{Binding SelectedPlaylist.Name}" FontSize="28" FontWeight="Bold"
-                               TextTrimming="CharacterEllipsis" MaxWidth="560" />
-                    <TextBlock Text="{Binding SelectedPlaylist.CreatorName, StringFormat='by {0}'}"
-                               Foreground="{DynamicResource SukiLiquid2}" />
-                </StackPanel>
-
-                <Button Grid.Column="2" Command="{Binding CollectPlaylistCommand}"
-                        Classes="Standard Icon" HorizontalAlignment="Right" Margin="10,0" ToolTip.Tip="收藏">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <PathIcon Data="{x:Static suki:Icons.Star}" />
-                    </StackPanel>
+        <localControls:SongCollectionDetailView
+            IsVisible="{Binding IsShowingSongs}"
+            Cover="{Binding SelectedPlaylist.Cover}"
+            Title="{Binding SelectedPlaylist.Name}"
+            Subtitle="{Binding SelectedPlaylist.CreatorName, StringFormat='by {0}'}"
+            Songs="{Binding SelectedPlaylistSongs}"
+            LoadMoreCommand="{Binding LoadMoreSongsCommand}"
+            BackCommand="{Binding GoBackCommand}"
+            IsLoadingMore="{Binding IsLoadingMoreSongs}">
+            <localControls:SongCollectionDetailView.Actions>
+                <Button Command="{Binding CollectPlaylistCommand}"
+                        Classes="Standard Icon"
+                        ToolTip.Tip="收藏">
+                    <PathIcon Data="{x:Static suki:Icons.Star}" />
                 </Button>
-
-                <Button Grid.Column="3" Command="{Binding GoBackCommand}" Classes="Basic" HorizontalAlignment="Right"
-                        Cursor="Hand">
-                    <PathIcon Data="{x:Static suki:Icons.ChevronLeft}" Foreground="{DynamicResource SukiLowText}"
-                              Width="28" Height="28" />
-                </Button>
-            </Grid>
-
-            <Grid Grid.Row="1" Margin="0,15,0,0">
-                <ListBox Classes="SongList"
-                         ItemsSource="{Binding SelectedPlaylistSongs}"
-                         behaviors:InteractionBehaviors.ScrollNearBottomCommand="{Binding LoadMoreSongsCommand}"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         Padding="0,0,0,80">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate DataType="vm:SongItem">
-                            <localControls:SongListItemControl />
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Bottom"
-                            Margin="10"
-                            Spacing="10"
-                            IsVisible="{Binding IsLoadingMoreSongs}">
-                    <suki:Loading Width="20" Height="20" />
-                    <TextBlock Text="正在加载歌曲..." VerticalAlignment="Center"
-                               Foreground="{DynamicResource SukiLiquid2}" />
-                </StackPanel>
-            </Grid>
-        </Grid>
+            </localControls:SongCollectionDetailView.Actions>
+        </localControls:SongCollectionDetailView>
     </Grid>
 </UserControl>

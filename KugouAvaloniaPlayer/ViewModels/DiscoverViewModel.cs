@@ -342,6 +342,7 @@ public partial class DiscoverViewModel : PageViewModelBase
                 Singer = s.Singers.Count > 0 ? string.Join("、", s.Singers.Select(x => x.Name)) : "未知",
                 Hash = s.Hash,
                 AlbumId = s.AlbumId,
+                AlbumName = s.Album?.Name ?? "",
                 FileId = s.FileId,
                 Singers = s.Singers,
                 Cover = string.IsNullOrWhiteSpace(s.Cover) ? DefaultSongCover : s.Cover,

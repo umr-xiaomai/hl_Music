@@ -108,6 +108,7 @@ public partial class SingerViewModel : PageViewModelBase
                     Singer = item.SingerName,
                     Hash = item.Hash,
                     AlbumId = item.AlbumId.ToString(),
+                    AlbumName = item.AlbumName,
                     DurationSeconds = item.Duration / 1000.0,
                     Cover = item.TransParam?.UnionCover
                 })
